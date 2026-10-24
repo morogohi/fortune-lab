@@ -1,0 +1,279 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="description" content="사주·토정비결·타로·별자리·MBTI를 한 번에 보는 운명 연구소. 입력 정보는 저장되지 않습니다.">
+<meta name="robots" content="index,follow">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+</head>
+<body>
+<title>운명 연구소</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@700;800&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 입력 → 본성 이미지 히어로 → 명식 → 가로 스크롤 탭(요약/상세 전환) → PDF 보고서. 오방색은 오행 표기에만 사용 */
+:root{
+  --bg:#eef0f4; --surface:#ffffff; --ink:#1b2033; --muted:#5d6479; --line:#d6dae4;
+  --accent:#2f3e8f; --accent-soft:#e3e7f6; --scene:#e6eaf3;
+  --card:#1d2547; --gold:#d9b45a;
+  --wood:#2e7d4f; --fire:#c0392b; --earth:#b08a1e; --metal:#7b8494; --water:#1f3b6e;
+  --display:"Nanum Myeongjo","Batang",serif;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#12151f; --surface:#1b1f2c; --ink:#e7e9f0; --muted:#9aa1b5; --line:#2d3344;
+  --accent:#9aa8ff; --accent-soft:#252b45; --scene:#232941; --card:#141a33; --gold:#e3c06a;
+  --wood:#5cc18a; --fire:#f06b5c; --earth:#e0b844; --metal:#b4bccb; --water:#7ea6f0; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12151f; --surface:#1b1f2c; --ink:#e7e9f0; --muted:#9aa1b5; --line:#2d3344;
+  --accent:#9aa8ff; --accent-soft:#252b45; --scene:#232941; --card:#141a33; --gold:#e3c06a;
+  --wood:#5cc18a; --fire:#f06b5c; --earth:#e0b844; --metal:#b4bccb; --water:#7ea6f0; color-scheme:dark}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.7;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:24px 48px}
+.wrap{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:20px}
+h1,h2,h3{text-wrap:balance;margin:0;line-height:1.3}
+h1{font-family:var(--display);font-size:clamp(28px,6vw,40px);font-weight:800}
+h2{font-family:var(--display);font-size:22px;font-weight:800}
+h3{font-size:15.5px;font-weight:600}
+p{margin:0}
+.lede{color:var(--muted);margin-top:6px;max-width:60ch}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:20px}
+.label{font-size:12px;letter-spacing:.08em;color:var(--muted)}
+form{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field>label{font-size:13px;color:var(--muted)}
+input,select,textarea{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:6px;padding:9px 10px;width:100%}
+input:disabled{opacity:.5}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{font:inherit;font-weight:600;background:var(--accent);color:var(--surface);border:0;border-radius:6px;padding:10px 18px;cursor:pointer;align-self:end}
+.btn:hover{filter:brightness(1.08)}
+.btn.ghost{background:none;color:var(--accent);border:1px solid var(--accent)}
+.btn:disabled{opacity:.6;cursor:wait}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center}
+.checks{justify-content:flex-end;gap:4px}
+.checks label{display:flex;align-items:center;gap:6px;font-size:13px}
+.checks input{width:auto}
+.note{font-size:12.5px;color:var(--muted)}
+.privacy{display:flex;gap:10px;align-items:flex-start;padding:10px 12px;border-radius:8px;background:var(--accent-soft);font-size:13px;margin-top:14px}
+.privacy b{color:var(--accent)}
+.hero{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:20px;align-items:center}
+@media (max-width:640px){.hero{grid-template-columns:1fr}}
+.hero svg{width:100%;height:auto;border-radius:8px;display:block}
+.big{font-family:var(--display);font-weight:800;font-size:clamp(26px,6vw,34px);line-height:1.25}
+.tags{display:flex;flex-wrap:wrap;gap:6px}
+.pill{display:inline-block;font-size:12px;padding:2px 9px;border-radius:99px;background:var(--accent-soft);color:var(--accent);font-weight:600}
+.lunar{font-size:13px;color:var(--muted)}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:16px}
+.pillar{display:flex;flex-direction:column;align-items:center;gap:2px;padding:10px 4px;border:1px solid var(--line);border-radius:8px}
+.pillar.day{border-color:var(--accent);background:var(--accent-soft)}
+.cap{font-size:12px;color:var(--muted)}
+.tg{font-size:11.5px;color:var(--muted);font-weight:600}
+.han{font-family:var(--display);font-weight:800;font-size:clamp(30px,8vw,44px);line-height:1.1}
+.ko{font-size:12px;color:var(--muted)}
+.e0{color:var(--wood)}.e1{color:var(--fire)}.e2{color:var(--earth)}.e3{color:var(--metal)}.e4{color:var(--water)}
+.bars{display:grid;grid-template-columns:repeat(5,1fr);gap:8px;margin-top:16px}
+.bar{display:flex;flex-direction:column;align-items:center;gap:4px}
+.track{width:100%;height:64px;background:var(--bg);border-radius:4px;display:flex;align-items:flex-end;overflow:hidden}
+.fill{width:100%;border-radius:4px 4px 0 0}
+.b0{background:var(--wood)}.b1{background:var(--fire)}.b2{background:var(--earth)}.b3{background:var(--metal)}.b4{background:var(--water)}
+.num{font-family:var(--mono);font-variant-numeric:tabular-nums;font-size:13px}
+.tabs{display:flex;gap:2px;overflow-x:auto;border-bottom:1px solid var(--line);scrollbar-width:none}
+.tab{font:inherit;font-weight:500;white-space:nowrap;background:none;border:0;border-bottom:2px solid transparent;color:var(--muted);padding:10px 12px;cursor:pointer}
+.tab[aria-selected="true"]{color:var(--ink);border-bottom-color:var(--accent)}
+.section{display:flex;flex-direction:column;gap:18px}
+.phead{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.lv{display:inline-flex;border:1px solid var(--line);border-radius:99px;padding:3px;background:var(--bg)}
+.lv button{font:inherit;font-size:13px;font-weight:600;border:0;background:none;color:var(--muted);padding:5px 14px;border-radius:99px;cursor:pointer}
+.lv button[aria-pressed="true"]{background:var(--accent);color:var(--surface)}
+.det{display:none;flex-direction:column;gap:18px;border-top:1px dashed var(--line);padding-top:18px}
+.deep .det{display:flex}
+.dethead{font-family:var(--display);font-weight:800;font-size:18px;color:var(--accent)}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:14px}
+.card{border:1px solid var(--line);border-radius:8px;padding:14px 16px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.dl{display:grid;grid-template-columns:5.5em 1fr;gap:10px 14px;margin:0}
+.dl dt{font-weight:600;color:var(--accent);font-size:14px}
+.dl dd{margin:0;min-width:0}
+@media (max-width:480px){.dl{grid-template-columns:1fr;gap:2px}.dl dd{margin-bottom:10px}}
+.gwae{font-family:var(--mono);font-size:30px;letter-spacing:.15em}
+.months{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:8px}
+.month{display:flex;gap:10px;font-size:14px;padding:8px 10px;border-radius:6px;background:var(--bg)}
+.month b{font-family:var(--mono);min-width:3.2ch;color:var(--accent)}
+.month small{display:block;color:var(--muted);font-size:12px;line-height:1.5}
+.month.hi{outline:1.5px solid var(--accent)}
+.score{font-family:var(--display);font-weight:800;font-size:52px;line-height:1}
+.meter{height:8px;border-radius:99px;background:var(--bg);overflow:hidden}
+.meter i{display:block;height:100%;background:var(--accent)}
+.job{display:grid;grid-template-columns:auto 1fr;gap:2px 12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.job:last-child{border-bottom:0}
+.job .tag{font-size:12.5px;color:var(--muted);grid-column:2}
+.rank{font-family:var(--mono);color:var(--accent);grid-row:span 2}
+.dayun{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.dy{flex:0 0 auto;display:flex;flex-direction:column;align-items:center;gap:1px;padding:8px 10px;border:1px solid var(--line);border-radius:8px;min-width:62px}
+.dy.now{border-color:var(--accent);background:var(--accent-soft)}
+.dy .han{font-size:22px}
+.glyph{font-size:44px;line-height:1;color:var(--accent);font-family:"Segoe UI Symbol","Noto Sans Symbols 2","Apple Symbols",serif}
+.dim{display:grid;grid-template-columns:2.4ch 1fr;gap:4px 10px}
+.dim b{font-family:var(--mono);color:var(--accent)}
+table.t{border-collapse:collapse;width:100%;font-size:14px}
+.t th,.t td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:top}
+.t th{color:var(--muted);font-weight:600;font-size:12.5px;white-space:nowrap}
+.tw{overflow-x:auto}
+/* tarot */
+.spread{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+.slot{display:flex;flex-direction:column;align-items:center;gap:6px;width:min(140px,30%)}
+.flip{width:100%;aspect-ratio:3/5;perspective:900px;cursor:pointer;background:none;border:0;padding:0;display:block}
+.flip .in{position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform .7s}
+.flip.open .in{transform:rotateY(180deg)}
+.flip .face{position:absolute;inset:0;width:100%;height:100%;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:8px;box-shadow:0 4px 14px rgb(0 0 0 / .2);object-fit:cover;background:#fff}
+.flip .front{transform:rotateY(180deg)}
+.flip .front.rev{transform:rotateY(180deg) rotate(180deg)}
+.tcard{display:grid;grid-template-columns:92px 1fr;gap:14px;align-items:start}
+.tcard img{width:92px;border-radius:6px;box-shadow:0 2px 8px rgb(0 0 0 / .15)}
+.tcard img.rev{transform:rotate(180deg)}
+@media (max-width:420px){.tcard{grid-template-columns:72px 1fr}.tcard img{width:72px}}
+.deck{height:96px;position:relative}
+.deck:empty{display:none}
+.deck span{position:absolute;top:0;width:56px;height:92px;border-radius:6px;background:var(--card);border:2px solid var(--gold)}
+.credit{font-size:12px;color:var(--muted)}
+.prof{border:1px solid var(--line);border-radius:8px;padding:10px 14px;background:var(--bg)}
+.prof summary{cursor:pointer;font-weight:600;font-size:14px}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-top:12px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chipck{display:inline-flex;align-items:center;gap:5px;font-size:13px;border:1px solid var(--line);border-radius:99px;padding:4px 10px;background:var(--surface);cursor:pointer}
+.chipck input{width:auto;margin:0}
+.chipck:has(input:checked){border-color:var(--accent);color:var(--accent);background:var(--accent-soft)}
+.pbar{display:grid;grid-template-columns:minmax(0,1fr) 34% 3.6em;gap:8px;align-items:center;font-size:13px;margin:4px 0}
+.pbar span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pbar i{display:block;height:8px;border-radius:99px;background:var(--accent);min-width:2px}
+.pbar b{text-align:right;font-weight:500}
+code{font-family:var(--mono);font-size:12.5px;background:var(--accent-soft);padding:1px 5px;border-radius:4px}
+@media (prefers-reduced-motion:reduce){.flip .in{transition:none}}
+@media (prefers-reduced-motion:no-preference){.fill,.meter i{transition:height .5s,width .5s}.deck.go span{animation:shuf .9s ease-in-out}}
+@keyframes shuf{30%{transform:translateX(var(--dx)) rotate(var(--r))}60%{transform:translateX(calc(var(--dx) * -1))}}
+/* PDF 보고서 (화면 밖에서 렌더) */
+#rwrap{position:fixed;left:0;top:0;width:760px;z-index:-10;opacity:0;pointer-events:none}
+.report{width:760px;--bg:#f2f4f8;--surface:#fff;--ink:#1b2033;--muted:#5a6176;--line:#d6dae4;--accent:#2f3e8f;--accent-soft:#e6e9f7;--scene:#e6eaf3;--card:#1d2547;--gold:#d9b45a;
+  --wood:#2e7d4f;--fire:#c0392b;--earth:#a5801a;--metal:#6d7686;--water:#1f3b6e;background:#fff;color:#1b2033;font-family:var(--body);font-size:13.5px;line-height:1.75;color-scheme:light}
+.report .rsec{padding:8px 4px 0;display:flex;flex-direction:column;gap:14px}
+.report .pb{page-break-before:always}
+.report .avoid,.report .card,.report .month,.report .tcard,.report .pillar{break-inside:avoid;page-break-inside:avoid}
+.report h2{font-size:22px;border-bottom:2px solid var(--accent);padding-bottom:6px}
+.report .det{display:flex;border-top:0;padding-top:0}
+.report .cover{height:980px;display:flex;flex-direction:column;justify-content:center;gap:18px;text-align:center}
+.report .cover img{width:520px!important;margin:0 auto;border-radius:10px}
+.report .months{grid-template-columns:repeat(3,1fr)}
+.report .grid2{grid-template-columns:repeat(2,1fr)}
+</style>
+
+<div class="wrap">
+  <header>
+    <div class="label">사주명리 · 토정비결 · 타로 · 별자리 · MBTI</div>
+    <h1>운명 연구소</h1>
+    <p class="lede">생년월일시로 사주팔자를 세우고, 대운과 토정비결, 타로와 별자리·MBTI를 겹쳐 봅니다. 탭마다 요약과 상세 해설을 고를 수 있고, 전체 내용을 PDF 보고서로 받을 수 있습니다.</p>
+  </header>
+
+  <section class="panel">
+    <form id="f" autocomplete="off">
+      <div class="field"><label for="name">이름 (선택)</label><input id="name" value="홍길동" autocomplete="off"></div>
+      <div class="field"><label for="cal">달력</label><select id="cal"><option value="s">양력</option><option value="l">음력 (평달)</option><option value="ll">음력 (윤달)</option></select></div>
+      <div class="field"><label for="birth">생년월일</label><input id="birth" type="date" value="1990-05-15" autocomplete="off"></div>
+      <div class="field"><label for="btime">태어난 시각</label><input id="btime" type="time" value="11:30" autocomplete="off"></div>
+      <div class="field checks"><label><input type="checkbox" id="tunk"> 시각 모름</label><label><input type="checkbox" id="corr" checked> 서울 경도 보정 (−32분)</label></div>
+      <div class="field"><label for="gender">성별</label><select id="gender"><option value="m">남</option><option value="f">여</option></select></div>
+      <div class="field"><label for="mbti">MBTI</label><select id="mbti"></select></div>
+      <div class="field"><label for="year">운세 연도</label><select id="year"><option>2026</option><option selected>2027</option><option>2028</option></select></div>
+      <details class="prof" style="grid-column:1/-1"><summary>생활 프로필 (선택) · 직업·지역·가구·주거·관심사로 맞춤 해설</summary>
+        <div class="pgrid">
+          <div class="field"><label for="prov">거주 지역</label><select id="prov"></select></div>
+          <div class="field"><label for="occ">직업</label><select id="occ"></select></div>
+          <div class="field"><label for="fam">가구 형태</label><select id="fam"></select></div>
+          <div class="field"><label for="house">주거 형태</label><select id="house"></select></div>
+          <div class="field" style="grid-column:1/-1"><span class="note">관심사 (여러 개 선택)</span><div id="ints" class="chips"></div></div>
+        </div></details>
+      <button class="btn" type="submit" id="go">풀이 보기</button>
+    </form>
+    <div class="privacy"><span><b>개인정보를 남기지 않습니다.</b> 입력한 정보는 이 화면 안에서만 계산되고 어디에도 저장되거나 전송되지 않습니다. 창을 닫거나 ‘입력 지우기’를 누르면 모두 사라집니다.</span></div>
+    <div class="row" style="margin-top:12px"><button class="btn ghost" type="button" id="clear">입력 지우기</button><span class="note" id="demo">지금 보이는 결과는 예시 값입니다.</span></div>
+  </section>
+  <p class="note" id="libwarn" hidden>만세력 라이브러리를 불러오지 못했습니다. 네트워크를 확인하고 새로고침하세요.</p>
+
+  <div id="results" class="section">
+  <section class="panel" id="chart"></section>
+
+  <section class="panel row" style="justify-content:space-between">
+    <div><h3>종합 운명 보고서 (PDF)</h3><p class="note">사주·대운·토정비결·타로·별자리·MBTI·궁합·적성까지 모든 상세 해설을 한 권으로 정리합니다.</p></div>
+    <button class="btn" type="button" id="pdfbtn">PDF 보고서 만들기</button>
+    <p class="note" id="pdfmsg" style="width:100%" hidden></p>
+  </section>
+
+  <nav class="tabs" role="tablist" id="tabs">
+    <button class="tab" role="tab" data-t="saju" aria-selected="true">사주풀이</button>
+    <button class="tab" role="tab" data-t="me" aria-selected="false">맞춤 해설</button>
+    <button class="tab" role="tab" data-t="luck" aria-selected="false">대운 · 세운</button>
+    <button class="tab" role="tab" data-t="tojeong" aria-selected="false">토정비결</button>
+    <button class="tab" role="tab" data-t="tarot" aria-selected="false">타로</button>
+    <button class="tab" role="tab" data-t="star" aria-selected="false">별자리 · MBTI</button>
+    <button class="tab" role="tab" data-t="match" aria-selected="false">궁합</button>
+    <button class="tab" role="tab" data-t="career" aria-selected="false">적성 · 직업</button>
+    <button class="tab" role="tab" data-t="share" aria-selected="false">공유 카드</button>
+  </nav>
+
+  <section class="panel section" id="v-saju"><div class="phead"><h2>사주풀이</h2><div class="lv"></div></div><div class="body"></div></section>
+  <section class="panel section" id="v-me" hidden><div class="phead"><h2>나에게 맞춘 해설</h2><div class="lv"></div></div><p class="note">사주에 연령대·성별·직업·거주 권역·가구·주거·관심사를 겹쳐, 대한민국에서 지금 내 조건에 맞는 조언을 드립니다.</p><div class="body"></div></section>
+  <section class="panel section" id="v-luck" hidden><div class="phead"><h2>대운 · 세운 · 월운</h2><div class="lv"></div></div><div class="body"></div></section>
+  <section class="panel section" id="v-tojeong" hidden><div class="phead"><h2>토정비결</h2><div class="lv"></div></div><div class="body"></div></section>
+  <section class="panel section" id="v-tarot" hidden>
+    <div class="phead"><h2>타로 리딩</h2><div class="lv"></div></div>
+    <p>마음속으로 질문을 떠올린 뒤 카드를 뽑으세요. 78장 전체(메이저 22장, 마이너 56장)에서 무작위로 뽑고, 거꾸로 나온 카드는 역방향으로 읽습니다.</p>
+    <form id="tf">
+      <div class="field"><label for="ttopic">주제</label><select id="ttopic"><option value="all">종합</option><option value="love">연애 · 관계</option><option value="work">일 · 직업</option><option value="money">재물</option></select></div>
+      <div class="field"><label for="tspread">스프레드</label><select id="tspread"><option value="3">과거 · 현재 · 미래 (3장)</option><option value="5">고민 해결 (5장)</option><option value="1">오늘의 카드 (1장)</option></select></div>
+      <button class="btn" type="submit">카드 섞고 뽑기</button>
+    </form>
+    <div class="deck" id="deck" aria-hidden="true"></div>
+    <div class="spread" id="spread"></div>
+    <div class="body"></div>
+    <p class="credit">카드 그림: 라이더-웨이트-스미스 타로(1909), 그림 파멜라 콜먼 스미스 · 퍼블릭 도메인 (Pam-A 원판 스캔, Steve P. 복원)</p>
+  </section>
+  <section class="panel section" id="v-star" hidden><div class="phead"><h2>별자리 · MBTI</h2><div class="lv"></div></div><div class="body"></div></section>
+  <section class="panel section" id="v-match" hidden>
+    <div class="phead"><h2>궁합</h2><div class="lv"></div></div>
+    <form id="mf" autocomplete="off">
+      <div class="field"><label for="pname">상대 이름 (선택)</label><input id="pname" value="김영희" autocomplete="off"></div>
+      <div class="field"><label for="pcal">상대 달력</label><select id="pcal"><option value="s">양력</option><option value="l">음력 (평달)</option><option value="ll">음력 (윤달)</option></select></div>
+      <div class="field"><label for="pbirth">상대 생년월일</label><input id="pbirth" type="date" value="1992-09-03" autocomplete="off"></div>
+      <div class="field"><label for="pmbti">상대 MBTI</label><select id="pmbti"></select></div>
+      <div class="field"><label for="rel">관계</label><select id="rel"><option value="love">연인 · 배우자</option><option value="work">직장 동료 · 상사</option><option value="hobby">취미 · 친구</option></select></div>
+      <button class="btn" type="submit">궁합 계산</button>
+    </form>
+    <div class="body"></div>
+  </section>
+  <section class="panel section" id="v-career" hidden><div class="phead"><h2>적성 · 미래 직업</h2><div class="lv"></div></div><div class="body"></div></section>
+  <section class="panel section" id="v-share" hidden>
+    <h2>공유 카드</h2>
+    <p class="note">이미지를 길게 누르거나 오른쪽 클릭해 저장하세요. 카드에는 생년월일과 명식만 들어가며, 이름은 원하실 때만 넣으면 됩니다.</p>
+    <label class="checks row" style="justify-content:flex-start"><input type="checkbox" id="sharename"> 공유 카드에 이름 넣기</label>
+    <img id="cardimg" alt="사주 요약 공유 카드" style="width:100%;max-width:420px;border-radius:10px;border:1px solid var(--line)">
+    <textarea id="sharetxt" rows="7" readonly style="max-width:420px"></textarea>
+    <button class="btn" type="button" id="copybtn" style="align-self:start">요약 문구 복사</button>
+  </section>
+  </div>
+
+  <p class="note">이 풀이는 전통 명리 계산식, 타로 상징, 성격 유형론을 조합한 오락·자기성찰용 콘텐츠입니다. 중요한 결정의 근거로 쓰지 마세요.</p>
+</div>
+<div id="rwrap" aria-hidden="true"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/lunar-javascript@1.7.3/lunar.js"></script>
+<script src="js/core.js"></script>
+<script src="js/extra.js"></script>
+<script src="js/persona-stats.js"></script>
+<script src="js/persona.js"></script>
+<script src="js/app.js"></script>
+
+</body>
+</html>
