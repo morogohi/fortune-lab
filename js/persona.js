@@ -81,10 +81,10 @@ function bPersona(){
       N.marital&&N.marital["배우자있음"]?`전체의 ${P(N.marital["배우자있음"])}%가 배우자가 있습니다.${N.housing?` 아파트 거주는 ${P(N.housing["아파트"])}%입니다.`:""}`:""].filter(Boolean);
     return`<div class="card avoid"><span class="label">대한민국 합성 페르소나 비교 · 전국 ${T.toLocaleString()}명 <span class="src syn">합성 데이터 · 실제 국민 조사 아님</span></span>
      <p>NVIDIA가 한국 인구 분포를 본떠 만든 합성 페르소나 100만 명 안에서 보면, ${lines.join(" ")}</p>
-     <div class="grid2">${[["혼인 상태",N.marital],["주거 형태",N.housing],["학력",N.education],["대학 전공 계열",N.major]].filter(x=>x[1]).map(([h,o])=>`<div><h3>${h}</h3>${bars(o)}</div>`).join("")}</div>
+     <!--full--><div class="grid2">${[["혼인 상태",N.marital],["주거 형태",N.housing],["학력",N.education],["대학 전공 계열",N.major]].filter(x=>x[1]).map(([h,o])=>`<div><h3>${h}</h3>${bars(o)}</div>`).join("")}</div><!--/full-->
      <p class="note">출처: ${esc(PS.meta.source)} · 전국 ${T.toLocaleString()}명 분포(${PS.meta.built} 집계). 개별 페르소나는 쓰지 않았으며 실제 인구 통계가 아닌 합성 데이터입니다. 연령대·성별·권역별 비교는 원본 DB로 <code>tools/build_persona_stats.py</code>를 실행하면 더해집니다.</p></div>`;
   }
-  const s=`${planHTML(false)}<div class="grid2">
+  const s=`${planHTML(true)}<div class="grid2">
    <div class="card"><span class="label">${band} · ${L.t}</span><p>만 ${age}세 무렵의 핵심 과제는 ‘${L.t.split("의")[0]}’입니다. ${f.Y}년 세운이 <b>${ts.n}</b>이라 ${["자립","표현과 성과","재물","책임과 직위","배움"][ts.g]}의 기운이 이 과제를 밀어 줍니다.</p></div>
    ${occ?`<div class="card"><span class="label">직업 · ${occ[1]}</span><p>${OCCX[occ[0]]} ${occFit}</p></div>`:""}
    ${rg?`<div class="card"><span class="label">거주 권역 · ${pf.prov} (${rg})</span><p>${REGX[rg]}</p><p class="note">행운 방향 ${EDIR[lucky[0]]}: 거주지에서 ${EDIR[lucky[0]]}으로의 나들이나 이동이 기분 전환에 좋습니다.</p></div>`:""}

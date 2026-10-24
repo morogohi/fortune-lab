@@ -37,7 +37,9 @@ async function detectChat(){
   chatMode=sampler?"sample":CFG.chatEndpoint?"endpoint":"byok";
   const st=$("chatmode");
   st.textContent={sample:"Claude 계정으로 답변합니다. 처음 보낼 때 사용 허락 창이 뜹니다.",endpoint:"운영자가 연결한 Claude API로 답변합니다.",byok:"이 페이지에는 상담 서버가 연결되어 있지 않습니다. 본인의 Anthropic API 키를 넣으면 이 창에서만 사용합니다."}[chatMode];
-  $("byok").hidden=chatMode!=="byok";
+  $("byok").hidden=true;
+  /* 시범 공개판: 운영자 서버가 없으면 상담 탭을 숨김 (유료 버전에서 제공 예정). 개발용 개인 키 입력은 ?devchat=1 일 때만 */
+  if(chatMode==="byok"){const dev=/[?&]devchat=1/.test(location.search);$("tab-chat").hidden=!dev;$("byok").hidden=!dev;if(!dev)st.textContent="AI 상담은 유료 버전에서 제공할 예정입니다."}
 }
 function bubble(role,text){const d=document.createElement("div");d.className="msg "+role;d.textContent=text;$("chatlog").appendChild(d);d.scrollIntoView({block:"nearest"});return d}
 async function callEndpoint(context,messages,signal){

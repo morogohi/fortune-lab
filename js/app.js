@@ -4,8 +4,11 @@ fillProfileInputs();
 ["mbti","pmbti"].forEach(id=>MB.forEach(m=>$(id).add(new Option(m,m))));
 $("mbti").value="INTJ";$("pmbti").value="ENFP";
 let S=null,lastDraw=null;
-const TABS=["saju","me","luck","tojeong","tarot","star","match","career","wisdom","chat","share"];
-const LVTABS=["saju","me","luck","tojeong","tarot","star","match","career","wisdom"];
+const ENGINE="계산 엔진 lunar-javascript 1.7.3 · 풀이 규칙 v2026.10.24";
+let isDemo=true;
+const TABS=["saju","plan","me","luck","tojeong","tarot","star","match","career","wisdom","chat","share"];
+const LVTABS=["saju","plan","me","luck","tojeong","tarot","star","match","career","wisdom"];
+{const Y=new Date().getFullYear(),y=$("year");y.innerHTML=`<option value="${Y}" selected>${Y}년 (올해)</option><option value="${Y+1}">${Y+1}년 (내년 미리 보기)</option>`}
 const pct=(c,t)=>t?c/t*100:0;
 const lacksOf=cnt=>cnt.map((c,i)=>c===0?i:-1).filter(i=>i>=0);
 function bRel(a,b){const he=[[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]].some(([x,z])=>(x===a&&z===b)||(x===b&&z===a));
@@ -118,8 +121,8 @@ function bLuck(){
   <h3>${f.Y}년 세운 · ${ST[yg.s]}${BR[yg.b]} ${STK[yg.s]}${BRK[yg.b]}년</h3>
   <div class="tags"><span class="pill">천간 ${ts.n}</span><span class="pill">지지 ${tb.n}</span></div>
   <dl class="dl">${["총운","직업","재물","연애","건강"].map(k=>`<dt>${k}</dt><dd>${sx[k]}</dd>`).join("")}</dl>
-  <h3>월운 · 절기 기준 12개월</h3>
-  <div class="months">${months.map(o=>`<div class="month"><b>${o.mm}월</b><span>${ST[o.gz.s]}${BR[o.gz.b]} · ${o.t.n}<small>${WOL10[o.t.n]} · ${WBEL[BE[o.gz.b]]}</small></span></div>`).join("")}</div>`;
+  <!--full--><h3>월운 · 절기 기준 12개월</h3>
+  <div class="months">${months.map(o=>`<div class="month"><b>${o.mm}월</b><span>${ST[o.gz.s]}${BR[o.gz.b]} · ${o.t.n}<small>${WOL10[o.t.n]} · ${WBEL[BE[o.gz.b]]}</small></span></div>`).join("")}</div><!--/full-->`;
   const d=`<div class="dethead">대운별 상세 해설</div>
   <div class="grid2">${P.dy.map(x=>{const a=tg10(me,x.gz.s),b=tg10(me,HID[x.gz.b]);return`<div class="card" ${x===cur?'style="border-color:var(--accent)"':""}><span class="label">${x.age}–${x.age+9}세 · ${x.yr}–${x.yr+9}${x===cur?" · 현재":""}</span>
     <h3><span class="e${SE[x.gz.s]}">${ST[x.gz.s]}</span><span class="e${BE[x.gz.b]}">${BR[x.gz.b]}</span> 대운 · ${a.n} / ${b.n}</h3><p>${stageOf(x.age+5)} 10년입니다. ${DY10[a.n]}</p><p class="note">${BELX[BE[x.gz.b]]} 후반 5년은 지지 ${b.n}의 기운이 커집니다.</p></div>`}).join("")}</div>
@@ -145,7 +148,7 @@ function bTojeong(){
    <span class="note">상괘: 세는나이 ${t.age} + 태세수 ${t.tae} ÷ 8<br>중괘: 음력 ${t.lm}월 ${t.dc===30?"대월 30":"소월 29"} + 월건수 ${t.wg} ÷ 6<br>하괘: 생일 ${t.ld} + 일진수 ${t.ij} ÷ 3</span></div>
   <div class="card"><span class="label">총평 <span class="src site">사이트 자체 해설</span></span><h3>${t.tone}</h3><p>${UP[t.up-1]}.</p><p>${UPX[t.up-1]}</p></div></div>
   <dl class="dl"><dt>재물·가정</dt><dd>${MID[t.mid-1]}.</dd><dt>처세</dt><dd>${LOW[t.low-1]}.</dd></dl>
-  <h3>월별 신수 (음력) <span class="src site">사이트 자체 해설</span></h3><div class="months">${ms.map((m,i)=>`<div class="month"><b>${i+1}월</b><span>${m.a}</span></div>`).join("")}</div>`;
+  <!--full--><h3>월별 신수 (음력) <span class="src site">사이트 자체 해설</span></h3><div class="months">${ms.map((m,i)=>`<div class="month"><b>${i+1}월</b><span>${m.a}</span></div>`).join("")}</div><!--/full-->`;
   const good=ms.map((m,i)=>m.q===0?i+1:0).filter(Boolean),bad=ms.map((m,i)=>m.q===2?i+1:0).filter(Boolean);
   const d=`<div class="dethead">괘 상세 풀이</div>
   <dl class="dl"><dt>상괘 ${t.up}</dt><dd>${UPD[t.up-1]}</dd><dt>중괘 ${t.mid}</dt><dd>${MIDD[t.mid-1]}</dd><dt>하괘 ${t.low}</dt><dd>${LOWD[t.low-1]}</dd></dl>
@@ -185,6 +188,8 @@ function bCareer(){
   <div class="card"><span class="label">사주 적성</span><p>${["기획·교육·성장","표현·마케팅·에너지","관리·중재·부동산","기술·실행·보안","분석·전략·유통"][e]} 계열이 일간과 맞고, 강한 ${EN[max]} 기운이 ${["확장성","추진력","안정감","정확성","통찰력"][max]}을 더합니다.</p></div>
   <div class="card"><span class="label">성공 방식 · ${GRP[gmax]} 중심</span><p>${["자기 이름을 건 독립·전문직","콘텐츠·기술·교육으로 결과물을 내는 일","영업·사업·투자처럼 성과가 숫자로 나오는 일","조직 안에서 직급과 자격으로 올라가는 일","연구·학위·자격으로 권위를 쌓는 일"][gmax]}에서 가장 빠르게 성장합니다.</p></div>
   <div class="card"><span class="label">피해야 할 환경</span><p>${t[3]==="J"?"우선순위가 매일 바뀌는 혼란한 조직":"세세한 규정과 보고가 많은 조직"}, ${strong?"재량 없이 지시만 따르는 자리":"혼자 모든 것을 떠안는 자리"}는 실력을 깎아 먹습니다.</p></div></div>
+  ${careerBridge(readGoals().skills)||`<p class="note">‘나의 목표’에 현재 경력·보유 기술을 적으면, 그 경력을 살리는 전환 직무와 전환 비용을 함께 보여 드립니다.</p>`}
+  <h3>사주·MBTI 기질로 본 추천 <span class="src site">사이트 자체 해설</span></h3>
   <div>${S.jobs.map((j,i)=>`<div class="job"><span class="rank">${String(i+1).padStart(2,"0")}</span><b>${j[0]}</b><span class="tag">${j[1]}</span></div>`).join("")}</div>`;
   const peaks=P.dy.filter(x=>[2,3,1].includes(tg10(me,x.gz.s).g));
   const d=`<div class="dethead">오행별 어울리는 업종</div>
@@ -298,12 +303,12 @@ function bTarot(D=lastDraw){
 }
 
 /* ===== 패널 출력 ===== */
-const BUILD={saju:bSaju,me:bPersona,luck:bLuck,tojeong:bTojeong,tarot:()=>bTarot(),star:bStar,match:bMatchGate,career:bCareer,wisdom:()=>bWisdom()};
+const BUILD={saju:bSaju,plan:bPlan,me:bPersona,luck:bLuck,tojeong:bTojeong,tarot:()=>bTarot(),star:bStar,match:bMatchGate,career:bCareer,wisdom:()=>bWisdom()};
 function setBody(k,{s,d}){const p=$("v-"+k);p.querySelector(".body").innerHTML=`<div class="section">${s}</div>${d?`<div class="det">${d}</div>`:""}`;
   p.querySelector(".lv").hidden=!d}
 function renderAll(){
   if(!S)return;
-  $("chart").innerHTML=heroHTML({el:EVAR[SE[S.me]],bg:"var(--scene)",soft:"var(--line)",ink:"var(--ink)"})+pillarsHTML();
+  $("chart").innerHTML=(isDemo?`<div class="demo-banner"><span><b>예시 결과</b>입니다. 가상 인물(홍길동, 1990년생)로 미리 보여 드립니다.</span><button type="button" class="btn" id="mystart">내 정보로 시작</button></div>`:"")+heroHTML({el:EVAR[SE[S.me]],bg:"var(--scene)",soft:"var(--line)",ink:"var(--ink)"})+pillarsHTML();
   for(const k of LVTABS)setBody(k,BUILD[k]());
   renderShare();
 }
@@ -359,6 +364,7 @@ async function renderPDF(root){
     const ppm=cv.width/CW,pageH=Math.floor(CH*ppm),ctx=cv.getContext("2d",{willReadFrequently:true});
     let y=0;
     while(y<cv.height-4){
+      {const rest=cv.height-y,d=ctx.getImageData(0,y,cv.width,rest).data;let ink=false;for(let i=0;i<d.length;i+=4*7){if(d[i]<190||d[i+1]<190||d[i+2]<190){ink=true;break}}if(!ink||rest<pageH*.04)break}
       let end=Math.min(cv.height,y+pageH);
       if(end<cv.height)end=findCut(ctx,cv.width,end,y+Math.floor(pageH*.6));
       const part=document.createElement("canvas");part.width=cv.width;part.height=end-y;
@@ -375,7 +381,7 @@ function buildReport(mode="full"){
   let D=lastDraw;if(!D||D.opened.size<D.n){D=drawCards(3,"all");D.cards.forEach((_,k)=>D.opened.add(k));D.auto=true}
   const today=new Date(),ds=`${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
   const core=mode==="core",mOn=$("matchOn").checked;
-  const strip=h=>h.replace(/<!--plan-->[\s\S]*?<!--\/plan-->/g,"");
+  const strip=h=>{h=h.replace(/<!--plan-->[\s\S]*?<!--\/plan-->/g,"");return core?h.replace(/<!--full-->[\s\S]*?<!--\/full-->/g,""):h};
   const part=(t,o,extra="")=>`<h2>${t}</h2>${extra}<div class="section">${strip(o.s)}</div>${!core&&o.d?`<div class="det">${o.d}</div>`:""}`;
   const sec=(...parts)=>`<div class="rsec">${parts.join("")}</div>`;
   const tar=bTarot(D),tarO={s:tar.s.replace(/<button[^>]*id="redraw"[^>]*>.*?<\/button>/,""),d:tar.d},tarX=D.auto?`<p class="note">화면에서 뽑은 카드가 없어 보고서를 만들 때 과거·현재·미래 3장을 새로 뽑았습니다.</p>`:"";
@@ -395,11 +401,12 @@ function buildReport(mode="full"){
      <tr><th>올해의 한마디</th><td>${q[0]} (${q[1]}) — ${q[2]}</td></tr></table></div>
     ${planHTML(true)}</div>`;
   if(core){
+    let n=0;const N=t=>`${++n}. ${t}`,mt=`<p class="note">${$("rel").selectedOptions[0].text} · 상대 MBTI ${$("pmbti").value}</p>`;
     return`<div class="report">${summary}
-     ${sec(part("1. 사주풀이",bSaju()),part("2. 나에게 맞춘 해설",bPersona()))}
-     ${sec(part("3. 대운 · 세운 · 월운",bLuck()),part("4. 토정비결",bTojeong()))}
-     ${sec(part("5. 타로 리딩",tarO,tarX),part("6. 별자리 · MBTI",bStar()),mOn?part("7. 궁합 · 상생",bMatch(),`<p class="note">${$("rel").selectedOptions[0].text} · 상대 MBTI ${$("pmbti").value}</p>`):"")}
-     ${sec(part(`${mOn?8:7}. 적성 · 미래 직업`,bCareer()),part(`${mOn?9:8}. 종합 결론 · 옛 성현의 덕담`,bWisdom()),disclaimer)}</div>`;
+     ${sec(part(N("사주풀이"),bSaju()),part(N("나에게 맞춘 해설"),bPersona()))}
+     ${sec(part(N("대운 · 세운 · 월운"),bLuck()),part(N("토정비결"),bTojeong()))}
+     ${sec(D.auto?"":part(N("타로 리딩"),tarO,tarX),part(N("별자리 · MBTI"),bStar()),mOn?part(N("궁합 · 상생"),bMatch(),mt):"")}
+     ${sec(part(N("적성 · 미래 직업"),bCareer()),part(N("종합 결론 · 옛 성현의 덕담"),bWisdom()),disclaimer)}</div>`;
   }
   return`<div class="report">${summary}
    ${sec(part("1. 사주풀이",bSaju()))}${sec(part("2. 나에게 맞춘 해설",bPersona()))}${sec(part("3. 대운 · 세운 · 월운",bLuck()))}${sec(part("4. 토정비결",bTojeong()))}
@@ -411,9 +418,9 @@ async function reportHTML(mode){
   if(im){const c=document.createElement("canvas");c.width=960;c.height=540;c.getContext("2d").drawImage(im,0,0,960,540);png=c.toDataURL("image/png")}
   return buildReport(mode).replace(/<svg viewBox="0 0 320 180"[\s\S]*?<\/svg>/g,()=>png?`<img alt="" style="width:100%;display:block;border-radius:8px" src="${png}">`:"");
 }
-async function printPDF(){
-  if(!S)return;const wrap=$("rwrap"),msg=$("pdfmsg");msg.hidden=false;
-  wrap.innerHTML=await reportHTML("full");
+async function printPDF(ev){
+  if(!S)return;const wrap=$("rwrap"),msg=$("pdfmsg"),mode=ev&&ev.currentTarget&&ev.currentTarget.dataset.mode||"core";msg.hidden=false;
+  wrap.innerHTML=await reportHTML(mode);
   await Promise.all([...wrap.querySelectorAll("img")].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
   document.body.classList.add("printing");
   const done=()=>{document.body.classList.remove("printing");wrap.innerHTML="";window.removeEventListener("afterprint",done)};
@@ -446,7 +453,14 @@ async function makePDF(ev){
 
 /* ===== 이벤트 ===== */
 function run(){if(!LIB){$("libwarn").hidden=false;return}if(compute()){$("results").hidden=false;renderAll()}}
-$("f").addEventListener("submit",e=>{e.preventDefault();$("demo").hidden=true;run()});
+$("f").addEventListener("submit",e=>{e.preventDefault();$("demo").hidden=true;isDemo=false;run()});
+document.addEventListener("click",e=>{if(e.target.id==="mystart"){$("clear").click();$("results").hidden=true;$("name").focus();$("f").scrollIntoView({behavior:"smooth",block:"start"})}});
+$("tabmore").addEventListener("click",()=>{const n=$("tabs"),on=!n.classList.contains("all");n.classList.toggle("all",on);$("tabmore").textContent=on?"핵심 탭만 보기 ▴":"전체 탭 보기 ▾";$("tabmore").setAttribute("aria-expanded",on)});
+$("enginever").textContent=ENGINE+".";
+$("fbcopy").addEventListener("click",()=>{const q=[["유용했던 부분","fb1"],["모순·이해 안 된 부분","fb2"],["해 본 과제","fb3"],["다시 쓸 이유","fb4"],["도움 정도","fb5"],["4주 계획 보고서 가격 의향","fb6"],["구매하지 않는 이유","fb7"]];
+  const t="[운명 연구소 시범 테스트 의견]\n"+q.map(([k,id])=>`${k}: ${$(id).value.trim()||"-"}`).join("\n")+`\n(${ENGINE})`;const o=$("fbout");o.value=t;o.hidden=false;
+  Promise.resolve().then(()=>navigator.clipboard.writeText(t)).then(()=>{$("fbmsg").textContent="복사했습니다. 메신저에 붙여 넣어 보내 주세요."},()=>{o.select();$("fbmsg").textContent="아래 글을 선택해 복사해 주세요."})});
+if((window.FORTUNE_CONFIG||{}).feedbackUrl)$("fblink").innerHTML=` 설문 폼으로 보내셔도 됩니다: <a href="${esc(FORTUNE_CONFIG.feedbackUrl)}" target="_blank" rel="noopener">설문 열기</a>`;
 $("mf").addEventListener("submit",e=>{e.preventDefault();if(S){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
 $("matchOn").addEventListener("change",()=>{syncMatch();if(S){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
 $("rel").addEventListener("change",()=>{if(S&&$("matchOn").checked){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
@@ -459,9 +473,11 @@ $("tunk").addEventListener("change",()=>{$("btime").disabled=$("tunk").checked;$
 $("sharename").addEventListener("change",renderShare);$("sharepillars").addEventListener("change",renderShare);
 ["prov","occ","fam","house","concern","hours","skills","goal3"].forEach(k=>$(k).addEventListener("change",()=>{if(S){setBody("me",bPersona());setBody("wisdom",bWisdom())}}));
 $("ints").addEventListener("change",()=>{if(S)setBody("me",bPersona())});
-$("pdfbtn").addEventListener("click",makePDF);$("pdffull").addEventListener("click",makePDF);$("pdfprint").addEventListener("click",printPDF);
-if(window.claude)$("pdfprint").hidden=true;
+/* 깃허브 페이지: 핵심·전체 모두 텍스트 PDF(인쇄)가 기본, 이미지 PDF는 보조. 아티팩트: 인쇄가 막혀 이미지 PDF만 */
+if(window.claude){$("pdfprint").hidden=true;$("pdfbtn").addEventListener("click",makePDF);$("pdffull").addEventListener("click",makePDF)}
+else{$("pdfbtn").addEventListener("click",printPDF);$("pdffull").addEventListener("click",printPDF);$("pdfprint").textContent="이미지 PDF 바로 받기";$("pdfprint").dataset.mode="core";$("pdfprint").addEventListener("click",makePDF)}
 $("clear").addEventListener("click",()=>{
+  planState={week:1,history:[]};planBasis="goal";
   if(window.clearChat)clearChat();$("matchOn").checked=false;syncMatch();
   ["name","birth","btime","pname","pbirth"].forEach(k=>$(k).value="");$("tunk").checked=false;$("cal").value="s";["prov","occ","fam","house","concern","skills","goal3"].forEach(k=>$(k).value="");$("hours").value="4";$("ints").querySelectorAll("input").forEach(i=>i.checked=false);$("pcal").value="s";
   S=null;lastDraw=null;$("spread").innerHTML="";$("deck").innerHTML="";$("chart").innerHTML="";$("cardimg").removeAttribute("src");$("sharetxt").value="";

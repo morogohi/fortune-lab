@@ -1,0 +1,15 @@
+Copyright (c) 2026 morogohi (운명 연구소). All rights reserved.
+
+이 저장소의 소스 코드, 해설 문안, 행동계획 규칙, 화면 디자인, 일간 장면 그림은
+저작권자의 서면 허락 없이 복제, 수정, 배포, 상업적으로 이용할 수 없습니다.
+
+- 공개 웹사이트(https://morogohi.github.io/fortune-lab/)를 개인적으로 이용하는 것은 자유입니다.
+- 깃허브 이용약관에 따라 저장소를 열람하고 포크할 수는 있지만, 이것이 사용·배포 권한을 주지는 않습니다.
+- 시범 테스트 참여, 연구·평가 목적의 열람은 허용합니다. 그 밖의 이용은 저장소 이슈로 문의하세요.
+
+제3자 구성요소(라이브러리, 글꼴, 타로 카드 그림, 페르소나 통계 등)는 각자의 라이선스를 따르며,
+THIRD_PARTY_NOTICES.md 에 정리되어 있습니다. 이 파일의 제한은 그 구성요소에는 적용되지 않습니다.
+
+All rights reserved. No license is granted to use, copy, modify, or distribute this software
+or its written content, except for third-party components listed in THIRD_PARTY_NOTICES.md,
+which remain under their own licenses.
