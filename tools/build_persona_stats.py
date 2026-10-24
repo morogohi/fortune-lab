@@ -113,6 +113,8 @@ def main(db_path: str, out_path: str):
     seg = defaultdict(lambda: {"n": 0, "occupation": Counter(), "education_level": Counter(), "household_type": Counter(),
                                "population_density": Counter(), "married": 0, "hobby": Counter(), "life": Counter()})
     total = 0
+    nat = {k: Counter() for k in ["marital", "education", "province", "family", "housing", "sex"]}
+    agebins = Counter()
     for row in conn.execute(q):
         r = dict(zip(names, row))
         band, sx = age_band(r.get("age")), sex_of(r.get("sex"))
@@ -120,6 +122,12 @@ def main(db_path: str, out_path: str):
         if not (band and sx and rg):
             continue
         total += 1
+        nat["marital"][str(r.get("marital_status") or "미상")] += 1
+        nat["education"][str(r.get("education_level") or "미상")] += 1
+        nat["province"][str(r.get("province") or r.get("region") or "미상")[:2]] += 1
+        nat["family"][str(r.get("household_type") or "미상")] += 1
+        nat["sex"][sx] += 1
+        agebins[band] += 1
         for key in (f"{band}|{sx}|{rg}", f"{band}|{sx}|전국"):
             s = seg[key]
             s["n"] += 1
@@ -144,9 +152,11 @@ def main(db_path: str, out_path: str):
                     "household": dist(s["household_type"], n), "density": dist(s["population_density"], n),
                     "married": round(s["married"] * 100 / n, 1),
                     "hobby": dist(s["hobby"], n)[:TOP], "lifestyle": dist(s["life"], n)[:TOP]}
+    natout = {k: dict(v.most_common(14)) for k, v in nat.items()}
+    natout["ageHist"] = [[k, agebins[k]] for k in sorted(agebins, key=lambda x: int(x[:2]))]
     payload = {"meta": {"source": "NVIDIA Nemotron-Personas-Korea (합성 페르소나, CC BY 4.0)", "total": total,
-                        "segments": len(out), "built": date.today().isoformat(), "min_segment": MIN_SEG, "min_cell": MIN_CELL},
-               "seg": out}
+                        "segments": len(out), "built": date.today().isoformat(), "level": "연령대·성별·권역", "min_segment": MIN_SEG, "min_cell": MIN_CELL},
+               "nat": natout, "seg": out}
     Path(out_path).parent.mkdir(parents=True, exist_ok=True)
     Path(out_path).write_text("/* 자동 생성: tools/build_persona_stats.py — 집계 비율만 포함, 개별 페르소나 없음 */\n"
                               "window.PERSONA_STATS=" + json.dumps(payload, ensure_ascii=False, separators=(",", ":")) + ";\n",

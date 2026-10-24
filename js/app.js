@@ -4,8 +4,8 @@ fillProfileInputs();
 ["mbti","pmbti"].forEach(id=>MB.forEach(m=>$(id).add(new Option(m,m))));
 $("mbti").value="INTJ";$("pmbti").value="ENFP";
 let S=null,lastDraw=null;
-const TABS=["saju","me","luck","tojeong","tarot","star","match","career","share"];
-const LVTABS=["saju","me","luck","tojeong","tarot","star","match","career"];
+const TABS=["saju","me","luck","tojeong","tarot","star","match","career","wisdom","chat","share"];
+const LVTABS=["saju","me","luck","tojeong","tarot","star","match","career","wisdom"];
 const pct=(c,t)=>t?c/t*100:0;
 const lacksOf=cnt=>cnt.map((c,i)=>c===0?i:-1).filter(i=>i>=0);
 function bRel(a,b){const he=[[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]].some(([x,z])=>(x===a&&z===b)||(x===b&&z===a));
@@ -198,6 +198,8 @@ function bCareer(){
 }
 
 /* ===== 궁합 ===== */
+function bMatchGate(){if(!$("matchOn").checked)return{s:`<div class="off-hint">궁합·상생은 선택 항목입니다. 위의 ‘궁합·상생 보기 켜기’를 누르면 연인·직장·친구와의 궁합을 보고, 종합 보고서에도 넣을 수 있습니다.</div>`,d:""};return bMatch()}
+function syncMatch(){const on=$("matchOn").checked;$("mf").querySelectorAll("input,select,button").forEach(el=>el.disabled=!on);$("mf").style.opacity=on?1:.5}
 function bMatch(){
   const [y,m,d0]=($("pbirth").value||"").split("-").map(Number);if(!y)return{s:"<p>상대 생년월일을 입력하세요.</p>",d:""};
   let Q;try{Q=pillars($("pcal").value,y,m,d0,12,0,true,false,"m")}catch(e){return{s:`<p class="note">상대의 음력 날짜가 그해 달력에 없습니다.</p>`,d:""}}
@@ -294,7 +296,7 @@ function bTarot(D=lastDraw){
 }
 
 /* ===== 패널 출력 ===== */
-const BUILD={saju:bSaju,me:bPersona,luck:bLuck,tojeong:bTojeong,tarot:()=>bTarot(),star:bStar,match:bMatch,career:bCareer};
+const BUILD={saju:bSaju,me:bPersona,luck:bLuck,tojeong:bTojeong,tarot:()=>bTarot(),star:bStar,match:bMatchGate,career:bCareer,wisdom:()=>bWisdom()};
 function setBody(k,{s,d}){const p=$("v-"+k);p.querySelector(".body").innerHTML=`<div class="section">${s}</div>${d?`<div class="det">${d}</div>`:""}`;
   p.querySelector(".lv").hidden=!d}
 function renderAll(){
@@ -369,7 +371,8 @@ function buildReport(){
   const today=new Date(),ds=`${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
   const sec=(t,o,extra="")=>`<div class="rsec"><h2>${t}</h2>${extra}<div class="section">${o.s}</div>${o.d?`<div class="det">${o.d}</div>`:""}</div>`;
   const tar=bTarot(D);
-  const toc=["사주 원국","사주풀이","나에게 맞춘 해설","대운 · 세운 · 월운","토정비결","타로 리딩","별자리 · MBTI","궁합","적성 · 미래 직업"];
+  const mOn=$("matchOn").checked;
+  const toc=["사주 원국","사주풀이","나에게 맞춘 해설","대운 · 세운 · 월운","토정비결","타로 리딩","별자리 · MBTI",...(mOn?["궁합 · 상생"]:[]),"적성 · 미래 직업","종합 결론 · 옛 성현의 덕담"];
   return`<div class="report">
    <div class="rsec cover"><div class="label">종합 운명 보고서</div><h1>운명 연구소</h1>
     ${scene(S.me,{el:ELIT[SE[S.me]].replace("#c3cad6","#8b93a3"),bg:"#e6eaf3",soft:"#cfd5e2",ink:"#1b2033"})}
@@ -379,7 +382,7 @@ function buildReport(){
    <div class="rsec"><h2>1. 사주 원국</h2>${heroHTML({el:ELIT[SE[S.me]].replace("#c3cad6","#8b93a3"),bg:"#e6eaf3",soft:"#cfd5e2",ink:"#1b2033"})}${pillarsHTML()}</div>
    ${sec("2. 사주풀이",bSaju())}${sec("3. 나에게 맞춘 해설",bPersona())}${sec("4. 대운 · 세운 · 월운",bLuck())}${sec("5. 토정비결",bTojeong())}
    ${sec("6. 타로 리딩",{s:tar.s.replace(/<button[^>]*id="redraw"[^>]*>.*?<\/button>/,""),d:tar.d},D.auto?`<p class="note">화면에서 뽑은 카드가 없어 보고서를 만들 때 과거·현재·미래 3장을 새로 뽑았습니다.</p>`:"")}
-   ${sec("7. 별자리 · MBTI",bStar())}${sec("8. 궁합",bMatch(),`<p class="note">상대: ${esc($("pname").value.trim()||"상대")} · ${$("pbirth").value} · ${$("pmbti").value} · ${$("rel").selectedOptions[0].text}</p>`)}${sec("9. 적성 · 미래 직업",bCareer())}
+   ${sec("7. 별자리 · MBTI",bStar())}${mOn?sec("8. 궁합 · 상생",bMatch(),`<p class="note">${$("rel").selectedOptions[0].text} · 상대 MBTI ${$("pmbti").value}</p>`):""}${sec(`${mOn?9:8}. 적성 · 미래 직업`,bCareer())}${sec(`${mOn?10:9}. 종합 결론 · 옛 성현의 덕담`,bWisdom())}
    <div class="rsec"><p class="note">이 보고서는 전통 명리 계산식, 타로 상징, 성격 유형론을 조합한 오락·자기성찰용 콘텐츠입니다. 타로 그림: 라이더-웨이트-스미스(1909), 파멜라 콜먼 스미스 · 퍼블릭 도메인.</p></div></div>`;
 }
 let restoreY=null;
@@ -411,7 +414,10 @@ async function makePDF(){
 /* ===== 이벤트 ===== */
 function run(){if(!LIB){$("libwarn").hidden=false;return}if(compute()){$("results").hidden=false;renderAll()}}
 $("f").addEventListener("submit",e=>{e.preventDefault();$("demo").hidden=true;run()});
-$("mf").addEventListener("submit",e=>{e.preventDefault();if(S)setBody("match",bMatch())});
+$("mf").addEventListener("submit",e=>{e.preventDefault();if(S){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
+$("matchOn").addEventListener("change",()=>{syncMatch();if(S){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
+$("rel").addEventListener("change",()=>{if(S&&$("matchOn").checked){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
+syncMatch();
 $("tf").addEventListener("submit",e=>{e.preventDefault();draw()});
 $("spread").addEventListener("click",e=>{const b=e.target.closest(".flip");if(!b||!lastDraw)return;b.classList.add("open");lastDraw.opened.add(+b.dataset.k);
   if(lastDraw.opened.size===lastDraw.n)setTimeout(()=>setBody("tarot",bTarot()),500)});
@@ -422,6 +428,7 @@ $("sharename").addEventListener("change",renderShare);
 $("ints").addEventListener("change",()=>{if(S)setBody("me",bPersona())});
 $("pdfbtn").addEventListener("click",makePDF);
 $("clear").addEventListener("click",()=>{
+  if(window.clearChat)clearChat();$("matchOn").checked=false;syncMatch();
   ["name","birth","btime","pname","pbirth"].forEach(k=>$(k).value="");$("tunk").checked=false;$("cal").value="s";["prov","occ","fam","house"].forEach(k=>$(k).value="");$("ints").querySelectorAll("input").forEach(i=>i.checked=false);$("pcal").value="s";
   S=null;lastDraw=null;$("spread").innerHTML="";$("deck").innerHTML="";$("chart").innerHTML="";$("cardimg").removeAttribute("src");$("sharetxt").value="";
   $("results").hidden=true;$("demo").hidden=false;$("demo").textContent="입력을 모두 지웠습니다. 생년월일을 넣고 ‘풀이 보기’를 누르세요.";$("tunk").dispatchEvent(new Event("change"))});
