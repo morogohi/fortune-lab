@@ -1,7 +1,0 @@
-name = "fortune-lab-chat"
-main = "worker.js"
-compatibility_date = "2025-06-01"
-
-[vars]
-ALLOWED_ORIGIN = "https://morogohi.github.io"
-MODEL = "claude-sonnet-5-5"
