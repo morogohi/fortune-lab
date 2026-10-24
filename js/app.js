@@ -119,17 +119,17 @@ function bLuck(){
   <div class="tags"><span class="pill">천간 ${ts.n}</span><span class="pill">지지 ${tb.n}</span></div>
   <dl class="dl">${["총운","직업","재물","연애","건강"].map(k=>`<dt>${k}</dt><dd>${sx[k]}</dd>`).join("")}</dl>
   <h3>월운 · 절기 기준 12개월</h3>
-  <div class="months">${months.map(o=>`<div class="month"><b>${o.mm}월</b><span>${ST[o.gz.s]}${BR[o.gz.b]} · ${o.t.n}<small>${WOL[o.t.g]}</small></span></div>`).join("")}</div>`;
+  <div class="months">${months.map(o=>`<div class="month"><b>${o.mm}월</b><span>${ST[o.gz.s]}${BR[o.gz.b]} · ${o.t.n}<small>${WOL10[o.t.n]} · ${WBEL[BE[o.gz.b]]}</small></span></div>`).join("")}</div>`;
   const d=`<div class="dethead">대운별 상세 해설</div>
   <div class="grid2">${P.dy.map(x=>{const a=tg10(me,x.gz.s),b=tg10(me,HID[x.gz.b]);return`<div class="card" ${x===cur?'style="border-color:var(--accent)"':""}><span class="label">${x.age}–${x.age+9}세 · ${x.yr}–${x.yr+9}${x===cur?" · 현재":""}</span>
-    <h3><span class="e${SE[x.gz.s]}">${ST[x.gz.s]}</span><span class="e${BE[x.gz.b]}">${BR[x.gz.b]}</span> 대운 · ${a.n} / ${b.n}</h3><p>${DTHEME[a.g]}</p><p class="note">후반 5년은 지지 ${b.n}의 기운이 커집니다. ${TGX[b.n][1]}</p></div>`}).join("")}</div>
+    <h3><span class="e${SE[x.gz.s]}">${ST[x.gz.s]}</span><span class="e${BE[x.gz.b]}">${BR[x.gz.b]}</span> 대운 · ${a.n} / ${b.n}</h3><p>${stageOf(x.age+5)} 10년입니다. ${DY10[a.n]}</p><p class="note">${BELX[BE[x.gz.b]]} 후반 5년은 지지 ${b.n}의 기운이 커집니다.</p></div>`}).join("")}</div>
   <div class="dethead">${f.Y}년 세운 상세</div>
   <div class="grid2"><div class="card"><span class="label">상반기 · 천간 ${ST[yg.s]} ${ts.n}</span><p>${TGX[ts.n][0]} ${sx.총운}</p><p class="note">${TGX[ts.n][2]}</p></div>
    <div class="card"><span class="label">하반기 · 지지 ${BR[yg.b]} ${tb.n}</span><p>${TGX[tb.n][0]} ${SEUN[tb.g].총운}</p><p class="note">${TGX[tb.n][2]}</p></div>
    <div class="card"><span class="label">일지와의 관계 · ${BR[P.d.b]} ↔ ${BR[yg.b]}</span><p>${BRELX[bRel(P.d.b,yg.b)]}</p></div>
    <div class="card"><span class="label">대운과 세운의 조합</span><p>${cur?`10년 흐름(${ct.n})과 올해의 기운(${ts.n})이 ${ct.g===ts.g?"같은 방향이라 그 주제가 아주 강하게 드러나는 해입니다.":"서로 다른 주제라 두 가지 일을 함께 챙겨야 하는 해입니다."}`:"대운 정보가 없습니다."}</p></div></div>
   <div class="dethead">월운 상세</div>
-  <div class="months">${months.map(o=>`<div class="month"><b>${o.mm}월</b><span>${ST[o.gz.s]}${BR[o.gz.b]} · ${o.t.n}/${o.tb.n}<small>${WOLX[o.t.g]} ${o.tb.g!==o.t.g?WOL[o.tb.g]:""}</small></span></div>`).join("")}</div>
+  <div class="months">${months.map(o=>`<div class="month"><b>${o.mm}월</b><span>${ST[o.gz.s]}${BR[o.gz.b]} · ${o.t.n}/${o.tb.n}<small>${WOLX[o.t.g]} ${WBEL[BE[o.gz.b]]}이라 ${["계획 세우기","약속 잡기","기반 다지기","마무리 짓기","정보 모으기"][BE[o.gz.b]]}에 좋습니다.${bRel(S.P.d.b,o.gz.b)==="chung"?" 일지와 충이 들어 가까운 관계에서 말을 아끼세요.":bRel(S.P.d.b,o.gz.b)==="he"?" 일지와 합이 들어 가까운 사람과 화목합니다.":""}</small></span></div>`).join("")}</div>
   <p class="note">각 달은 그달 절입일(4–8일경)부터 다음 달 절입 전까지입니다. 대운 시작 나이는 성별과 출생 후 절기까지의 날짜로 계산합니다.</p>`;
   return{s,d};
 }
@@ -137,13 +137,15 @@ function bLuck(){
 /* ===== 토정비결 ===== */
 function bTojeong(){
   const {f}=S,t=S.tj;
-  const ms=Array.from({length:12},(_,i)=>({a:MPOOL[hash(t.code*13+i*7)%MPOOL.length],b:MADV[hash(t.code*7+i*11)%MADV.length],q:hash(t.code*3+i*5)%3}));
+  const perm=(n,seed)=>{const a=[...Array(n).keys()];for(let i=n-1;i>0;i--){const j=hash(seed*31+i)%(i+1);[a[i],a[j]]=[a[j],a[i]]}return a};
+  const pa=perm(MPOOL.length,t.code),pb=perm(MADV.length,t.code+7);
+  const ms=Array.from({length:12},(_,i)=>({a:MPOOL[pa[i]],b:MADV[pb[i]],q:hash(t.code*3+i*5)%3}));
   const s=`<h3>${f.Y}년 토정비결</h3>
-  <div class="grid2"><div class="card"><span class="label">작괘 (상 · 중 · 하)</span><span class="gwae">${t.up} ${t.mid} ${t.low}</span>
+  <div class="grid2"><div class="card"><span class="label">작괘 (상 · 중 · 하) <span class="src trad">전통 계산</span></span><span class="gwae">${t.up} ${t.mid} ${t.low}</span>
    <span class="note">상괘: 세는나이 ${t.age} + 태세수 ${t.tae} ÷ 8<br>중괘: 음력 ${t.lm}월 ${t.dc===30?"대월 30":"소월 29"} + 월건수 ${t.wg} ÷ 6<br>하괘: 생일 ${t.ld} + 일진수 ${t.ij} ÷ 3</span></div>
-  <div class="card"><span class="label">총평</span><h3>${t.tone}</h3><p>“${UP[t.up-1]}.”</p><p>${UPX[t.up-1]}</p></div></div>
+  <div class="card"><span class="label">총평 <span class="src site">사이트 자체 해설</span></span><h3>${t.tone}</h3><p>${UP[t.up-1]}.</p><p>${UPX[t.up-1]}</p></div></div>
   <dl class="dl"><dt>재물·가정</dt><dd>${MID[t.mid-1]}.</dd><dt>처세</dt><dd>${LOW[t.low-1]}.</dd></dl>
-  <h3>월별 신수 (음력)</h3><div class="months">${ms.map((m,i)=>`<div class="month"><b>${i+1}월</b><span>${m.a}</span></div>`).join("")}</div>`;
+  <h3>월별 신수 (음력) <span class="src site">사이트 자체 해설</span></h3><div class="months">${ms.map((m,i)=>`<div class="month"><b>${i+1}월</b><span>${m.a}</span></div>`).join("")}</div>`;
   const good=ms.map((m,i)=>m.q===0?i+1:0).filter(Boolean),bad=ms.map((m,i)=>m.q===2?i+1:0).filter(Boolean);
   const d=`<div class="dethead">괘 상세 풀이</div>
   <dl class="dl"><dt>상괘 ${t.up}</dt><dd>${UPD[t.up-1]}</dd><dt>중괘 ${t.mid}</dt><dd>${MIDD[t.mid-1]}</dd><dt>하괘 ${t.low}</dt><dd>${LOWD[t.low-1]}</dd></dl>
@@ -151,7 +153,7 @@ function bTojeong(){
    <div class="card"><span class="label">조심할 달</span><h3>${bad.length?bad.map(x=>x+"월").join(" · "):"특별히 없음"}</h3><p>큰 지출과 계약은 한 번 더 확인하고, 건강을 챙기세요.</p></div></div>
   <div class="dethead">월별 상세 신수와 실천 팁</div>
   <div class="months">${ms.map((m,i)=>`<div class="month ${m.q===0?"hi":""}"><b>${i+1}월</b><span>${m.a}<small>${["기운 좋음","보통","조심"][m.q]} · ${m.b}</small></span></div>`).join("")}</div>
-  <p class="note">음력 생월·생일을 기준으로 ${f.Y}년 해당 음력 달의 크기와 월건·일진의 수로 괘를 뽑았습니다. 괘사는 원전을 요약한 현대어 풀이입니다.</p>`;
+  <p class="note"><b>전통 계산</b>: 작괘(상·중·하괘 번호)는 토정비결의 전통 방식대로 음력 생월·생일, 그해 음력 달의 크기, 태세·월건·일진의 수로 뽑았습니다. <b>사이트 자체 해설</b>: 총평과 괘 풀이, 월별 신수와 실천 팁은 원전 괘사를 옮긴 것이 아니라 이 사이트가 괘 번호에 맞춰 구성한 현대어 해설입니다. 월별 신수는 괘 번호로 문장을 골라 같은 입력에 같은 결과가 나오게 했고, 한 해 안에서 같은 문장이 되풀이되지 않습니다.</p>`;
   return{s,d};
 }
 
@@ -325,14 +327,17 @@ async function renderShare(){
   x.fillStyle="#eef0f6";x.font=`800 60px ${SER}`;x.fillText(`${nm?nm+"님 · ":""}${ST[me]}${EK[SE[me]]} ${DMX[me].nm}`,128,578);
   x.fillStyle="#9aa1b5";x.font=`400 29px ${SAN}`;x.fillText(`${ANI[P.y.b]}띠 · ${f.mbti} · ${S.z[0]}`,96,650);
   const cols=[["시",P.h],["일",P.d],["월",P.m],["년",P.y]];
-  cols.forEach(([k,p],i)=>{const cx=96+i*228+102;x.fillStyle=k==="일"?"#252d4d":"#1b2240";x.fillRect(cx-102,690,204,300);
+  const showP=$("sharepillars").checked;
+  if(!showP){x.fillStyle="#1b2240";x.fillRect(96,690,888,300);x.textAlign="center";x.fillStyle="#9aa1b5";x.font=`600 26px ${SAN}`;x.fillText("나의 일간",540,740);
+    x.font=`800 150px ${SER}`;x.fillStyle=ELIT[SE[me]];x.fillText(ST[me],470,900);x.fillStyle="#eef0f6";x.font=`800 64px ${SER}`;x.fillText(EK[SE[me]],610,880);x.font=`400 28px ${SAN}`;x.fillStyle="#9aa1b5";x.fillText(DMX[me].key,540,960);x.textAlign="left"}
+  else cols.forEach(([k,p],i)=>{const cx=96+i*228+102;x.fillStyle=k==="일"?"#252d4d":"#1b2240";x.fillRect(cx-102,690,204,300);
     x.fillStyle="#9aa1b5";x.font=`600 26px ${SAN}`;x.textAlign="center";x.fillText(k+"주",cx,734);x.font=`800 104px ${SER}`;
     if(p){x.fillStyle=ELIT[SE[p.s]];x.fillText(ST[p.s],cx,846);x.fillStyle=ELIT[BE[p.b]];x.fillText(BR[p.b],cx,960)}else{x.fillStyle="#4a5272";x.fillText("?",cx,846);x.fillText("?",cx,960)}x.textAlign="left"});
   [[`${f.Y} 토정`,`${S.tj.code}괘 · ${S.tj.tone.split(" · ")[0]}`],["행운 오행",S.lucky.map(i=>EK[i]).join(" · ")],["추천 직업",S.jobs[0][0]]].forEach(([k,v],i)=>{const y=1052+i*80;
     x.fillStyle="#9aa1b5";x.font=`600 26px ${SAN}`;x.fillText(k,96,y);x.fillStyle="#eef0f6";x.font=`600 38px ${SAN}`;x.fillText(v,300,y+2)});
   x.fillStyle="#6c7390";x.font=`400 22px ${SAN}`;x.fillText("오락·자기성찰용 풀이입니다",96,1272);
   $("cardimg").src=c.toDataURL("image/png");
-  $("sharetxt").value=`[운명 연구소] ${nm?nm+"님의 ":""}사주\n명식: ${cols.slice().reverse().map(([k,p])=>p?ST[p.s]+BR[p.b]:"??").join(" ")} (년월일시)\n일간: ${ST[me]}${EK[SE[me]]} · ${DMX[me].nm} (${DMX[me].key})\n${f.Y}년 토정비결: ${S.tj.code}괘, ${S.tj.tone}\n행운 오행: ${S.lucky.map(i=>EK[i]).join("·")}\n${f.mbti} · ${S.z[0]} · 추천 직업 ${S.jobs[0][0]}`;
+  $("sharetxt").value=`[운명 연구소] ${nm?nm+"님의 ":""}사주\n${showP?`명식: ${cols.slice().reverse().map(([k,p])=>p?ST[p.s]+BR[p.b]:"??").join(" ")} (년월일시)\n`:""}일간: ${ST[me]}${EK[SE[me]]} · ${DMX[me].nm} (${DMX[me].key})\n${f.Y}년 토정비결: ${S.tj.code}괘, ${S.tj.tone}\n행운 오행: ${S.lucky.map(i=>EK[i]).join("·")}\n${f.mbti} · ${S.z[0]} · 추천 직업 ${S.jobs[0][0]}`;
 }
 
 /* ===== PDF 보고서 ===== */
@@ -366,39 +371,67 @@ async function renderPDF(root){
   }
   return pdf;
 }
-function buildReport(){
+function buildReport(mode="full"){
   let D=lastDraw;if(!D||D.opened.size<D.n){D=drawCards(3,"all");D.cards.forEach((_,k)=>D.opened.add(k));D.auto=true}
   const today=new Date(),ds=`${today.getFullYear()}.${today.getMonth()+1}.${today.getDate()}`;
-  const sec=(t,o,extra="")=>`<div class="rsec"><h2>${t}</h2>${extra}<div class="section">${o.s}</div>${o.d?`<div class="det">${o.d}</div>`:""}</div>`;
-  const tar=bTarot(D);
-  const mOn=$("matchOn").checked;
-  const toc=["사주 원국","사주풀이","나에게 맞춘 해설","대운 · 세운 · 월운","토정비결","타로 리딩","별자리 · MBTI",...(mOn?["궁합 · 상생"]:[]),"적성 · 미래 직업","종합 결론 · 옛 성현의 덕담"];
-  return`<div class="report">
-   <div class="rsec cover"><div class="label">종합 운명 보고서</div><h1>운명 연구소</h1>
-    ${scene(S.me,{el:ELIT[SE[S.me]].replace("#c3cad6","#8b93a3"),bg:"#e6eaf3",soft:"#cfd5e2",ink:"#1b2033"})}
-    <div class="big">${S.f.name}님 · ${ST[S.me]}${EK[SE[S.me]]} ${DMX[S.me].nm}</div><p>${DMX[S.me].key}</p>
-    <p class="note">작성일 ${ds} · 운세 기준 연도 ${S.f.Y}년</p>
-    <ol style="text-align:left;margin:20px auto 0;width:300px">${toc.map(t=>`<li>${t}</li>`).join("")}</ol></div>
-   <div class="rsec"><h2>1. 사주 원국</h2>${heroHTML({el:ELIT[SE[S.me]].replace("#c3cad6","#8b93a3"),bg:"#e6eaf3",soft:"#cfd5e2",ink:"#1b2033"})}${pillarsHTML()}</div>
-   ${sec("2. 사주풀이",bSaju())}${sec("3. 나에게 맞춘 해설",bPersona())}${sec("4. 대운 · 세운 · 월운",bLuck())}${sec("5. 토정비결",bTojeong())}
-   ${sec("6. 타로 리딩",{s:tar.s.replace(/<button[^>]*id="redraw"[^>]*>.*?<\/button>/,""),d:tar.d},D.auto?`<p class="note">화면에서 뽑은 카드가 없어 보고서를 만들 때 과거·현재·미래 3장을 새로 뽑았습니다.</p>`:"")}
-   ${sec("7. 별자리 · MBTI",bStar())}${mOn?sec("8. 궁합 · 상생",bMatch(),`<p class="note">${$("rel").selectedOptions[0].text} · 상대 MBTI ${$("pmbti").value}</p>`):""}${sec(`${mOn?9:8}. 적성 · 미래 직업`,bCareer())}${sec(`${mOn?10:9}. 종합 결론 · 옛 성현의 덕담`,bWisdom())}
-   <div class="rsec"><p class="note">이 보고서는 전통 명리 계산식, 타로 상징, 성격 유형론을 조합한 오락·자기성찰용 콘텐츠입니다. 타로 그림: 라이더-웨이트-스미스(1909), 파멜라 콜먼 스미스 · 퍼블릭 도메인.</p></div></div>`;
+  const core=mode==="core",mOn=$("matchOn").checked;
+  const strip=h=>h.replace(/<!--plan-->[\s\S]*?<!--\/plan-->/g,"");
+  const part=(t,o,extra="")=>`<h2>${t}</h2>${extra}<div class="section">${strip(o.s)}</div>${!core&&o.d?`<div class="det">${o.d}</div>`:""}`;
+  const sec=(...parts)=>`<div class="rsec">${parts.join("")}</div>`;
+  const tar=bTarot(D),tarO={s:tar.s.replace(/<button[^>]*id="redraw"[^>]*>.*?<\/button>/,""),d:tar.d},tarX=D.auto?`<p class="note">화면에서 뽑은 카드가 없어 보고서를 만들 때 과거·현재·미래 3장을 새로 뽑았습니다.</p>`:"";
+  const C={el:ELIT[SE[S.me]].replace("#c3cad6","#8b93a3"),bg:"#e6eaf3",soft:"#cfd5e2",ink:"#1b2033"};
+  const {f,P,me,strong,lucky,tj}=S,yg=yearGz(f.Y),ts=tg10(me,yg.s),gmax=S.gc.indexOf(Math.max(...S.gc)),band=ageBand(f.Y-P.solar.y),q=WIS.life[band];
+  const disclaimer=`<p class="note" style="margin-top:18px">이 보고서는 전통 명리 계산식, 타로 상징, 성격 유형론을 조합한 오락·자기성찰용 콘텐츠입니다. 작괘·명식·대운 같은 계산은 전통 방식을 따르고, 풀이 문장은 이 사이트가 구성한 해설입니다. 페르소나 비교는 NVIDIA 합성 데이터이며 실제 국민 조사가 아닙니다. 타로 그림: 라이더-웨이트-스미스(1909), 파멜라 콜먼 스미스 · 퍼블릭 도메인.</p>`;
+  const summary=`<div class="rsec"><div class="label">${core?"핵심":"종합"} 운명 보고서 · 작성일 ${ds} · 기준 연도 ${f.Y}년</div><h1 style="margin:4px 0 10px">${S.f.name}님의 한눈에 보는 운명</h1>
+    ${core?`<p class="lunar">양력 ${P.solar.y}.${P.solar.m}.${P.solar.d} · ${ANI[P.y.b]}띠 · ${S.z[0]} · ${f.mbti}</p>`:heroHTML(C)}${pillarsHTML()}
+    <div class="tw" style="margin-top:14px"><table class="t">
+     <tr><th>타고난 기질</th><td>${ST[me]}${EK[SE[me]]} · ${DMX[me].nm} — ${DMX[me].key}</td></tr>
+     <tr><th>힘의 균형</th><td>${strong?"신강 · 힘을 쓸 곳을 만들 때 운이 열림":"신약 · 사람과 배움의 도움으로 운이 열림"} / 중심 십신 ${GRP[gmax]}</td></tr>
+     <tr><th>행운의 오행</th><td>${lucky.map(i=>EN[i]).join(" · ")} (색 ${ECOL[lucky[0]]}, 방향 ${EDIR[lucky[0]]})</td></tr>
+     <tr><th>${f.Y}년 흐름</th><td>세운 ${ST[yg.s]}${BR[yg.b]} · ${ts.n} — ${SEUN[ts.g].총운}</td></tr>
+     <tr><th>토정비결</th><td>${tj.code}괘 · ${tj.tone}</td></tr>
+     <tr><th>별자리 · MBTI</th><td>${S.z[0]} · ${f.mbti} ${MBT[f.mbti][0]}</td></tr>
+     <tr><th>추천 직업</th><td>${S.jobs.slice(0,3).map(j=>j[0]).join(", ")}</td></tr>
+     <tr><th>올해의 한마디</th><td>${q[0]} (${q[1]}) — ${q[2]}</td></tr></table></div>
+    ${planHTML(true)}</div>`;
+  if(core){
+    return`<div class="report">${summary}
+     ${sec(part("1. 사주풀이",bSaju()),part("2. 나에게 맞춘 해설",bPersona()))}
+     ${sec(part("3. 대운 · 세운 · 월운",bLuck()),part("4. 토정비결",bTojeong()))}
+     ${sec(part("5. 타로 리딩",tarO,tarX),part("6. 별자리 · MBTI",bStar()),mOn?part("7. 궁합 · 상생",bMatch(),`<p class="note">${$("rel").selectedOptions[0].text} · 상대 MBTI ${$("pmbti").value}</p>`):"")}
+     ${sec(part(`${mOn?8:7}. 적성 · 미래 직업`,bCareer()),part(`${mOn?9:8}. 종합 결론 · 옛 성현의 덕담`,bWisdom()),disclaimer)}</div>`;
+  }
+  return`<div class="report">${summary}
+   ${sec(part("1. 사주풀이",bSaju()))}${sec(part("2. 나에게 맞춘 해설",bPersona()))}${sec(part("3. 대운 · 세운 · 월운",bLuck()))}${sec(part("4. 토정비결",bTojeong()))}
+   ${sec(part("5. 타로 리딩",tarO,tarX))}${sec(part("6. 별자리 · MBTI",bStar()))}${mOn?sec(part("7. 궁합 · 상생",bMatch(),`<p class="note">${$("rel").selectedOptions[0].text} · 상대 MBTI ${$("pmbti").value}</p>`)):""}
+   ${sec(part(`${mOn?8:7}. 적성 · 미래 직업`,bCareer()))}${sec(part(`${mOn?9:8}. 종합 결론 · 옛 성현의 덕담`,bWisdom()),disclaimer)}</div>`;
+}
+async function reportHTML(mode){
+  const im=await svgImg(scene(S.me,{el:ELIT[SE[S.me]].replace("#c3cad6","#8b93a3"),bg:"#e6eaf3",soft:"#cfd5e2",ink:"#1b2033"}));let png="";
+  if(im){const c=document.createElement("canvas");c.width=960;c.height=540;c.getContext("2d").drawImage(im,0,0,960,540);png=c.toDataURL("image/png")}
+  return buildReport(mode).replace(/<svg viewBox="0 0 320 180"[\s\S]*?<\/svg>/g,()=>png?`<img alt="" style="width:100%;display:block;border-radius:8px" src="${png}">`:"");
+}
+async function printPDF(){
+  if(!S)return;const wrap=$("rwrap"),msg=$("pdfmsg");msg.hidden=false;
+  wrap.innerHTML=await reportHTML("full");
+  await Promise.all([...wrap.querySelectorAll("img")].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
+  document.body.classList.add("printing");
+  const done=()=>{document.body.classList.remove("printing");wrap.innerHTML="";window.removeEventListener("afterprint",done)};
+  window.addEventListener("afterprint",done);
+  msg.textContent="인쇄 창에서 대상(프린터)을 ‘PDF로 저장’으로 고르면 글자를 검색·복사할 수 있는 PDF가 만들어집니다.";
+  window.print();setTimeout(()=>{if(document.body.classList.contains("printing"))done()},60000);
 }
 let restoreY=null;
-async function makePDF(){
+async function makePDF(ev){
   if(!S)return;
-  const btn=$("pdfbtn"),msg=$("pdfmsg");btn.disabled=true;btn.textContent="보고서 만드는 중…";msg.hidden=false;msg.textContent="모든 탭의 상세 해설을 모아 페이지를 그리는 중입니다. 10–30초 걸릴 수 있습니다.";
+  const btn=ev&&ev.currentTarget||$("pdfbtn"),mode=btn.dataset.mode||"core",label=btn.textContent,msg=$("pdfmsg");["pdfbtn","pdffull","pdfprint"].forEach(k=>$(k).disabled=true);btn.textContent="만드는 중…";msg.hidden=false;msg.textContent="모든 탭의 상세 해설을 모아 페이지를 그리는 중입니다. 10–30초 걸릴 수 있습니다.";
   const wrap=$("rwrap");
   try{
     await loadPDFLibs();
-    const sv=scene(S.me,{el:ELIT[SE[S.me]].replace("#c3cad6","#8b93a3"),bg:"#e6eaf3",soft:"#cfd5e2",ink:"#1b2033"});
-    const im=await svgImg(sv);let png="";
-    if(im){const c=document.createElement("canvas");c.width=960;c.height=540;c.getContext("2d").drawImage(im,0,0,960,540);png=c.toDataURL("image/png")}
-    wrap.innerHTML=buildReport().replace(/<svg viewBox="0 0 320 180"[\s\S]*?<\/svg>/g,()=>png?`<img alt="" style="width:100%;display:block;border-radius:8px" src="${png}">`:"");
+    wrap.innerHTML=await reportHTML(mode);
     await Promise.all([...wrap.querySelectorAll("img")].map(i=>i.complete?0:new Promise(r=>{i.onload=i.onerror=r})));
     try{await document.fonts.ready}catch(e){}
-    const fname=`운명연구소_보고서_${S.f.Y}.pdf`;
+    const fname=`운명연구소_${mode==="core"?"핵심보고서":"전체해설"}_${S.f.Y}.pdf`;
     restoreY=window.scrollY;window.scrollTo(0,0);
     const pdf=await renderPDF(wrap.firstElementChild);
     if(window.claude&&window.claude.use){
@@ -408,7 +441,7 @@ async function makePDF(){
       catch(e){msg.textContent=e&&e.code==="declined"?"저장을 취소했습니다.":"저장하지 못했습니다. 잠시 후 다시 시도하세요."}
     }else{pdf.save(fname);msg.textContent="PDF 보고서를 내려받았습니다. 개인정보는 이 파일에만 담기니 공유할 때 주의하세요."}
   }catch(e){console.error("PDF",e&&e.stack||e);msg.textContent="보고서를 만들지 못했습니다. 네트워크를 확인하고 다시 시도하세요."}
-  finally{if(restoreY!==null){window.scrollTo(0,restoreY);restoreY=null}wrap.innerHTML="";btn.disabled=false;btn.textContent="PDF 보고서 만들기"}
+  finally{if(restoreY!==null){window.scrollTo(0,restoreY);restoreY=null}wrap.innerHTML="";["pdfbtn","pdffull","pdfprint"].forEach(k=>$(k).disabled=false);btn.textContent=label}
 }
 
 /* ===== 이벤트 ===== */
@@ -423,13 +456,14 @@ $("spread").addEventListener("click",e=>{const b=e.target.closest(".flip");if(!b
   if(lastDraw.opened.size===lastDraw.n)setTimeout(()=>setBody("tarot",bTarot()),500)});
 $("v-tarot").addEventListener("click",e=>{if(e.target.id==="redraw"){draw();$("v-tarot").scrollIntoView({behavior:"smooth",block:"start"})}});
 $("tunk").addEventListener("change",()=>{$("btime").disabled=$("tunk").checked;$("corr").disabled=$("tunk").checked});
-$("sharename").addEventListener("change",renderShare);
-["prov","occ","fam","house"].forEach(k=>$(k).addEventListener("change",()=>{if(S)setBody("me",bPersona())}));
+$("sharename").addEventListener("change",renderShare);$("sharepillars").addEventListener("change",renderShare);
+["prov","occ","fam","house","concern","hours","skills","goal3"].forEach(k=>$(k).addEventListener("change",()=>{if(S){setBody("me",bPersona());setBody("wisdom",bWisdom())}}));
 $("ints").addEventListener("change",()=>{if(S)setBody("me",bPersona())});
-$("pdfbtn").addEventListener("click",makePDF);
+$("pdfbtn").addEventListener("click",makePDF);$("pdffull").addEventListener("click",makePDF);$("pdfprint").addEventListener("click",printPDF);
+if(window.claude)$("pdfprint").hidden=true;
 $("clear").addEventListener("click",()=>{
   if(window.clearChat)clearChat();$("matchOn").checked=false;syncMatch();
-  ["name","birth","btime","pname","pbirth"].forEach(k=>$(k).value="");$("tunk").checked=false;$("cal").value="s";["prov","occ","fam","house"].forEach(k=>$(k).value="");$("ints").querySelectorAll("input").forEach(i=>i.checked=false);$("pcal").value="s";
+  ["name","birth","btime","pname","pbirth"].forEach(k=>$(k).value="");$("tunk").checked=false;$("cal").value="s";["prov","occ","fam","house","concern","skills","goal3"].forEach(k=>$(k).value="");$("hours").value="4";$("ints").querySelectorAll("input").forEach(i=>i.checked=false);$("pcal").value="s";
   S=null;lastDraw=null;$("spread").innerHTML="";$("deck").innerHTML="";$("chart").innerHTML="";$("cardimg").removeAttribute("src");$("sharetxt").value="";
   $("results").hidden=true;$("demo").hidden=false;$("demo").textContent="입력을 모두 지웠습니다. 생년월일을 넣고 ‘풀이 보기’를 누르세요.";$("tunk").dispatchEvent(new Event("change"))});
 $("copybtn").addEventListener("click",()=>{const t=$("sharetxt");

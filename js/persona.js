@@ -64,7 +64,7 @@ function bPersona(){
   // 페르소나 통계
   const PS=window.PERSONA_STATS,key=PS&&PS.seg&&(PS.seg[`${band}|${sx}|${rg}`]?`${band}|${sx}|${rg}`:PS.seg[`${band}|${sx}|전국`]?`${band}|${sx}|전국`:null),seg=key?PS.seg[key]:null;
   const dist=(arr)=>{const mx=Math.max(...arr.map(a=>a[1]),1);return arr.map(([k,v])=>`<div class="pbar"><span>${esc(k)}</span><i style="width:${Math.round(v/mx*100)}%"></i><b class="num">${v}%</b></div>`).join("")};
-  const statCard=seg?`<div class="card avoid"><span class="label">대한민국 페르소나 비교 · ${key.split("|").join(" · ")} · ${seg.n.toLocaleString()}명</span>
+  const statCard=seg?`<div class="card avoid"><span class="label">대한민국 합성 페르소나 비교 · ${key.split("|").join(" · ")} · ${seg.n.toLocaleString()}명 <span class="src syn">합성 데이터 · 실제 국민 조사 아님</span></span>
     <p>같은 조건의 합성 페르소나 ${seg.n.toLocaleString()}명 가운데 기혼 비율은 ${seg.married}%입니다.</p>
     <div class="grid2"><div><h3>주요 직업</h3>${dist(seg.occupation)}</div><div><h3>가구 형태</h3>${dist(seg.household)}</div>
     ${seg.hobby.length?`<div><h3>많이 즐기는 취미</h3>${dist(seg.hobby)}</div>`:""}${seg.education.length?`<div><h3>학력</h3>${dist(seg.education)}</div>`:""}</div>
@@ -79,12 +79,12 @@ function bPersona(){
       pf.prov&&N.province&&N.province[pf.prov]?`${pf.prov} 거주자는 ${P(N.province[pf.prov])}%로 17개 시도 중 ${Object.values(N.province).sort((a,b)=>b-a).indexOf(N.province[pf.prov])+1}번째로 많습니다.`:"",
       pf.fam&&N.famGroup&&N.famGroup[pf.fam]?`${fk[pf.fam]}는 ${P(N.famGroup[pf.fam])}%입니다.${pf.fam==="solo"?" 열 명 중 한 명 이상이 혼자 사는 셈이라, 1인 가구를 위한 모임과 서비스가 계속 늘고 있습니다.":""}`:"",
       N.marital&&N.marital["배우자있음"]?`전체의 ${P(N.marital["배우자있음"])}%가 배우자가 있습니다.${N.housing?` 아파트 거주는 ${P(N.housing["아파트"])}%입니다.`:""}`:""].filter(Boolean);
-    return`<div class="card avoid"><span class="label">대한민국 페르소나 비교 · 전국 ${T.toLocaleString()}명</span>
-     <p>${lines.join(" ")}</p>
+    return`<div class="card avoid"><span class="label">대한민국 합성 페르소나 비교 · 전국 ${T.toLocaleString()}명 <span class="src syn">합성 데이터 · 실제 국민 조사 아님</span></span>
+     <p>NVIDIA가 한국 인구 분포를 본떠 만든 합성 페르소나 100만 명 안에서 보면, ${lines.join(" ")}</p>
      <div class="grid2">${[["혼인 상태",N.marital],["주거 형태",N.housing],["학력",N.education],["대학 전공 계열",N.major]].filter(x=>x[1]).map(([h,o])=>`<div><h3>${h}</h3>${bars(o)}</div>`).join("")}</div>
      <p class="note">출처: ${esc(PS.meta.source)} · 전국 ${T.toLocaleString()}명 분포(${PS.meta.built} 집계). 개별 페르소나는 쓰지 않았으며 실제 인구 통계가 아닌 합성 데이터입니다. 연령대·성별·권역별 비교는 원본 DB로 <code>tools/build_persona_stats.py</code>를 실행하면 더해집니다.</p></div>`;
   }
-  const s=`<div class="grid2">
+  const s=`${planHTML(false)}<div class="grid2">
    <div class="card"><span class="label">${band} · ${L.t}</span><p>만 ${age}세 무렵의 핵심 과제는 ‘${L.t.split("의")[0]}’입니다. ${f.Y}년 세운이 <b>${ts.n}</b>이라 ${["자립","표현과 성과","재물","책임과 직위","배움"][ts.g]}의 기운이 이 과제를 밀어 줍니다.</p></div>
    ${occ?`<div class="card"><span class="label">직업 · ${occ[1]}</span><p>${OCCX[occ[0]]} ${occFit}</p></div>`:""}
    ${rg?`<div class="card"><span class="label">거주 권역 · ${pf.prov} (${rg})</span><p>${REGX[rg]}</p><p class="note">행운 방향 ${EDIR[lucky[0]]}: 거주지에서 ${EDIR[lucky[0]]}으로의 나들이나 이동이 기분 전환에 좋습니다.</p></div>`:""}

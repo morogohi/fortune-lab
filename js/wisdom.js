@@ -49,6 +49,7 @@ function bWisdom(){
   const s=`<div class="card"><span class="label">종합 결론</span>
     <p>${S.f.name}님은 <b>${ST[me]}${EK[SE[me]]} · ${DMX[me].nm}</b>의 기운을 타고났습니다. ${DMX[me].key}의 바탕 위에, ${["자립","표현","재물","명예","배움"][gmax]}의 힘으로 삶을 꾸려 가는 사주입니다.
     ${f.Y}년은 ‘${tj.tone.split(" · ")[1]||tj.tone}’이며, 행운 오행은 ${S.lucky.map(i=>EN[i]).join("·")}입니다.</p></div>
+   ${planHTML(true)}
    <h3>옛 성현의 덕담</h3><div class="grid2">${picks.map(([q,l])=>quoteCard(q,l)).join("")}</div>`;
   const more=[[WIS.grp[gmax][1],`${GRP[gmax]}의 기운에 더하는 말`],[strong?WIS.strong[0]:WIS.weak[1],strong?"넘치는 힘을 다스리는 말":"보이지 않는 성장을 믿는 말"],[WIS.temp[S.temp],`${f.mbti} · ${S.temp} 기질에게`]];
   if(matchOn)more.push([WIS.friend,"사람을 알아보는 법"]);

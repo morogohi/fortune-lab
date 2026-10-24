@@ -27,6 +27,7 @@ function chatContext(){
    `별자리: ${z[0]}, MBTI: ${f.mbti}`,
    `추천 직업 상위: ${S.jobs.slice(0,3).map(j=>j[0]).join(", ")}`];
   if(pf.prov||occ||fam||house||pf.ints.length)L.push(`생활 프로필: ${[pf.prov&&`${P2R[pf.prov]} 거주`,occ&&occ[1],fam&&fam[1],house&&house[1],pf.ints.length&&("관심사 "+pf.ints.map(k=>INTS.find(o=>o[0]===k)[1]).join("·"))].filter(Boolean).join(", ")}`);
+  {const g=readGoals();if(g.concern||g.goal)L.push(`고민: ${g.concern?CONCERNS[g.concern]:"미선택"}${g.goal?`, 3개월 목표: ${g.goal}`:""}${g.skills?`, 경력·기술: ${g.skills}`:""}, 주당 가용 시간 약 ${g.hours}시간`)}
   if(lastDraw&&lastDraw.opened.size===lastDraw.n)L.push(`타로(${lastDraw.n}장, 주제 ${$("ttopic").selectedOptions[0].text}): ${lastDraw.cards.map((x,k)=>`${SPREADS[lastDraw.n][k][0]} ${x.c.ko}${x.rev?"(역)":""}`).join(", ")}`);
   if($("matchOn").checked&&$("pbirth").value)L.push(`궁합 보기: ${$("rel").selectedOptions[0].text}, 상대 MBTI ${$("pmbti").value} (상대 이름과 생년월일은 보내지 않음)`);
   return L.join("\n");
@@ -80,3 +81,5 @@ $("chatstop").addEventListener("click",()=>chatCtl&&chatCtl.abort());
 $("chatsugg").addEventListener("click",e=>{const b=e.target.closest("button");if(b)sendChat(b.textContent)});
 $("chatreset").addEventListener("click",clearChat);
 detectChat();
+function showCtxPreview(){$("ctxtext").textContent=$("chatctx").checked?chatContext():"(풀이 요약을 보내지 않습니다. 질문 내용만 전송됩니다.)"}
+$("ctxprev").addEventListener("toggle",showCtxPreview);$("chatctx").addEventListener("change",showCtxPreview);
