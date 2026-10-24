@@ -460,7 +460,11 @@ $("enginever").textContent=ENGINE+".";
 $("fbcopy").addEventListener("click",()=>{const q=[["유용했던 부분","fb1"],["모순·이해 안 된 부분","fb2"],["해 본 과제","fb3"],["다시 쓸 이유","fb4"],["도움 정도","fb5"],["4주 계획 보고서 가격 의향","fb6"],["구매하지 않는 이유","fb7"]];
   const t="[운명 연구소 시범 테스트 의견]\n"+q.map(([k,id])=>`${k}: ${$(id).value.trim()||"-"}`).join("\n")+`\n(${ENGINE})`;const o=$("fbout");o.value=t;o.hidden=false;
   Promise.resolve().then(()=>navigator.clipboard.writeText(t)).then(()=>{$("fbmsg").textContent="복사했습니다. 메신저에 붙여 넣어 보내 주세요."},()=>{o.select();$("fbmsg").textContent="아래 글을 선택해 복사해 주세요."})});
-if((window.FORTUNE_CONFIG||{}).feedbackUrl)$("fblink").innerHTML=` 설문 폼으로 보내셔도 됩니다: <a href="${esc(FORTUNE_CONFIG.feedbackUrl)}" target="_blank" rel="noopener">설문 열기</a>`;
+{const C=window.FORTUNE_CONFIG||{};if(C.feedbackUrl){const E=C.feedbackEntries||{},b=$("fbform");b.hidden=false;
+  b.addEventListener("click",()=>{const u=new URL(C.feedbackUrl);u.searchParams.set("usp","pp_url");
+    ["fb1","fb2","fb3","fb4","fb5","fb6","fb7"].forEach(id=>{const v=$(id).value.trim();if(E[id]&&v)u.searchParams.set("entry."+E[id],v.slice(0,800))});
+    if(E.ver)u.searchParams.set("entry."+E.ver,ENGINE);window.open(u.toString(),"_blank","noopener");
+    $("fbmsg").textContent="새 창의 구글 설문에서 내용을 확인하고 ‘제출’을 눌러 주세요."});}}
 $("mf").addEventListener("submit",e=>{e.preventDefault();if(S){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
 $("matchOn").addEventListener("change",()=>{syncMatch();if(S){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
 $("rel").addEventListener("change",()=>{if(S&&$("matchOn").checked){setBody("match",bMatchGate());setBody("wisdom",bWisdom())}});
