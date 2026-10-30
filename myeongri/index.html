@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>명리 계산 원리 실습 — 내 사주를 직접 세워보기 · 운명 연구소</title>
+<meta name="description" content="생년월일만 넣으면 년주·월주·일주·시주가 어떻게 계산되는지 공식과 함께 한 단계씩 보여줍니다. 오행·십성·대운·궁합의 원리까지 쉽게 해설합니다.">
+<link rel="stylesheet" href="../life/fonts/fonts.css">
+<style>
+:root{--bg:#faf7f2;--ink:#2b2433;--dim:#6f6680;--card:#fff;--line:#e8e1d8;--acc:#b5532d;--acc2:#6c4fb3;
+  --wood:#3fa66b;--fire:#e05a4a;--earth:#d2a33a;--metal:#9aa3b2;--water:#4f7fd6}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Gowun Dodum',system-ui,sans-serif;line-height:1.75;font-size:16px}
+.wrap{max-width:760px;margin:0 auto;padding:20px 16px 60px}
+h1,h2,h3{font-family:'Jua',sans-serif;font-weight:400;line-height:1.3}
+h1{font-size:30px;margin:6px 0}h2{font-size:23px;margin:34px 0 10px;color:var(--acc)}h3{font-size:18px;margin:18px 0 6px}
+.lead{color:var(--dim)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px;margin:12px 0;box-shadow:0 2px 8px #0000000a}
+label{display:block;font-size:14px;color:var(--dim);margin:8px 0 3px}
+input,select{width:100%;font:inherit;font-size:16px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.seg{display:flex;gap:6px}.seg button{flex:1;padding:9px;border:1px solid var(--line);background:#fff;border-radius:10px;font:inherit;cursor:pointer}
+.seg button.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.btn{display:block;width:100%;margin-top:14px;padding:13px;border:0;border-radius:12px;background:var(--acc);color:#fff;font-family:'Jua';font-size:19px;cursor:pointer}
+.btn.sub{background:var(--acc2)}
+details.opt{margin-top:10px;border-top:1px dashed var(--line);padding-top:8px}details.opt summary{cursor:pointer;font-family:'Jua';color:var(--acc2)}
+.chk{display:flex;align-items:center;gap:8px;font-size:14px;color:var(--dim)}.chk input{width:auto}
+.pillars{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;text-align:center;margin:8px 0}
+.pl small{display:block;color:var(--dim);font-size:13px}
+.gz{display:block;border-radius:12px;margin:3px 0;padding:6px 0;font-family:serif;font-size:30px;line-height:1.1;color:#fff}
+.gz em{display:block;font-style:normal;font-size:12px;font-family:'Gowun Dodum'}
+.gz.me{box-shadow:0 0 0 3px var(--ink)}
+.e0{background:var(--wood)}.e1{background:var(--fire)}.e2{background:var(--earth)}.e3{background:var(--metal)}.e4{background:var(--water)}
+.tg{display:inline-block;font-size:12px;color:var(--dim)}
+.step{border-left:4px solid var(--acc);padding:4px 0 4px 14px;margin:14px 0}
+.step b.n{font-family:'Jua';color:var(--acc);font-size:15px}
+.formula{background:#f3eee6;border-radius:10px;padding:10px 12px;font-family:ui-monospace,Menlo,monospace;font-size:14px;margin:8px 0;white-space:pre-wrap;line-height:1.6}
+table{border-collapse:collapse;width:100%;font-size:14px;margin:8px 0}
+th,td{border:1px solid var(--line);padding:6px 5px;text-align:center}
+th{background:#f3eee6;font-weight:600}
+.card{overflow-x:auto}
+#g60 table{font-size:12px}#g60 td{padding:3px 1px;font-family:serif}#g60 small{font-family:sans-serif;color:var(--dim)}
+.sj td{font-size:13px;padding:4px 1px}.sj small{font-size:10px;color:var(--dim)}
+td.hl,th.hl{background:#ffe6c9;font-weight:700}
+.bar{display:grid;grid-template-columns:70px 1fr 26px;align-items:center;gap:8px;font-size:14px;margin:4px 0}
+.bar i{display:block;height:12px;border-radius:6px}
+.score{font-family:'Jua';font-size:40px;color:var(--acc2);text-align:center}
+.note{font-size:13px;color:var(--dim)}
+.dy{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px}
+.dy div{flex:0 0 auto;text-align:center;border:1px solid var(--line);border-radius:10px;padding:6px 8px;min-width:58px;font-size:12px}
+.dy div b{display:block;font-family:serif;font-size:20px}
+.dy div.now{border-color:var(--acc);background:#ffe6c9}
+.toc a{color:var(--acc2)}
+.cta{display:flex;gap:8px;flex-wrap:wrap}.cta a{flex:1;min-width:200px;text-align:center;text-decoration:none;background:var(--ink);color:#fff;border-radius:12px;padding:12px;font-family:'Jua'}
+svg text{font-family:'Jua',sans-serif}
+.hide{display:none}
+body.embed .wrap{padding-top:6px}body.embed .noembed{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="noembed">
+    <div class="note">운명 연구소 · 명리 실습</div>
+    <h1>내 사주를 직접 세워보기</h1>
+    <p class="lead">생년월일을 넣으면 <b>년주·월주·일주·시주가 어떤 공식으로 나오는지</b> 한 단계씩 보여줘요. 오행·십성·대운·궁합의 원리까지 계산 과정 그대로 확인할 수 있어요.</p>
+  </header>
+
+  <div class="card" id="form">
+    <div class="row">
+      <div><label>생년월일</label><input type="date" id="d" value="1990-07-15" min="1900-01-01" max="2100-12-31"></div>
+      <div style="flex:.55"><label>달력</label><select id="cal"><option value="s">양력</option><option value="l">음력</option><option value="ll">음력 윤달</option></select></div>
+    </div>
+    <div class="row">
+      <div><label>태어난 시각</label><input type="time" id="t" value="09:40"></div>
+      <div style="flex:.55"><label>&nbsp;</label><label class="chk" style="margin:10px 0 0"><input type="checkbox" id="unk"> 시간 모름</label></div>
+    </div>
+    <label>성별 (대운 방향 계산에 필요)</label>
+    <div class="seg" id="sex"><button data-v="m" class="on">남자</button><button data-v="f">여자</button></div>
+    <label class="chk" style="margin-top:10px"><input type="checkbox" id="corr" checked> 진태양시 보정 (서울 기준 −32분)</label>
+    <details class="opt" id="mate"><summary>💞 궁합 상대 추가 (선택)</summary>
+      <div class="row"><div><label>상대 생년월일</label><input type="date" id="d2" min="1900-01-01" max="2100-12-31"></div>
+        <div style="flex:.55"><label>달력</label><select id="cal2"><option value="s">양력</option><option value="l">음력</option></select></div></div>
+      <div class="row"><div><label>상대 시각 (모르면 비워두기)</label><input type="time" id="t2"></div>
+        <div style="flex:.55"><label>상대 성별</label><select id="sex2"><option value="f">여자</option><option value="m">남자</option></select></div></div>
+    </details>
+    <button class="btn" id="go">🔮 계산 과정 보기</button>
+    <p class="note" style="margin:8px 0 0">입력값은 이 브라우저 안에서만 계산되고 어디에도 저장·전송되지 않아요.</p>
+  </div>
+
+  <div id="out"></div>
+
+  <section id="theory">
+    <h2>📘 계산에 쓰이는 원리 한눈에 보기</h2>
+    <div class="card">
+      <h3>① 60갑자: 천간 10개 × 지지 12개의 순환</h3>
+      <p>천간(甲乙丙丁戊己庚辛壬癸)과 지지(子丑寅卯辰巳午未申酉戌亥)를 하나씩 짝지어 나가면 10과 12의 최소공배수인 <b>60개 조합</b>이 생겨요. 해(年)·달(月)·날(日)·시(時)는 모두 이 60갑자를 차례로 돌며 이름을 붙입니다.</p>
+      <div class="formula">n번째 갑자 (0부터 셈) → 천간 = n mod 10,  지지 = n mod 12
+예) n=0 → 甲子,  n=1 → 乙丑,  n=59 → 癸亥, 그다음 다시 甲子</div>
+      <div id="g60"></div>
+    </div>
+    <div class="card">
+      <h3>② 오행의 상생과 상극</h3>
+      <p>천간·지지 글자마다 오행(목·화·토·금·수)이 있어요. 바깥 원을 따라 도는 화살표가 <b>상생</b>(서로 살림), 안쪽 별 모양이 <b>상극</b>(서로 누름)이에요.</p>
+      <div id="wx" style="text-align:center"></div>
+    </div>
+    <div class="card">
+      <h3>③ 십성: '나(일간)'를 기준으로 다른 글자에 이름 붙이기</h3>
+      <p>사주 해석의 출발점은 <b>일주의 천간(일간)</b>이에요. 다른 일곱 글자가 일간과 어떤 오행 관계인지, 음양이 같은지 다른지에 따라 열 가지 이름이 붙어요.</p>
+      <table><tr><th>관계</th><th>음양 같음</th><th>음양 다름</th><th>쉽게 말하면</th></tr>
+        <tr><td>나와 같은 오행</td><td>비견</td><td>겁재</td><td>형제·친구·경쟁자</td></tr>
+        <tr><td>내가 생하는 오행</td><td>식신</td><td>상관</td><td>재능·표현·결과물</td></tr>
+        <tr><td>내가 극하는 오행</td><td>편재</td><td>정재</td><td>재물·현실 감각</td></tr>
+        <tr><td>나를 극하는 오행</td><td>편관</td><td>정관</td><td>직장·책임·명예</td></tr>
+        <tr><td>나를 생하는 오행</td><td>편인</td><td>정인</td><td>배움·도움·문서</td></tr></table>
+    </div>
+  </section>
+
+  <section class="noembed">
+    <h2>더 알아보기</h2>
+    <div class="cta">
+      <a href="https://fortune-lab.blogspot.com/">📚 운명 연구소 블로그</a>
+      <a href="../">🔮 운명 연구소 종합 운세</a>
+      <a href="../life/">🌏 사주로 사는 인생 게임</a>
+    </div>
+  </section>
+  <p class="note" style="margin-top:24px">※ 만세력 계산은 공개 라이브러리 lunar-javascript(MIT)를 사용했어요. 절기 시각은 한국 표준시로 환산했어요. 사주 풀이는 전통 이론을 소개하는 참고·재미용 콘텐츠이며, 중요한 결정은 스스로 판단하세요.</p>
+</div>
+
+<script src="lunar.js"></script>
+<script>
+/* ===== 기본 데이터 ===== */
+const ST='甲乙丙丁戊己庚辛壬癸',STK='갑을병정무기경신임계',BR='子丑寅卯辰巳午未申酉戌亥',BRK='자축인묘진사오미신유술해';
+const SE=[0,0,1,1,2,2,3,3,4,4],BE=[4,2,0,0,2,1,1,2,3,3,2,4],HID=[9,5,0,1,4,2,3,5,6,7,4,8];
+const EK=['목','화','토','금','수'],EN=['목(木)','화(火)','토(土)','금(金)','수(水)'],ECOL=['var(--wood)','var(--fire)','var(--earth)','var(--metal)','var(--water)'];
+const ANI='쥐 소 호랑이 토끼 용 뱀 말 양 원숭이 닭 개 돼지'.split(' ');
+const JIE=['立春','惊蛰','清明','立夏','芒种','小暑','立秋','白露','寒露','立冬','大雪','小寒'];
+const JIEK=['입춘','경칩','청명','입하','망종','소암','입추','백로','한로','입동','대설','소한'];JIEK[5]='소서';
+const mod=(a,n)=>((a%n)+n)%n;
+const gzIdx=(s,b)=>{for(let n=0;n<60;n++)if(n%10===s&&n%12===b)return n};
+const gzK=(s,b)=>STK[s]+BRK[b], gzH=(s,b)=>ST[s]+BR[b];
+const yy=i=>i%2===0?'양':'음';
+const $=s=>document.querySelector(s);
+const pad=n=>String(n).padStart(2,'0');
+const fmt=d=>`${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+function tg(me,o){const r=mod(SE[o]-SE[me],5),same=me%2===o%2;return{g:r,n:[['비견','겁재'],['식신','상관'],['편재','정재'],['편관','정관'],['편인','정인']][r][same?0:1]}}
+const REL=['나와 같은 오행','내가 생하는 오행','내가 극하는 오행','나를 극하는 오행','나를 생하는 오행'];
+
+/* 솔라 객체(한국시) → JS Date */
+const sd=s=>new Date(s.getYear(),s.getMonth()-1,s.getDay(),s.getHour(),s.getMinute(),s.getSecond());
+/* 라이브러리 절기 시각(중국 표준시, UTC+8) → 한국시(+60분) */
+const jieKST=s=>new Date(sd(s).getTime()+3600e3);
+
+function compute(inp){
+  // 1) 양력 변환
+  let so;
+  if(inp.cal==='s')so=Solar.fromYmdHms(inp.y,inp.m,inp.d,inp.h,inp.mi,0);
+  else{const L=Lunar.fromYmdHms(inp.y,inp.cal==='ll'?-inp.m:inp.m,inp.d,inp.h,inp.mi,0);
+    if(L.getMonth()!==(inp.cal==='ll'?-inp.m:inp.m)||L.getDay()!==inp.d)throw new Error('존재하지 않는 음력 날짜예요');so=L.getSolar()}
+  const birth=sd(so);
+  // 2) 년·월주: 절입 시각(중국 표준시)과 비교하려고 한국시 −60분 시점으로 계산
+  const tY=new Date(birth.getTime()-3600e3);
+  const lyY=Solar.fromYmdHms(tY.getFullYear(),tY.getMonth()+1,tY.getDate(),tY.getHours(),tY.getMinutes(),0).getLunar();
+  const ec=lyY.getEightChar();
+  const yg={s:ST.indexOf(ec.getYear()[0]),b:BR.indexOf(ec.getYear()[1])},mg={s:ST.indexOf(ec.getMonth()[0]),b:BR.indexOf(ec.getMonth()[1])};
+  const lichun=jieKST(Solar.fromYmd(birth.getFullYear(),6,1).getLunar().getJieQiTable()['立春']);
+  const baseYear=birth<lichun?birth.getFullYear()-1:birth.getFullYear();
+  const prev=lyY.getPrevJie(true),next=lyY.getNextJie(true);
+  const prevName=JIEK[JIE.indexOf(prev.getName())]||prev.getName(),prevT=jieKST(prev.getSolar());
+  const nextName=JIEK[JIE.indexOf(next.getName())]||next.getName(),nextT=jieKST(next.getSolar());
+  // 3) 일·시주: 진태양시 보정
+  const shift=inp.corr&&!inp.unk?32:0;
+  const tD=new Date(birth.getTime()-shift*60e3), hh=inp.unk?12:tD.getHours(), mm=inp.unk?0:tD.getMinutes();
+  const ldD=Solar.fromYmdHms(tD.getFullYear(),tD.getMonth()+1,tD.getDate(),hh,mm,0).getLunar().getEightChar();
+  const dg={s:ST.indexOf(ldD.getDay()[0]),b:BR.indexOf(ldD.getDay()[1])};
+  const hg=inp.unk?null:{s:ST.indexOf(ldD.getTime()[0]),b:BR.indexOf(ldD.getTime()[1])};
+  // 일주 설명용: 기준일 2000-01-01 = 戊午(54)
+  const dayDate=new Date(tD.getFullYear(),tD.getMonth(),tD.getDate());
+  const diff=Math.round((dayDate-new Date(2000,0,1))/864e5);
+  // 대운
+  const forward=(yg.s%2===0)===(inp.male);
+  const target=forward?nextT:prevT;
+  const days=Math.abs(target-birth)/864e5, dyNum=days/3;
+  const dyStart=Math.round(dyNum);
+  const dys=[];for(let i=1;i<=8;i++){const n=mod(gzIdx(mg.s,mg.b)+(forward?i:-i),60);dys.push({s:n%10,b:n%12,age:dyStart+(i-1)*10})}
+  return{inp,birth,tD,shift,yg,mg,dg,hg,lichun,baseYear,prevName,prevT,nextName,nextT,diff,forward,days,dyNum,dyStart,dys,lunar:so.getLunar()};
+}
+
+/* 오행·십성 집계 */
+function analyze(r){
+  const cols=[['년',r.yg],['월',r.mg],['일',r.dg],['시',r.hg]].filter(x=>x[1]);
+  const el=[0,0,0,0,0],yin=[0,0];
+  cols.forEach(([_,g])=>{el[SE[g.s]]++;el[BE[g.b]]++;yin[g.s%2]++;yin[g.b%2]++});
+  return{cols,el,yin,me:r.dg.s};
+}
+
+/* ===== 렌더 ===== */
+function pillarHTML(r){
+  const c=(g,lab,me)=>g?`<div class="pl"><small>${lab}</small><span class="gz e${SE[g.s]}${me?' me':''}">${ST[g.s]}<em>${STK[g.s]} · ${EK[SE[g.s]]}</em></span><span class="gz e${BE[g.b]}">${BR[g.b]}<em>${BRK[g.b]} · ${EK[BE[g.b]]}</em></span></div>`:`<div class="pl"><small>${lab}</small><span class="gz" style="background:#ccc">?</span><span class="gz" style="background:#ccc">?</span></div>`;
+  return `<div class="pillars">${c(r.yg,'년주')}${c(r.mg,'월주')}${c(r.dg,'일주 (나)',1)}${c(r.hg,'시주')}</div>`;
+}
+function stepYear(r){
+  const n=gzIdx(r.yg.s,r.yg.b);
+  return `<div class="step"><b class="n">STEP 1 · 년주(年柱) — 해의 기둥</b>
+  <p>명리학에서 한 해는 <b>1월 1일이 아니라 입춘(立春)</b>에 바뀌어요. ${r.birth.getFullYear()}년 입춘은 <b>${fmt(r.lichun)}</b>이고, 태어난 시각은 그 ${r.birth<r.lichun?'<b>이전</b>이라 전해':'이후라 그해'} 기준으로 셉니다.</p>
+  <div class="formula">기준 연도 = ${r.baseYear}
+(기준 연도 − 4) mod 60 = (${r.baseYear} − 4) mod 60 = ${n}
+천간 = ${n} mod 10 = ${n%10} → ${ST[r.yg.s]}(${STK[r.yg.s]})
+지지 = ${n} mod 12 = ${n%12} → ${BR[r.yg.b]}(${BRK[r.yg.b]})   ∴ 년주 ${gzH(r.yg.s,r.yg.b)}(${gzK(r.yg.s,r.yg.b)})년, ${ANI[r.yg.b]}띠</div>
+  <p class="note">왜 4를 뺄까요? 서기 4년이 60갑자의 첫 번째인 甲子년이기 때문이에요.</p></div>`;
+}
+function stepMonth(r){
+  const n=mod(r.mg.b-2,12), start=mod((r.yg.s%5)*2+2,10);
+  const rows=[['甲·己','丙寅'],['乙·庚','戊寅'],['丙·辛','庚寅'],['丁·壬','壬寅'],['戊·癸','甲寅']];
+  return `<div class="step"><b class="n">STEP 2 · 월주(月柱) — 달의 기둥</b>
+  <p>달도 음력 1일이 아니라 <b>절기(節氣)</b>로 바뀌어요. 입춘부터 寅월(인월)이 시작되고, 경칩·청명·입하… 열두 절기마다 지지가 하나씩 넘어가요. 태어난 시점 직전 절기는 <b>${r.prevName} (${fmt(r.prevT)})</b>, 다음 절기는 ${r.nextName} (${fmt(r.nextT)})이에요.</p>
+  <div class="formula">직전 절기 ${r.prevName} → 월지 ${BR[r.mg.b]}(${BRK[r.mg.b]}) · 寅월에서 ${n}칸 지난 달</div>
+  <p>월의 천간은 <b>년간에 따라 寅월의 천간이 정해지는 규칙(년상기월법)</b>으로 구해요. 년간이 ${ST[r.yg.s]}이므로 寅월은 ${ST[start]}寅부터 시작해요.</p>
+  <table><tr><th>년간</th>${rows.map((x,i)=>`<th class="${i===r.yg.s%5?'hl':''}">${x[0]}</th>`).join('')}</tr><tr><td>寅월</td>${rows.map((x,i)=>`<td class="${i===r.yg.s%5?'hl':''}">${x[1]}</td>`).join('')}</tr></table>
+  <div class="formula">월간 = (寅월 천간 ${start} + ${n}) mod 10 = ${mod(start+n,10)} → ${ST[r.mg.s]}(${STK[r.mg.s]})
+∴ 월주 ${gzH(r.mg.s,r.mg.b)}(${gzK(r.mg.s,r.mg.b)})</div></div>`;
+}
+function stepDay(r){
+  const n=gzIdx(r.dg.s,r.dg.b), calc=mod(54+r.diff,60);
+  return `<div class="step"><b class="n">STEP 3 · 일주(日柱) — 날의 기둥, 바로 '나'</b>
+  <p>날짜는 끊김 없이 60갑자를 돌아요. 그래서 이름을 알고 있는 기준일에서 며칠이 지났는지만 세면 돼요. 기준일 <b>2000년 1월 1일은 戊午일</b>(60갑자 중 54번)이에요.</p>
+  <div class="formula">기준일부터 경과 일수 = ${r.diff.toLocaleString()}일
+(54 + ${r.diff}) mod 60 = ${calc} → ${gzH(calc%10,calc%12)}
+∴ 일주 ${gzH(r.dg.s,r.dg.b)}(${gzK(r.dg.s,r.dg.b)})${calc!==n?' (자정 무렵 출생은 학파에 따라 날짜 경계를 다르게 봐요)':''}</div>
+  <p>일주의 천간 <b>${ST[r.dg.s]}(${STK[r.dg.s]}) · ${EN[SE[r.dg.s]]}</b>이 <b>일간</b>, 곧 사주 주인 '나'를 뜻해요. 모든 해석은 이 글자를 기준으로 시작해요.</p></div>`;
+}
+function stepHour(r){
+  if(!r.hg)return `<div class="step"><b class="n">STEP 4 · 시주(時柱)</b><p>태어난 시간을 모르면 시주는 비워 두고 세 기둥(여섯 글자)으로 봐요. 시주는 말년운·자녀운을 볼 때 주로 쓰여요.</p></div>`;
+  const start=mod((r.dg.s%5)*2,10), n=r.hg.b;
+  const rows=[['甲·己','甲子'],['乙·庚','丙子'],['丙·辛','戊子'],['丁·壬','庚子'],['戊·癸','壬子']];
+  const sj=BR.split('').map((b,i)=>`${i===6?'</tr><tr>':''}<td class="${i===n?'hl':''}">${b}<br><small>${pad(mod(i*2-1,24))}~${pad(i*2+1)}시</small></td>`).join('');
+  return `<div class="step"><b class="n">STEP 4 · 시주(時柱) — 시간의 기둥</b>
+  <p>하루를 2시간씩 12시진으로 나눠요. 한국 표준시는 동경 135°가 기준인데 서울은 약 127°라서, ${r.shift?`해가 실제로 뜨고 지는 시각(진태양시)에 맞추려고 <b>${r.shift}분을 빼서</b> ${pad(r.tD.getHours())}:${pad(r.tD.getMinutes())}로 봤어요.`:'보정 없이 입력한 시각 그대로 봤어요.'}</p>
+  <table class="sj"><tr>${sj}</tr></table>
+  <p>시의 천간은 <b>일간에 따라 子시의 천간이 정해지는 규칙(일상기시법)</b>으로 구해요.</p>
+  <table><tr><th>일간</th>${rows.map((x,i)=>`<th class="${i===r.dg.s%5?'hl':''}">${x[0]}</th>`).join('')}</tr><tr><td>子시</td>${rows.map((x,i)=>`<td class="${i===r.dg.s%5?'hl':''}">${x[1]}</td>`).join('')}</tr></table>
+  <div class="formula">시지 = ${BR[n]}(${BRK[n]}) · 子시에서 ${n}칸
+시간 = (子시 천간 ${start} + ${n}) mod 10 = ${mod(start+n,10)} → ${ST[r.hg.s]}(${STK[r.hg.s]})
+∴ 시주 ${gzH(r.hg.s,r.hg.b)}(${gzK(r.hg.s,r.hg.b)})</div></div>`;
+}
+function elemHTML(r,a){
+  const mx=Math.max(...a.el,1),tot=a.el.reduce((x,y)=>x+y,0);
+  const strong=a.el.indexOf(Math.max(...a.el)),weak=a.el.indexOf(Math.min(...a.el));
+  return `<h2>⚖️ 오행 분포 — 어떤 기운이 많고 적은가</h2><div class="card">
+  ${a.el.map((n,i)=>`<div class="bar"><span>${EN[i]}</span><i style="width:${n/mx*100}%;background:${ECOL[i]}"></i><b>${n}</b></div>`).join('')}
+  <p>글자 ${tot}개 중 <b>${EN[strong]}</b>이 가장 많고 <b>${EN[weak]}</b>이 가장 적어요. 음양은 양 ${a.yin[0]} : 음 ${a.yin[1]}이에요.</p>
+  <p class="note">많은 기운은 그 사람의 두드러진 성향으로, 부족한 기운은 채우면 좋은 부분으로 봐요. 다만 실제 해석은 일간이 계절(월지)에 힘을 얻었는지, 다른 글자들의 도움을 받는지(신강·신약)를 함께 따져야 해요.</p></div>`;
+}
+function tenHTML(r,a){
+  const me=a.me,rows=[];
+  a.cols.forEach(([lab,g])=>{
+    if(lab!=='일'){const t=tg(me,g.s);rows.push(`<tr><td>${lab}간</td><td>${ST[g.s]} ${EK[SE[g.s]]}·${yy(g.s)}</td><td>${REL[t.g]}, 음양 ${me%2===g.s%2?'같음':'다름'}</td><td><b>${t.n}</b></td></tr>`)}
+    const h=HID[g.b],t2=tg(me,h);rows.push(`<tr><td>${lab}지</td><td>${BR[g.b]} → 본기 ${ST[h]} ${EK[SE[h]]}·${yy(h)}</td><td>${REL[t2.g]}, 음양 ${me%2===h%2?'같음':'다름'}</td><td><b>${t2.n}</b></td></tr>`);
+  });
+  return `<h2>🧭 십성 — 일간 ${ST[me]}(${EK[SE[me]]}·${yy(me)})의 눈으로 본 나머지 글자</h2><div class="card">
+  <table><tr><th>자리</th><th>글자</th><th>일간과의 관계</th><th>십성</th></tr>${rows.join('')}</table>
+  <p class="note">지지는 그 안에 숨은 천간(지장간) 중 가장 힘센 본기를 기준으로 십성을 매겼어요.</p></div>`;
+}
+function daeunHTML(r){
+  const now=new Date().getFullYear()-r.birth.getFullYear();
+  return `<h2>🔄 대운 — 10년마다 바뀌는 큰 흐름</h2><div class="card">
+  <p><b>방향</b>: 년간 ${ST[r.yg.s]}는 ${yy(r.yg.s)}간이고 ${r.inp.male?'남자':'여자'}이므로 <b>${r.forward?'순행(앞으로)':'역행(뒤로)'}</b>해요. (양년생 남자·음년생 여자는 순행, 그 반대는 역행)</p>
+  <div class="formula">${r.forward?`다음 절기 ${r.nextName}까지`:`이전 절기 ${r.prevName}까지`} = ${r.days.toFixed(1)}일
+대운수 = ${r.days.toFixed(1)} ÷ 3 = ${r.dyNum.toFixed(2)} → 약 ${r.dyStart}세부터 첫 대운
+(사흘을 1년으로 환산하는 전통 규칙)</div>
+  <p class="note">만세력마다 반올림 방식과 나이 셈법(만 나이 / 태어나자마자 1살로 세는 나이)이 달라서 대운 시작 나이가 1년쯤 차이 날 수 있어요.</p>
+  <p>대운은 월주 ${gzH(r.mg.s,r.mg.b)}에서 출발해 ${r.forward?'다음':'이전'} 갑자로 하나씩 이동해요.</p>
+  <div class="dy">${r.dys.map(d=>`<div class="${now>=d.age&&now<d.age+10?'now':''}">${d.age}세<b>${gzH(d.s,d.b)}</b>${tg(r.dg.s,d.s).n}</div>`).join('')}</div></div>`;
+}
+/* 궁합 */
+const HAP6=[[0,1],[2,11],[3,10],[4,9],[5,8],[6,7]],CHUNG=[[0,6],[1,7],[2,8],[3,9],[4,10],[5,11]];
+const SAM=[[8,0,4,'수'],[2,6,10,'화'],[5,9,1,'금'],[11,3,7,'목']];
+const inP=(ps,x,y)=>ps.some(([p,q])=>(p===x&&q===y)||(p===y&&q===x));
+function compatHTML(r1,a1,r2,a2){
+  const items=[];let sc=60;
+  const me=SE[r1.dg.s],o=SE[r2.dg.s],rel=mod(o-me,5);
+  const relTxt=['같은 오행 — 비슷한 기질이라 말이 잘 통하지만 고집이 부딪힐 수 있어요','내가 상대를 생해 줘요 — 내가 챙기고 베푸는 관계','내가 상대를 극해요 — 내가 이끄는 관계, 배려가 필요해요','상대가 나를 극해요 — 상대가 나를 다잡아 주는 관계','상대가 나를 생해 줘요 — 내가 도움을 받는 관계'][rel];
+  const p1=rel===0?8:(rel===1||rel===4)?14:-6;sc+=p1;items.push(['일간 오행',`${EK[me]} ↔ ${EK[o]}`,relTxt,p1]);
+  const hap=Math.abs(r1.dg.s-r2.dg.s)===5;if(hap){sc+=10;items.push(['천간합',`${ST[r1.dg.s]}·${ST[r2.dg.s]}`,'일간끼리 합(合)을 이뤄 서로 끌리는 힘이 강해요',10])}
+  const yb1=r1.yg.b,yb2=r2.yg.b,db1=r1.dg.b,db2=r2.dg.b;
+  if(inP(HAP6,db1,db2)){sc+=8;items.push(['일지 육합',`${BR[db1]}·${BR[db2]}`,'배우자 자리(일지)가 합 — 생활 궁합이 좋아요',8])}
+  if(inP(CHUNG,db1,db2)){sc-=8;items.push(['일지 충',`${BR[db1]}·${BR[db2]}`,'배우자 자리가 부딪혀요 — 생활 습관 조율이 필요해요',-8])}
+  if(inP(HAP6,yb1,yb2)){sc+=5;items.push(['띠 육합',`${ANI[yb1]}·${ANI[yb2]}띠`,'띠끼리 합 — 집안 분위기가 잘 어울려요',5])}
+  if(SAM.some(s=>s.includes(yb1)&&s.includes(yb2)&&yb1!==yb2)){sc+=5;items.push(['띠 삼합',`${ANI[yb1]}·${ANI[yb2]}띠`,'세 띠가 모여 한 오행을 이루는 삼합 관계예요',5])}
+  if(inP(CHUNG,yb1,yb2)){sc-=6;items.push(['띠 충',`${ANI[yb1]}·${ANI[yb2]}띠`,'띠끼리 정면으로 마주 봐요 — 서로 양보가 필요해요',-6])}
+  const w1=a1.el.indexOf(Math.min(...a1.el)),w2=a2.el.indexOf(Math.min(...a2.el));
+  if(a2.el[w1]>=2){sc+=6;items.push(['오행 보완',`내 ${EK[w1]} 부족`,`상대에게 ${EK[w1]} 기운이 ${a2.el[w1]}개 — 내 부족함을 채워 줘요`,6])}
+  if(a1.el[w2]>=2){sc+=6;items.push(['오행 보완',`상대 ${EK[w2]} 부족`,`나에게 ${EK[w2]} 기운이 ${a1.el[w2]}개 — 상대의 부족함을 채워 줘요`,6])}
+  sc=Math.max(20,Math.min(99,sc));
+  const word=sc>=85?'천생연분':sc>=72?'잘 맞는 사이':sc>=58?'노력하면 좋은 사이':'서로 다름을 배우는 사이';
+  return `<h2>💞 궁합 — 두 사주를 겹쳐 보기</h2><div class="card">
+  <div class="row" style="text-align:center"><div><b>나</b><br>${pillarHTML(r1)}</div></div>
+  <div class="row" style="text-align:center"><div><b>상대</b><br>${pillarHTML(r2)}</div></div>
+  <div class="score">${sc}점 · ${word}</div>
+  <table><tr><th>항목</th><th>글자</th><th>의미</th><th>점수</th></tr>${items.map(i=>`<tr><td>${i[0]}</td><td>${i[1]}</td><td style="text-align:left">${i[2]}</td><td>${i[3]>0?'+':''}${i[3]}</td></tr>`).join('')}</table>
+  <div class="formula">기본 60점 ${items.map(i=>(i[3]>0?'+ ':'− ')+Math.abs(i[3])).join(' ')} = ${sc}점 (20~99점 범위)</div>
+  <p class="note">궁합은 ① 두 사람 일간의 오행 관계 ② 천간합 ③ 일지(배우자 자리)·띠의 합과 충 ④ 서로 부족한 오행을 채워 주는지를 차례로 봐요. 점수 배점은 이해를 돕기 위한 운명 연구소의 단순화 모델이에요.</p></div>`;
+}
+
+/* ===== 원리 그림 ===== */
+function drawTheory(){
+  let h='<table><tr>'+Array.from({length:60},(_,n)=>`${n%10===0&&n?'</tr><tr>':''}<td title="${n}"><span style="color:${ECOL[SE[n%10]]}">${ST[n%10]}</span><span style="color:${ECOL[BE[n%12]]}">${BR[n%12]}</span><br><small>${n}</small></td>`).join('')+'</tr></table>';
+  $('#g60').innerHTML=h;
+  const cxy=i=>{const a=-Math.PI/2+i*2*Math.PI/5;return[150+100*Math.cos(a),150+100*Math.sin(a)]};
+  let s='<svg viewBox="0 0 300 300" width="300" height="300"><defs><marker id="ar" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#888"/></marker><marker id="ar2" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="M0,0 L8,4 L0,8 z" fill="#c0392b"/></marker></defs>';
+  for(let i=0;i<5;i++){const [x1,y1]=cxy(i),[x2,y2]=cxy((i+1)%5),[x3,y3]=cxy((i+2)%5);
+    const sh=(a,b,k)=>a+(b-a)*k;
+    s+=`<line x1="${sh(x1,x2,.2)}" y1="${sh(y1,y2,.2)}" x2="${sh(x1,x2,.8)}" y2="${sh(y1,y2,.8)}" stroke="#888" stroke-width="2.5" marker-end="url(#ar)"/>`;
+    s+=`<line x1="${sh(x1,x3,.22)}" y1="${sh(y1,y3,.22)}" x2="${sh(x1,x3,.78)}" y2="${sh(y1,y3,.78)}" stroke="#c0392b" stroke-width="1.6" stroke-dasharray="5 4" marker-end="url(#ar2)"/>`}
+  for(let i=0;i<5;i++){const [x,y]=cxy(i);s+=`<circle cx="${x}" cy="${y}" r="30" fill="${['#3fa66b','#e05a4a','#d2a33a','#9aa3b2','#4f7fd6'][i]}"/><text x="${x}" y="${y+7}" text-anchor="middle" font-size="20" fill="#fff">${EK[i]}</text>`}
+  s+='<text x="150" y="292" text-anchor="middle" font-size="12" fill="#666">회색 실선: 상생 · 빨간 점선: 상극</text></svg>';
+  $('#wx').innerHTML=s;
+}
+
+/* ===== 실행 ===== */
+function read(sfx){
+  const d=$('#d'+sfx).value;if(!d)return null;
+  const [y,m,dd]=d.split('-').map(Number),t=$('#t'+sfx).value,unk=sfx?!t:$('#unk').checked||!t;
+  const [h,mi]=unk?[12,0]:t.split(':').map(Number);
+  return{y,m,d:dd,h,mi,unk,cal:$('#cal'+sfx).value,male:sfx?$('#sex2').value==='m':document.querySelector('#sex .on').dataset.v==='m',corr:$('#corr').checked};
+}
+function run(){
+  try{
+    const i1=read('');if(!i1)return;
+    const r=compute(i1),a=analyze(r);
+    let html=`<h2>📜 나의 사주 원국</h2><div class="card">${pillarHTML(r)}
+      <p style="text-align:center">양력 ${r.birth.getFullYear()}.${r.birth.getMonth()+1}.${r.birth.getDate()} · 음력 ${r.lunar.getYear()}.${Math.abs(r.lunar.getMonth())}.${r.lunar.getDay()}${r.lunar.getMonth()<0?'(윤)':''} · ${ANI[r.yg.b]}띠</p></div>
+      <h2>🧮 계산 과정 — 네 기둥을 세우는 4단계</h2><div class="card">${stepYear(r)}${stepMonth(r)}${stepDay(r)}${stepHour(r)}</div>
+      ${elemHTML(r,a)}${tenHTML(r,a)}${daeunHTML(r)}`;
+    const i2=read('2');
+    if(i2){const r2=compute(i2),a2=analyze(r2);html+=compatHTML(r,a,r2,a2)}
+    $('#out').innerHTML=html;
+    $('#out').scrollIntoView({behavior:'smooth'});
+    try{localStorage.setItem('mr_last',JSON.stringify({d:$('#d').value,t:$('#t').value,cal:$('#cal').value}))}catch(e){}
+    postH();
+  }catch(e){$('#out').innerHTML=`<div class="card" style="color:#c0392b">⚠️ ${e.message}</div>`}
+}
+document.querySelectorAll('#sex button').forEach(b=>b.onclick=()=>{document.querySelectorAll('#sex button').forEach(x=>x.classList.toggle('on',x===b))});
+$('#go').onclick=run;
+drawTheory();
+/* 블로그에 iframe으로 넣었을 때 높이 자동 맞춤 */
+if(location.search.includes('embed=1'))document.body.classList.add('embed');
+function postH(){try{parent.postMessage({mrHeight:document.documentElement.scrollHeight},'*')}catch(e){}}
+window.addEventListener('load',postH);new ResizeObserver(postH).observe(document.body);
+</script>
+</body>
+</html>
