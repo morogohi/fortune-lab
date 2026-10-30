@@ -204,6 +204,33 @@
   .fate span{display:block;font-size:12px;color:var(--dim)}.fate b{font-size:16px}.fate small{display:block;color:var(--dim);font-size:12px}
   .fate .verdict{text-align:center;font-family:'Jua';font-size:18px;background:#ff8a3d33}.fate .verdict.ok{background:#5be08f33}
   @keyframes cut{0%{opacity:0;transform:scale(.4) rotate(-6deg)}14%{opacity:1;transform:scale(1.12) rotate(2deg)}22%{transform:scale(1)}80%{opacity:1}100%{opacity:0;transform:scale(1.05) translateY(-14px)}}
+
+  /* ===== v4: 상점·리포트·궁합·인생카드 ===== */
+  .trow{display:flex;gap:8px;margin-top:10px}.trow .ghost{margin:0}
+  #nyBanner{background:linear-gradient(90deg,#c0392b,#e67e22);border-radius:12px;padding:8px 14px;font-family:'Jua';margin-bottom:10px;font-size:15px}
+  .disclaim{font-size:11px;color:#8f84b5;margin-top:10px}
+  details.mate{background:#1b1530;border:1px solid #ffffff1c;border-radius:14px;padding:10px 12px;margin:10px 0}
+  details.mate summary{font-family:'Jua';font-size:15px;cursor:pointer;list-style:none}
+  details.mate summary small{display:block;font-family:'Gowun Dodum';font-size:11px;color:var(--dim)}
+  #compatBox{width:100%}
+  .compat{border-color:#ff9ecf66}.cmph{display:flex;justify-content:space-between;align-items:center;gap:6px;text-align:center}
+  .cmph span{flex:1;font-family:'Jua';font-size:15px}.cmph small{display:block;font-family:'Gowun Dodum';font-size:11px;color:var(--dim)}
+  .cmph b{font-family:'Jua';font-size:26px;color:#ff9ecf}.cmpw{text-align:center;font-family:'Jua';margin:6px 0;color:var(--hap)}.cmpn{font-size:13px;color:#e6dcf7;line-height:1.6}
+  #overlay{position:absolute;inset:0;background:#000c;display:none;align-items:flex-end;z-index:50}
+  #overlay.on{display:flex}
+  #osheet{width:100%;max-height:92%;overflow-y:auto;background:var(--card);border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);animation:sheet .3s ease-out}
+  #osheet h3{font-family:'Jua';font-size:22px;text-align:center;margin:2px 0 10px}
+  .shopitem{display:flex;gap:10px;align-items:center;background:var(--card2);border-radius:14px;padding:12px;margin:8px 0}
+  .shopitem .se{font-size:30px}.shopitem div{flex:1}.shopitem b{font-family:'Jua';font-size:16px}.shopitem small{display:block;color:var(--dim);font-size:12px;line-height:1.4}
+  .shopitem button{background:var(--accent);border-radius:12px;padding:9px 12px;font-size:14px;white-space:nowrap}
+  .shopitem button.own{background:#ffffff1c;color:var(--money)}
+  .obtn{display:block;width:100%;background:var(--card2);border-radius:14px;padding:13px;margin-top:8px;font-size:16px}
+  .obtn.pri{background:linear-gradient(180deg,#ff9d55,#ff6b2d)}
+  .lock{background:#ffcc4d14;border:1px dashed #ffcc4d66;border-radius:14px;padding:14px;text-align:center;margin-top:10px}
+  .lock b{font-family:'Jua';font-size:17px;display:block;margin-bottom:4px}.lock small{color:var(--dim);font-size:12px}
+  .dytbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}.dytbl th,.dytbl td{border-bottom:1px solid #ffffff14;padding:5px 3px;text-align:left;vertical-align:top}
+  .dytbl tr.on td{background:#ff8a3d22}
+  #cardImg{width:100%;border-radius:14px;display:block;margin:8px 0;box-shadow:0 8px 24px #0008}
 </style>
 </head>
 <body>
@@ -217,7 +244,9 @@
     <h1>프로젝트 80억</h1>
     <div id="counter">세계 인구 8,000,000,000명</div>
     <p>80억 명 중 한 사람으로 태어나<br>그 사람의 인생을 끝까지 살아보세요</p>
+    <div id="nyBanner" style="display:none">🧧 신년 운세 이벤트 · 프리미엄 사주 리포트 무료!</div>
     <button class="bigbtn" id="startBtn">🎲 탄생하기</button>
+    <div class="trow"><button class="ghost" id="myReportBtn">📜 내 사주 리포트</button><button class="ghost" id="shopBtn">🛍️ 상점</button></div>
     <div class="howto">
       <b>🎯 게임 목표</b>
       <div>① 생년월일로 <b>사주</b>를 뽑아 타고난 재능과 10년 대운이 정해져요</div>
@@ -227,6 +256,7 @@
     </div>
     <div id="karmaTag"></div>
     <button class="adbtn" id="adKarmaBtn" style="display:none"></button>
+    <div class="disclaim">※ 사주 풀이와 인생 결과는 재미로 보는 콘텐츠예요.</div>
     <div id="legal"><a href="privacy.html">개인정보 처리방침</a><a id="privBtn" style="display:none">광고 개인정보 설정</a></div>
     <div id="history"></div>
   </section>
@@ -251,6 +281,15 @@
       <label>이름 <small>(비우면 그 나라 이름으로 자동)</small>
         <input type="text" id="fName" maxlength="10" placeholder="예: 김민준">
       </label>
+      <details class="mate" id="mateBox"><summary>💞 궁합 모드 <small>함께할 사람의 생년월일을 넣으면 게임 속에서 만나요</small></summary>
+        <label>상대 이름<input type="text" id="mName" maxlength="10" placeholder="예: 김서연"></label>
+        <label>상대 생년월일<div class="row2"><input type="date" id="mDate" min="1900-01-01" max="2030-12-31"><select id="mCal"><option value="s">양력</option><option value="l">음력</option></select></div></label>
+        <label>상대 성별<div class="seg" id="mSex"><button data-v="f" class="on">👧 여자</button><button data-v="m">👦 남자</button></div></label>
+      </details>
+      <details class="mate" id="fateBox"><summary>🎛️ 운명 조작 팩 <small id="fateLock">🔒 상점에서 열기</small></summary>
+        <label>가정형편<select id="fCls"><option value="">🎲 랜덤</option></select></label>
+        <label>타고난 재능<select id="fTal"><option value="">🎲 랜덤</option></select></label>
+      </details>
       <label class="chk"><input type="checkbox" id="fRemember" checked> 다음에도 이 정보 기억하기</label>
       <div class="row2"><button class="ghost" id="fillRandom" type="button">🎲 칸 자동 채우기</button><button class="bigbtn sm" id="customBtn" type="button">🔮 이 사주로 태어나기</button></div>
       <div id="fErr"></div>
@@ -262,6 +301,7 @@
     <div id="rollTitle">당신이 태어날 곳은…</div>
     <div id="slots" style="width:100%"></div>
     <div id="sajuBox"></div>
+    <div id="compatBox"></div>
     <div id="bucketBox"></div>
     <div id="rollBtns">
       <button class="bigbtn" id="liveBtn">이 인생 살아보기 ▶</button>
@@ -291,16 +331,20 @@
   </section>
 
   <section id="end" class="screen"></section>
+
+  <div id="overlay"><div id="osheet"></div></div>
 </div>
 
 <script src="js/ad-config.js"></script>
 <script src="js/ads.js"></script>
+<script src="js/store.js"></script>
 <script src="lib/lunar.js"></script>
 <script src="js/saju-core.js"></script>
 <script src="js/saju.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/life2.js"></script>
 <script src="js/game.js"></script>
+<script src="js/biz.js"></script>
 
 </body>
 </html>

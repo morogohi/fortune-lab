@@ -80,7 +80,9 @@ window.Ads = (() => {
     catch (e) { rewardLoaded = false; notify(); setTimeout(preloadReward, 30000); }
   }
 
+  const noAds = () => !!(window.Store && Store.has('noads'));
   async function banner(on) {
+    if (noAds()) on = false;
     wantBanner = on;
     if (!ready || !ID.banner) return;
     try {
@@ -101,7 +103,7 @@ window.Ads = (() => {
   async function maybeInterstitial(done) {
     endings++;
     const gapOk = (Date.now() - lastInter) / 1000 >= (CFG.interstitialMinGapSec || 0);
-    if (!ready || !interLoaded || endings % (CFG.interstitialEveryNEndings || 2) !== 0 || !gapOk) { done && done(); return; }
+    if (noAds() || !ready || !interLoaded || endings % (CFG.interstitialEveryNEndings || 2) !== 0 || !gapOk) { done && done(); return; }
     let fired = false;
     const fin = () => { if (fired) return; fired = true; done && done(); };
     const h = await A.addListener('interstitialAdDismissed', () => { h.remove(); fin(); });
@@ -151,6 +153,19 @@ window.Native = (() => {
       if (native && C.Plugins.Share) { await C.Plugins.Share.share({ title: '프로젝트 80억', text }); return 'shared'; }
       if (navigator.share) { await navigator.share({ text }); return 'shared'; }
       await navigator.clipboard.writeText(text); return 'copied';
+    },
+    /* 인생 카드 이미지 저장·공유: 앱은 공유 시트, 웹은 공유(지원 시) 또는 다운로드 */
+    async shareImage(dataUrl, text, mode) {
+      const b64 = dataUrl.split(',')[1];
+      if (native && C.Plugins.Filesystem && C.Plugins.Share) {
+        const w = await C.Plugins.Filesystem.writeFile({ path: 'life-card.png', data: b64, directory: 'CACHE' });
+        await C.Plugins.Share.share({ title: '프로젝트 80억 인생 카드', text, files: [w.uri] });
+        return 'shared';
+      }
+      const blob = await (await fetch(dataUrl)).blob(), file = new File([blob], 'life-card.png', { type: 'image/png' });
+      if (mode === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return 'shared'; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'life-card.png'; document.body.appendChild(a); a.click(); a.remove();
+      return 'downloaded';
     },
     hideSplash() { if (native && C.Plugins.SplashScreen) C.Plugins.SplashScreen.hide().catch(() => {}); },
     statusBar() {

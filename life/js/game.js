@@ -86,10 +86,10 @@ function stageOf(a){
 let P=null;
 function newLife(opt={}){
   const c=(opt.country&&COUNTRIES.find(x=>x.n===opt.country))||wpick(COUNTRIES,x=>x.w);const T=TIER[c.t];
-  const ci=wpick([0,1,2,3,4],i=>T.cls[i]);const cl=CLASSES[ci];
+  const ci=opt.cls!=null?opt.cls:wpick([0,1,2,3,4],i=>T.cls[i]);const cl=CLASSES[ci];
   const male=opt.male!=null?opt.male:Math.random()<.5;
   const nm=NAMES[c.r];let name=pick(nm[male?0:1]);if(c.r==='kr')name=pick(nm[2])+name;
-  const tal=pick(TALENTS);
+  const tal=(opt.talent!=null&&TALENTS[opt.talent])||pick(TALENTS);
   const rural=ci<=2&&Math.random()<T.rural;
   P={country:c,tier:c.t,mult:T.mult,cls:ci,clsInfo:cl,rural,male,name,tal,
     age:0,hap:R(45,68)+cl.hap,hp:R(55,78)+T.hp,smart:R(20,50),look:R(25,60),bond:R(45,70)+cl.bond,
@@ -108,6 +108,7 @@ function newLife(opt={}){
   P.saju=Saju.analyze(P.birth,male);Saju.applyStats(P,P.saju);
   ['hap','hp','smart','look','bond'].forEach(k=>P[k]=clamp(P[k]));
   pickBucket(P);
+  if(opt.mate&&P.saju){P.mate={...opt.mate};P.mate.saju=Saju.analyze(opt.mate.birth,opt.mate.male);P.mate.c=Saju.compatPair(P.saju,P.mate.saju)}
 }
 
 /* ================= 효과/로그 ================= */
@@ -357,7 +358,7 @@ function ageUp(){
   if((P.age===12||P.age===18)&&P.inSchool){const t=topSubjects();log(`📋 성적표: ${t.map(x=>`${x.e}${x.n} ${P.sub[x.k]}`).join(' · ')}`,'good');say(`${t[0].n}가 제일 자신 있어!`)}
   const pool=EVENTS.filter(e=>e.c(P)&&!(e.once&&P.seen.has(e.id)));
   const must=pool.filter(e=>e.once&&['firstword','doljabi','school7','school14','college','army','letter','grand'].includes(e.id));
-  const sys=(P.age===16&&!P.ideal)?idealEvent():(yearlyCareer()||yearlyRomance()||kidEv);
+  const sys=(P.age===16&&!P.ideal)?idealEvent():(mateEvent()||yearlyCareer()||yearlyRomance()||kidEv);
   const ev=must[0]||sys||(Math.random()<.55&&pool.length?pick(pool.filter(e=>!(e.id==='malaria'&&Math.random()<.6))):null);
   if(ev){if(ev.id)P.seen.add(ev.id);showModal(ev)}
   else log(pick(['평범한 한 해가 지나갔다','별일 없이 지나갔다','시간이 쏜살같다','조용하지만 소중한 한 해']));
@@ -421,7 +422,7 @@ function die(reason){
   snapAlbum(true);
   const st=lifeStory(avg);
   const moments=pickMoments();
-  const summary=[`🌏 프로젝트 80억 — 인생 경험 요약`,``,`${P.country.f} ${P.country.n} · ${P.rural?'농촌':'도시'} · ${P.clsInfo.n}의 ${P.male?'아들':'딸'} ${P.name} (향년 ${P.age}세)`,`「${title}」  등급 ${grade} · ${score}점`,P.saju?`🔮 사주 ${P.saju.pillarTxt.join(' ')} · ${P.saju.dm.nm} 일간`:'',``,`🎯 버킷리스트 ${bk}/3`,...P.bucket.map(x=>`${x.done?'✅':'⬜'} ${x.e} ${x.t}`),``,...(fr?[`📜 사주 vs 실제: ${fr.pred} → ${fr.real} (${fr.verdict})`,``]:[]),
+  const summary=[`🌏 프로젝트 80억 — 인생 경험 요약`,``,`${P.country.f} ${P.country.n} · ${P.rural?'농촌':'도시'} · ${P.clsInfo.n}의 ${P.male?'아들':'딸'} ${P.name} (향년 ${P.age}세)`,`「${title}」  등급 ${grade} · ${score}점`,P.saju?`🔮 사주 ${P.saju.pillarTxt.join(' ')} · ${P.saju.dm.nm} 일간`:'',``,`🎯 버킷리스트 ${bk}/3`,...P.bucket.map(x=>`${x.done?'✅':'⬜'} ${x.e} ${x.t}`),``,...(fr?[`📜 사주 vs 실제: ${fr.pred} → ${fr.real} (${fr.verdict})`,``]:[]),...(P.mate?[mateLine(),``]:[]),
     ...st.paras,``,`⭐ 결정적 순간`,...moments.map(m=>`· ${m.a}살 ${m.e} ${m.t} → ${m.c}${m.r?' ('+m.r+')':''}`),``,`💡 이 인생이 남긴 것`,...st.lessons.map(l=>'· '+l),``,`💌 ${st.closing}`,``,[...P.badges].map(b=>'#'+b.replace(/\s/g,'')).join(' ')].join('\n');
   setTimeout(()=>Ads.maybeInterstitial(()=>{
     $('#end').innerHTML=`
@@ -431,6 +432,9 @@ function die(reason){
       <div id="grade" style="color:${{S:'#ffcc4d',A:'#5be08f',B:'#5ec8ff',C:'#c58bff',D:'#ff6b81'}[grade]}">${grade}</div>
       <div id="lifeTitle">「${title}」</div>
       <div id="epitaph">${epi}</div>
+      ${P.mate?`<div class="box" style="text-align:center;font-size:15px">${mateLine()}</div>`:''}
+      <div class="box"><div class="jua sec">📸 쇼츠용 인생 카드</div><img id="cardImg" alt="인생 카드">
+        <div class="row2"><button class="ghost" id="cardSave" style="flex:1;margin:0">💾 저장</button><button class="ghost" id="cardShare" style="flex:1;margin:0">📤 공유</button></div></div>
 
       <div class="box"><div class="jua sec">📸 인생 앨범</div>
         <div id="album">${P.album.map((s,i)=>`<div class="ph"><canvas data-i="${i}"></canvas><span>${s.a}살 · ${s.label}</span><small>${s.cap}</small></div>`).join('')}</div></div>
@@ -472,9 +476,11 @@ function die(reason){
     $('#homeBtn').onclick=()=>{renderTitle();show('title')};
     $('#copyBtn').onclick=async()=>{try{const r=await Native.share(summary);if(r==='copied')$('#copyBtn').textContent='✅ 복사됨'}catch(e){}};
     show('end');$('#end').scrollTop=0;drawGraph();
+    $('#cardSave').onclick=()=>shareCard('save');$('#cardShare').onclick=()=>shareCard('share');
     const last=P.album[P.album.length-1];
     drawSnapTo($('#portrait'),last,true);
     document.querySelectorAll('#album canvas').forEach(c=>drawSnapTo(c,P.album[+c.dataset.i]));
+    renderLifeCard({grade,title,score,fr});
   }),1400);
 }
 
@@ -607,8 +613,14 @@ function initSetup(){
     const [y,m,d]=v.split('-').map(Number),t=$('#fTime').value,sx=document.querySelector('#fSex .on').dataset.v;
     const birth={cal:$('#fCal').value,y,m,d,hh:t?+t.split(':')[0]:12,mm:t?+t.split(':')[1]:0,unk:!t};
     if(Saju.ok()&&!Saju.analyze(birth,true)){$('#fErr').textContent='존재하지 않는 날짜예요 (음력이면 날짜를 확인해 주세요)';Snd.sfx('bad');return}
-    if($('#fRemember').checked)store.set('p8b_me',{date:v,cal:birth.cal,time:t,country:$('#fCountry').value,sex:sx,name:$('#fName').value.trim()});
-    setupOpt={birth,male:sx==='r'?null:sx==='m',country:$('#fCountry').value||null,name:$('#fName').value.trim()||null};
+    let mate=null;const mv=$('#mDate').value,mn=$('#mName').value.trim();
+    if(mv||mn){if(!mv){$('#fErr').textContent='궁합 모드: 상대 생년월일을 입력해 주세요';Snd.sfx('bad');return}
+      const [my,mm2,md]=mv.split('-').map(Number),msx=document.querySelector('#mSex .on').dataset.v;
+      mate={name:mn||'운명의 상대',male:msx==='m',birth:{cal:$('#mCal').value,y:my,m:mm2,d:md,hh:12,mm:0,unk:true},date:mv,cal:$('#mCal').value,sex:msx}}
+    if($('#fRemember').checked)store.set('p8b_me',{date:v,cal:birth.cal,time:t,country:$('#fCountry').value,sex:sx,name:$('#fName').value.trim(),mate:mate?{name:mate.name,date:mate.date,cal:mate.cal,sex:mate.sex}:null});
+    const fate=Store.has('fate');
+    setupOpt={birth,male:sx==='r'?null:sx==='m',country:$('#fCountry').value||null,name:$('#fName').value.trim()||null,mate,
+      cls:fate&&$('#fCls').value!==''?+$('#fCls').value:null,talent:fate&&$('#fTal').value!==''?+$('#fTal').value:null};
     Snd.sfx('reveal');startRoll();
   };
   $('#setupBack').onclick=()=>{renderTitle();show('title')};
@@ -626,7 +638,8 @@ function startRoll(){
   ];
   const pools=[COUNTRIES.map(x=>x.f+' '+x.n),['🌾 농촌','🏙️ 도시'],CLASSES.map(x=>x.e+' '+x.n),['👦 ???','👧 ???'],['19??.?.?'],TALENTS.map(t=>t.e+' '+t.n)];
   $('#slots').innerHTML=items.map(([a])=>`<div class="slot"><span>${a}</span><b>?</b></div>`).join('');
-  $('#sajuBox').className='';$('#bucketBox').className='';
+  $('#sajuBox').className='';$('#bucketBox').className='';$('#compatBox').className='';
+  $('#compatBox').innerHTML=P.mate&&P.mate.saju?`<div class="jua" style="margin-top:12px">💞 ${P.mate.name}와(과)의 사주 궁합</div>${Saju.compatHTML(P.name,P.saju,P.mate.name,P.mate.saju)}<p class="sjnote">게임 속 어딘가에서 ${P.mate.name}을(를) 만나게 돼요.</p>`:'';
   $('#sajuBox').innerHTML=P.saju?`<div class="jua" style="margin-top:12px">🔮 ${P.name}의 사주</div>${Saju.summaryHTML(P.saju)}`:'';
   $('#bucketBox').innerHTML=`<div class="bucket"><b>🎯 이번 생의 버킷리스트</b>${P.bucket.map(x=>`<div>${x.e} ${x.t}${x.saju?' <em>🔮 사주 추천</em>':''}</div>`).join('')}</div>`;
   const rb=$('#rollBtns');rb.style.opacity=0;rb.style.pointerEvents='none';
@@ -637,7 +650,7 @@ function startRoll(){
     const iv=setInterval(()=>{el.textContent=pick(pools[i]);Snd.sfx('tick');if(++n>(i===0?14:8)){clearInterval(iv);el.innerHTML=items[i][1]+(items[i][2]?`<em>${items[i][2]}</em>`:'');buzz(12);Snd.sfx('reveal')}},60);
   },i*560));
   const tEnd=items.length*560+500;
-  setTimeout(()=>{$('#sajuBox').className='show'},tEnd);
+  setTimeout(()=>{$('#sajuBox').className='show';$('#compatBox').className='show'},tEnd);
   setTimeout(()=>{$('#bucketBox').className='show';rb.style.opacity=1;rb.style.pointerEvents='auto'},tEnd+500);
 }
 function beginLife(){
@@ -657,7 +670,7 @@ function beginLife(){
 }
 function showSaju(){
   if(!P||!P.saju){log('사주 정보가 없어요');return}
-  showModal({e:'📜',t:`${P.name}의 사주`,html:()=>Saju.fullHTML(P.saju,P.age),ch:[{t:'닫기',f:()=>{}}]});
+  showReport(P.name,P.saju,P.age,true);
 }
 function showBucket(){
   showModal({e:'🎯',t:'버킷리스트',html:()=>`<div class="bucket">${P.bucket.map(x=>`<div class="${x.done?'done':''}">${x.done?'✅':'⬜'} ${x.e} ${x.t}${x.done?` <em>${x.age}살 달성</em>`:''}${x.saju?' <em>🔮</em>':''}</div>`).join('')}</div><p style="margin-top:10px">하나 이룰 때마다 카르마 +10 ✨</p>`,ch:[{t:'닫기',f:()=>{}}]});
@@ -1078,14 +1091,14 @@ function drawSeason(t,gy,dt){
     else{cx.fillStyle=`rgba(255,240,150,${.3+.3*Math.sin(t*3+p.ph)})`;cx.beginPath();cx.arc(p.x,p.y,1.6,0,7);cx.fill()}});
 }
 /* 스냅샷(앨범/초상) 그리기 */
-function drawSnapTo(canvas,snap,big){
-  const d=Math.min(2,devicePixelRatio||1),r=canvas.getBoundingClientRect();
+function drawSnapTo(canvas,snap,big,size){
+  const d=size?1:Math.min(2,devicePixelRatio||1),r=size?{width:size.w,height:size.h}:canvas.getBoundingClientRect();
   canvas.width=r.width*d;canvas.height=r.height*d;
   const sv=[cx,W,H];cx=canvas.getContext('2d');cx.setTransform(d,0,0,d,0,0);W=r.width;H=r.height*1.15;
   const S=SCENES[snap.scene]||SCENES.play;const ch=r.height;
   const g=cx.createLinearGradient(0,0,0,ch);g.addColorStop(0,S.sky[0]);g.addColorStop(1,S.sky[1]);cx.fillStyle=g;cx.fillRect(0,0,W,ch);
   const gy=ch*0.86;cx.fillStyle=S.ground;cx.fillRect(0,gy,W,ch-gy);
-  drawPerson(W/2,gy,snap.a,P.male,snap.a*.37,charOpts(snap,snap.pose||(snap.dead?'idle':'idle'),0),big?1:0.95);
+  drawPerson(W/2,gy,snap.a,P.male,snap.a*.37,charOpts(snap,snap.pose||'idle',0),(big?1:0.95)*(size&&size.k||1));
   [cx,W,H]=sv;
 }
 function hut(x,gy,s){

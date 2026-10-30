@@ -109,5 +109,53 @@ window.Saju = (() => {
       <p class="sjnote">※ 운명 연구소 만세력 엔진으로 계산했어요. 게임 속 재미를 위한 풀이입니다.</p>`;
   }
 
-  return { ok, randomBirth, analyze, applyStats, luckAt, compat, stemName, summaryHTML, fullHTML, GRPN, GRPE, ELSUB, ELE, ELC };
+
+  /* ---------- 프리미엄 사주 리포트 ---------- */
+  function premiumHTML(a, age, year) {
+    const yg = S.yearGz(year), ts = S.tg10(a.me, yg.s), tb = S.tg10(a.me, S.HID[yg.b]), sx = S.SEUN[ts.g], sb = S.SEUN[tb.g];
+    const L = luckAt(a, age);
+    const dyRows = a.dy.slice(0, 8).map(d => `<tr class="${L && L.start === d.age ? 'on' : ''}"><td>${d.age}세~</td><td><b>${d.txt}</b></td><td>${GRPE[d.g]} ${GRPN[d.g]}</td><td>${GRPDESC[d.g]}</td></tr>`).join('');
+    return `${summaryHTML(a)}
+      <div class="sjnote" style="text-align:center;margin:6px 0">🔓 프리미엄 사주 리포트</div>
+      <div class="sjtxt">
+        <h4>🗓️ ${year}년 운세 · 세운 ${S.STK[yg.s]}${S.BRK[yg.b]}(${S.ST[yg.s]}${S.BR[yg.b]}) · ${ts.n}</h4>
+        <p><b>총운</b> ${sx.총운}</p><p><b>일·직업</b> ${sx.직업}</p><p><b>재물</b> ${sx.재물}</p><p><b>연애</b> ${sx.연애}</p><p><b>건강</b> ${sx.건강}</p>
+        <p><b>하반기(${S.BRK[yg.b]} · ${tb.n})</b> ${sb.총운}</p>
+        <h4>📅 이번 달 한마디</h4><p>${S.WOL[S.tg10(a.me, (yg.s + new Date().getMonth()) % 10).g]}</p>
+        <h4>🔮 10년 대운 흐름</h4>
+        <table class="dytbl"><tr><th>시기</th><th>대운</th><th>기운</th><th>풀이</th></tr>${dyRows}</table>
+        <h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
+        <h4>💕 연애</h4><p>${a.dm.연애}</p><h4>💰 재물</h4><p>${a.dm.재물}</p><h4>🩺 건강</h4><p>${a.dm.건강}</p>
+        <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p>
+        <h4>🍀 개운법</h4><p>${a.dm.개운} · 부족한 기운 ${S.EK[a.weak]}을(를) 채워 주세요.</p>
+      </div>
+      <p class="sjnote">※ 사주 풀이는 재미로 보는 콘텐츠예요. 중요한 결정은 스스로 판단하세요.</p>`;
+  }
+
+  /* ---------- 두 사람 궁합 (실제 사주끼리) ---------- */
+  const HAP6 = [[0, 1], [2, 11], [3, 10], [4, 9], [5, 8], [6, 7]];
+  const CHUNG = [[0, 6], [1, 7], [2, 8], [3, 9], [4, 10], [5, 11]];
+  const inPairs = (ps, x, y) => ps.some(([p, q]) => (p === x && q === y) || (p === y && q === x));
+  function compatPair(a, b) {
+    if (!a || !b) return null;
+    const me = S.SE[a.me], o = S.SE[b.me], r = S.mod(o - me, 5);
+    let sc = r === 0 ? 70 : (r === 1 || r === 4) ? 84 : 52;
+    const notes = [];
+    notes.push(r === 0 ? '같은 기운끼리라 말이 잘 통해요' : (r === 1 || r === 4) ? '서로를 살려 주는 상생 관계예요' : '부딪히며 성장하는 상극 관계예요');
+    if (S.SE[a.me] % 1 === 0 && Math.abs(a.me - b.me) === 5) { sc += 8; notes.push('일간이 합을 이뤄 끌림이 강해요'); }
+    if (inPairs(HAP6, a.p.y.b, b.p.y.b)) { sc += 6; notes.push(`${a.ddi}띠와 ${b.ddi}띠는 육합`); }
+    if (inPairs(CHUNG, a.p.y.b, b.p.y.b)) { sc -= 8; notes.push(`${a.ddi}띠와 ${b.ddi}띠는 충 — 양보가 필요해요`); }
+    if (b.el[a.weak] >= 2) { sc += 5; notes.push(`내게 부족한 ${S.EK[a.weak]} 기운을 상대가 채워 줘요`); }
+    if (a.el[b.weak] >= 2) { sc += 5; notes.push(`상대에게 부족한 ${S.EK[b.weak]} 기운을 내가 채워 줘요`); }
+    sc = Math.max(25, Math.min(99, sc));
+    const word = sc >= 85 ? '천생연분' : sc >= 72 ? '잘 맞는 사이' : sc >= 58 ? '노력하면 좋은 사이' : '서로 다름을 배우는 사이';
+    return { score: sc, word, notes };
+  }
+  function compatHTML(nameA, a, nameB, b) {
+    const c = compatPair(a, b); if (!c) return '';
+    return `<div class="sajucard compat"><div class="cmph"><span>${nameA}<small>${a.dm.nm} · ${a.ddi}띠</small></span><b>💞 ${c.score}%</b><span>${nameB}<small>${b.dm.nm} · ${b.ddi}띠</small></span></div>
+      <div class="cmpw">${c.word}</div>${c.notes.map(n => `<div class="cmpn">· ${n}</div>`).join('')}</div>`;
+  }
+
+  return { premiumHTML, compatPair, compatHTML, ok, randomBirth, analyze, applyStats, luckAt, compat, stemName, summaryHTML, fullHTML, GRPN, GRPE, ELSUB, ELE, ELC };
 })();
