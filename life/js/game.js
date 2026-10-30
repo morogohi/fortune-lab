@@ -471,6 +471,7 @@ function die(reason){
       <button class="adbtn" id="adKarmaBtn2" style="display:none"></button>
       <button class="bigbtn" id="againBtn" style="margin:8px 0">🎲 다른 인생 체험하기</button>
       <div style="display:flex;gap:8px"><button class="ghost" id="copyBtn">📤 인생 요약 공유하기</button><button class="ghost" id="homeBtn">처음으로</button></div>
+      <div id="webAdEnd" class="webad"></div>
       <div style="height:24px"></div>`;
     $('#againBtn').onclick=startRoll;
     $('#homeBtn').onclick=()=>{renderTitle();show('title')};
@@ -583,6 +584,7 @@ const MOOD_OF={title:'title',setup:'title',roll:'roll',end:'ending'};
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
   Ads.banner(id!=='game');refreshAdUI();
+  if(window.WebAds&&!Store.has('noads')){if(id==='title')WebAds.banner('webAdTitle');if(id==='end')setTimeout(()=>WebAds.banner('webAdEnd'),1600)}
   Snd.mood(id==='game'&&P?stageOf(P.age).k:(MOOD_OF[id]||'title'));
   const sb=$('#sndbar');if(id==='game'){$('#stageWrap').appendChild(sb);sb.classList.add('ingame')}else{$('#app').appendChild(sb);sb.classList.remove('ingame')}
 }

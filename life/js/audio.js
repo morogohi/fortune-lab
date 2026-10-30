@@ -127,5 +127,6 @@ window.Snd = (() => {
     if (ac) { if (k === 'bgm') bgmBus.gain.value = S.bgm ? .32 : 0; else sfxBus.gain.value = S.sfx ? .55 : 0; }
     return S[k];
   }
-  return { mood: setMood, sfx, toggle, get on() { return S; } };
+  function mute(m) { if (master) master.gain.value = m ? 0 : .9; }
+  return { mood: setMood, sfx, toggle, mute, get on() { return S; } };
 })();

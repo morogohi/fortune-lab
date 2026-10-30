@@ -230,6 +230,8 @@
   .lock b{font-family:'Jua';font-size:17px;display:block;margin-bottom:4px}.lock small{color:var(--dim);font-size:12px}
   .dytbl{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}.dytbl th,.dytbl td{border-bottom:1px solid #ffffff14;padding:5px 3px;text-align:left;vertical-align:top}
   .dytbl tr.on td{background:#ff8a3d22}
+  .webad{display:none;width:100%;max-width:400px;min-height:60px;margin:22px auto 8px;text-align:center}
+  .webad .adlabel{font-size:10px;color:#8f84b5;margin-bottom:2px}
   #cardImg{width:100%;border-radius:14px;display:block;margin:8px 0;box-shadow:0 8px 24px #0008}
 </style>
 </head>
@@ -259,6 +261,7 @@
     <div class="disclaim">※ 사주 풀이와 인생 결과는 재미로 보는 콘텐츠예요.</div>
     <div id="legal"><a href="privacy.html">개인정보 처리방침</a><a id="privBtn" style="display:none">광고 개인정보 설정</a></div>
     <div id="history"></div>
+    <div id="webAdTitle" class="webad"></div>
   </section>
 
   <section id="setup" class="screen">
@@ -336,6 +339,7 @@
 </div>
 
 <script src="js/ad-config.js"></script>
+<script src="js/webads.js"></script>
 <script src="js/ads.js"></script>
 <script src="js/store.js"></script>
 <script src="lib/lunar.js"></script>

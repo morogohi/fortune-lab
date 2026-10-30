@@ -39,7 +39,7 @@ window.Ads = (() => {
   }
 
   async function init() {
-    if (!native) return;
+    if (!native) { if (window.WebAds && WebAds.on) { WebAds.load(); WebAds.onChange(notify); notify(); if (!noAds()) WebAds.banner('webAdTitle'); } return; }
     try {
       // 1) 광고 동의(UMP) — 유럽 등 동의가 필요한 지역에서 동의 창 표시
       let ci = await A.requestConsentInfo();
@@ -102,6 +102,11 @@ window.Ads = (() => {
   /* 엔딩으로 넘어갈 때 호출. 광고가 닫히면 done() 실행 (광고를 안 띄우면 바로 실행) */
   async function maybeInterstitial(done) {
     endings++;
+    if (!native) {
+      const gapOk0 = (Date.now() - lastInter) / 1000 >= (CFG.interstitialMinGapSec || 0);
+      if (noAds() || !window.WebAds || !WebAds.on || endings % (CFG.interstitialEveryNEndings || 2) !== 0 || !gapOk0) { done && done(); return; }
+      lastInter = Date.now(); WebAds.interstitial(done); return;
+    }
     const gapOk = (Date.now() - lastInter) / 1000 >= (CFG.interstitialMinGapSec || 0);
     if (noAds() || !ready || !interLoaded || endings % (CFG.interstitialEveryNEndings || 2) !== 0 || !gapOk) { done && done(); return; }
     let fired = false;
@@ -112,10 +117,14 @@ window.Ads = (() => {
     setTimeout(fin, 60000);
   }
 
-  function canReward() { return ready && rewardLoaded && rewardsLeft() > 0; }
+  function canReward() {
+    if (!native) return !!(window.WebAds && WebAds.on && WebAds.canReward() && rewardsLeft() > 0);
+    return ready && rewardLoaded && rewardsLeft() > 0;
+  }
   /* cb(보상받음:true/false) — 광고가 닫힐 때 호출 */
   async function showReward(onGranted) {
     if (!canReward()) { onGranted && onGranted(false); return false; }
+    if (!native) { WebAds.showReward(got => { if (got) countReward(); onGranted && onGranted(got); notify(); }); return true; }
     rewardCb = onGranted; rewardGot = false; rewardLoaded = false; notify();
     try { await A.showRewardVideoAd(); } catch (e) { finishReward(); }
     return true;
