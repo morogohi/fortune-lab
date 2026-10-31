@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>사주 바람기 테스트 · 운명 연구소</title>
+<meta name="description" content="생년월일시로 보는 사주 바람기 지수. 도화살·홍염살·배우자궁으로 알아보는 나의 연애 유형과 올해 이성운.">
+<meta property="og:title" content="사주 바람기 테스트 · 운명 연구소">
+<meta property="og:description" content="내 사주에 도화살이 있을까? 바람기 지수와 연애 유형, 연인과의 관계 안정도까지.">
+<meta name="theme-color" content="#2a1033">
+<link href="../life/fonts/fonts.css" rel="stylesheet">
+<style>
+:root{--bg:#1d0b24;--card:#2c1436;--card2:#381a45;--ink:#fbeef6;--sub:#cfb3c8;--pink:#ff6fa5;--gold:#ffc76b;--line:#4d2a5a;--ok:#7fd6a8}
+*{box-sizing:border-box}
+html,body{margin:0;background:radial-gradient(120% 60% at 50% 0,#4a1550 0,var(--bg) 60%) fixed,var(--bg);color:var(--ink);font-family:"Gowun Dodum",system-ui,-apple-system,"Apple SD Gothic Neo","Malgun Gothic",sans-serif;line-height:1.6}
+.wrap{max-width:520px;margin:0 auto;padding:22px 16px calc(40px + env(safe-area-inset-bottom))}
+h1,h2,h3,.jua{font-family:"Jua","Gowun Dodum",sans-serif;font-weight:400;letter-spacing:-.2px}
+header{text-align:center;margin:10px 0 20px}
+header .petal{font-size:46px;line-height:1;filter:drop-shadow(0 6px 18px #ff6fa577)}
+header h1{font-size:30px;margin:8px 0 4px}
+header p{color:var(--sub);margin:0;font-size:15px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin:14px 0}
+label{display:block;font-size:14px;color:var(--sub);margin:12px 0 6px}
+input,select{width:100%;font:inherit;font-size:16px;color:var(--ink);background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:12px}
+input:focus,select:focus{outline:2px solid var(--pink);border-color:transparent}
+.row{display:flex;gap:8px}.row>*{flex:1}
+.seg{display:flex;background:var(--card2);border:1px solid var(--line);border-radius:12px;padding:4px;gap:4px}
+.seg button{flex:1;border:0;background:transparent;color:var(--sub);font:inherit;font-size:15px;padding:9px 0;border-radius:9px;cursor:pointer}
+.seg button.on{background:var(--pink);color:#2a0a1d;font-weight:700}
+.chk{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:14px;color:var(--sub)}
+.chk input{width:20px;height:20px;accent-color:var(--pink)}
+.btn{display:block;width:100%;border:0;border-radius:16px;padding:16px;font:inherit;font-family:"Jua",sans-serif;font-size:20px;color:#2a0a1d;background:linear-gradient(135deg,#ff8db8,#ff5d93);box-shadow:0 10px 26px #ff5d9355;cursor:pointer;margin-top:18px}
+.btn.ghost{background:transparent;color:var(--ink);border:1px solid var(--line);box-shadow:none;font-size:17px;padding:13px}
+.err{color:#ff9c9c;font-size:14px;margin-top:10px;min-height:1em}
+.toggle{display:flex;justify-content:space-between;align-items:center;cursor:pointer;font-family:"Jua",sans-serif;font-size:18px}
+.toggle small{font-family:"Gowun Dodum";color:var(--sub);font-size:13px}
+#partnerBox{margin-top:6px}
+/* 결과 */
+#result{display:none}
+.hero{text-align:center;padding:24px 18px}
+.gauge{position:relative;width:210px;height:210px;margin:6px auto 4px}
+.gauge svg{transform:rotate(-90deg)}
+.gauge .num{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center}
+.gauge b{font-family:"Jua";font-size:58px;line-height:1}
+.gauge span{color:var(--sub);font-size:13px}
+.type{font-family:"Jua";font-size:27px;margin:8px 0 4px}
+.type small{display:block;font-size:14px;color:var(--gold);font-family:"Gowun Dodum"}
+.hero p{margin:10px 0 0;color:var(--ink)}
+.pill{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;text-align:center;margin-top:12px}
+.pill div{background:var(--card2);border-radius:12px;padding:8px 0}
+.pill i{display:block;font-style:normal;font-size:12px;color:var(--sub)}
+.pill b{font-size:22px;font-weight:400;font-family:serif}
+.pill em{display:block;font-style:normal;font-size:12px;color:var(--sub)}
+h2{font-size:21px;margin:0 0 10px}
+.fx{display:flex;gap:10px;padding:10px 0;border-top:1px dashed var(--line)}
+.fx:first-of-type{border-top:0}
+.fx .pt{flex:none;width:46px;text-align:center;font-family:"Jua";font-size:16px;border-radius:10px;padding:3px 0;height:fit-content}
+.fx .pt.up{background:#ff6fa533;color:var(--pink)}.fx .pt.dn{background:#7fd6a833;color:var(--ok)}
+.fx b{font-weight:700}
+.fx p{margin:2px 0 0;font-size:15px;color:var(--sub)}
+.yr{display:flex;gap:10px;align-items:flex-start;padding:10px 0;border-top:1px dashed var(--line)}
+.yr:first-of-type{border-top:0}
+.tag{flex:none;font-size:13px;border-radius:999px;padding:3px 10px;font-weight:700}
+.tag.주의{background:#ff6fa5;color:#2a0a1d}.tag.설렘{background:var(--gold);color:#2a1a00}.tag.안정{background:var(--ok);color:#06281a}
+ul.tips{margin:0;padding-left:20px}ul.tips li{margin:6px 0}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:8px;text-align:center;margin-bottom:10px}
+.cmp div{background:var(--card2);border-radius:14px;padding:12px 6px}
+.cmp b{font-family:"Jua";font-size:34px;display:block;line-height:1.1}
+.bar{height:12px;background:var(--card2);border-radius:99px;overflow:hidden;margin:6px 0 10px}
+.bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--pink));border-radius:99px}
+.note{font-size:12.5px;color:var(--sub);line-height:1.55}
+.label{display:inline-block;font-size:11.5px;color:var(--gold);border:1px solid #ffc76b66;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:2px;font-family:"Gowun Dodum"}
+footer{text-align:center;margin-top:26px}
+footer a{color:var(--sub)}
+.toast{position:fixed;left:50%;bottom:30px;transform:translateX(-50%);background:#000c;color:#fff;padding:10px 18px;border-radius:999px;font-size:14px;opacity:0;transition:.3s;pointer-events:none}
+.toast.on{opacity:1}
+@media (prefers-reduced-motion:no-preference){.pop{animation:pop .5s ease both}@keyframes pop{from{opacity:0;transform:translateY(12px)}}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="petal">🌸</div>
+    <h1>사주 바람기 테스트</h1>
+    <p>도화살·홍염살·배우자궁으로 보는 나의 연애 체질</p>
+  </header>
+
+  <section id="form">
+    <div class="card">
+      <div class="toggle jua">나의 사주</div>
+      <div id="me"></div>
+    </div>
+    <div class="card">
+      <div class="toggle" id="ptoggle"><span>💑 연인과 함께 보기</span><small id="ptxt">선택 · 눌러서 열기</small></div>
+      <div id="partnerBox" hidden><div id="you"></div></div>
+    </div>
+    <div class="err" id="err" role="alert"></div>
+    <button class="btn" id="go">바람기 지수 확인하기</button>
+    <p class="note" style="text-align:center;margin-top:12px">입력한 생년월일은 이 기기 화면 안에서만 계산하고, 어디에도 저장하거나 보내지 않습니다.</p>
+  </section>
+
+  <section id="result" aria-live="polite"></section>
+
+  <footer>
+    <p class="note">재미로 보는 콘텐츠입니다. 사주는 성향을 비춰 보는 거울일 뿐, 실제 행동을 단정하지 않습니다.<br>상대를 의심하거나 추궁하는 근거로 쓰지 마세요.</p>
+    <p class="note"><a href="../">운명 연구소 홈</a> · <a href="../life/">프로젝트 80억</a></p>
+  </footer>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="../life/lib/lunar.js"></script>
+<script src="../life/js/saju-core.js"></script>
+<script src="baram.js"></script>
+<script>
+(() => {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+
+  // 입력 묶음 (나 / 연인 공용)
+  function personForm(root, pre, title) {
+    root.innerHTML = `
+      <label for="${pre}name">${title} (선택)</label>
+      <input id="${pre}name" maxlength="10" placeholder="결과에만 표시돼요" autocomplete="off">
+      <label>성별</label>
+      <div class="seg" data-k="${pre}g"><button type="button" data-v="m">남성</button><button type="button" data-v="f">여성</button></div>
+      <label>달력</label>
+      <div class="seg" data-k="${pre}cal"><button type="button" data-v="s" class="on">양력</button><button type="button" data-v="l">음력</button><button type="button" data-v="ll">음력 윤달</button></div>
+      <label for="${pre}date">생년월일</label>
+      <input id="${pre}date" type="date" min="1920-01-01" max="2015-12-31" value="">
+      <label for="${pre}time">태어난 시각</label>
+      <input id="${pre}time" type="time">
+      <label class="chk"><input type="checkbox" id="${pre}unk"> 태어난 시각을 몰라요</label>`;
+    root.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
+      const b = e.target.closest('button'); if (!b) return;
+      seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+    }));
+    $(pre + 'unk').addEventListener('change', e => { $(pre + 'time').disabled = e.target.checked; });
+  }
+  const segVal = k => { const b = document.querySelector(`.seg[data-k="${k}"] button.on`); return b ? b.dataset.v : null; };
+  personForm($('me'), 'a', '이름');
+  personForm($('you'), 'b', '연인 이름');
+
+  let pOn = false;
+  $('ptoggle').addEventListener('click', () => {
+    pOn = !pOn; $('partnerBox').hidden = !pOn;
+    $('ptxt').textContent = pOn ? '켜짐 · 눌러서 닫기' : '선택 · 눌러서 열기';
+  });
+
+  function read(pre, who) {
+    const g = segVal(pre + 'g'); if (!g) throw `${who} 성별을 골라 주세요.`;
+    const dv = $(pre + 'date').value; if (!dv) throw `${who} 생년월일을 입력해 주세요.`;
+    const [y, m, d] = dv.split('-').map(Number);
+    const unk = $(pre + 'unk').checked || !$(pre + 'time').value;
+    const [hh, mm] = ($(pre + 'time').value || '12:00').split(':').map(Number);
+    return { name: $(pre + 'name').value.trim(), male: g === 'm', b: { cal: segVal(pre + 'cal'), y, m, d, hh, mm, unk, corr: true } };
+  }
+
+  function gauge(score) {
+    const r = 90, c = 2 * Math.PI * r, off = c * (1 - score / 100);
+    return `<div class="gauge"><svg width="210" height="210" viewBox="0 0 210 210">
+      <defs><linearGradient id="gg" x1="0" x2="1"><stop offset="0" stop-color="#ffc76b"/><stop offset="1" stop-color="#ff5d93"/></linearGradient></defs>
+      <circle cx="105" cy="105" r="${r}" fill="none" stroke="#4d2a5a" stroke-width="16"/>
+      <circle id="arc" cx="105" cy="105" r="${r}" fill="none" stroke="url(#gg)" stroke-width="16" stroke-linecap="round" stroke-dasharray="${c}" stroke-dashoffset="${c}" data-off="${off}" style="transition:stroke-dashoffset 1.2s ease"/>
+    </svg><div class="num"><b id="cnt">0</b><span>바람기 지수</span></div></div>`;
+  }
+
+  function render(A, B) {
+    const a = A.r, nm = esc(A.name || '당신');
+    const pills = ['년', '월', '일', '시'].map((k, i) => `<div><i>${k}주</i><b>${a.pillars[i]}</b><em>${a.pillarsK[i]}</em></div>`).join('');
+    const fx = a.F.slice().sort((x, y) => Math.abs(y.pt) - Math.abs(x.pt)).map(f =>
+      `<div class="fx"><span class="pt ${f.pt > 0 ? 'up' : 'dn'}">${f.pt > 0 ? '+' : ''}${f.pt}</span><div><b>${esc(f.k)}</b><p>${esc(f.t)}</p></div></div>`).join('')
+      || '<p>뚜렷한 이성운 신살이 없는 담백한 사주입니다.</p>';
+    const yrs = a.years.map(y => `<div class="yr"><span class="tag ${y.lv}">${y.lv}</span><div><b>${y.y}년 ${y.gz}(${y.gzK})</b><p class="note" style="font-size:14.5px;margin:2px 0 0">${y.msg.join('. ')}.</p></div></div>`).join('');
+    const tips = window.BARAM.tips(a).map(t => `<li>${esc(t)}</li>`).join('');
+
+    let duo = '';
+    if (B) {
+      const b = B.r, c = window.BARAM.couple(a, b), bn = esc(B.name || '연인');
+      duo = `<div class="card pop"><h2>💑 ${nm} × ${bn}</h2>
+        <div class="cmp"><div><span class="note">${nm}</span><b>${a.score}</b><span class="note">${a.type.e} ${a.type.n}</span></div>
+        <div><span class="note">${bn}</span><b>${b.score}</b><span class="note">${b.type.e} ${b.type.n}</span></div></div>
+        <div style="display:flex;justify-content:space-between"><b>관계 안정도</b><b>${c.s}점</b></div>
+        <div class="bar"><i style="width:${c.s}%"></i></div>
+        <ul class="tips">${c.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
+        <p class="note">${a.score === b.score ? '두 사람의 바람기 지수가 같습니다.' : `바람기 지수는 ${a.score > b.score ? nm : bn}님 쪽이 더 높습니다.`} 높다고 바람을 피운다는 뜻이 아니라, 유혹이 더 자주 찾아오는 체질이라는 뜻입니다.</p></div>`;
+    }
+
+    $('result').innerHTML = `
+      <div class="card hero pop">
+        <div class="note">${A.name ? nm + '님 · ' : ''}${a.ddi}띠 · 일간 ${window.SAJU.STK[a.me]}${['목', '목', '화', '화', '토', '토', '금', '금', '수', '수'][a.me]}(${a.dm.nm})</div>
+        ${gauge(a.score)}
+        <div class="type">${a.type.e} ${a.type.n}${a.type.key ? `<small>핵심 요인 · ${esc(a.type.key)}</small>` : ''}</div>
+        <p>${a.type.d}</p>
+        <div class="pill">${pills}</div>
+      </div>
+      <div class="card pop"><h2>왜 이런 점수일까? <span class="label">전통 신살·십신 계산</span></h2>${fx}
+        <p class="note">기본 26점에서 시작해 요인별 점수를 더하고 뺍니다. 점수 공식은 운명 연구소 자체 해설입니다.</p></div>
+      <div class="card pop"><h2>${a.dm.nm} 일간의 연애 스타일</h2><p style="margin:0">${a.dm.연애}</p></div>
+      <div class="card pop"><h2>올해·내년 이성운</h2>${yrs}</div>
+      ${duo}
+      <div class="card pop"><h2>관계를 지키는 한 줄 처방</h2><ul class="tips">${tips}</ul></div>
+      <button class="btn" id="share">결과 공유하기</button>
+      <button class="btn ghost" id="again">다시 하기</button>`;
+
+    $('form').style.display = 'none'; $('result').style.display = 'block';
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      const arc = $('arc'); if (arc) arc.style.strokeDashoffset = arc.dataset.off;
+      let n = 0; const t = setInterval(() => { n = Math.min(a.score, n + Math.max(1, Math.round(a.score / 30))); $('cnt').textContent = n; if (n >= a.score) clearInterval(t); }, 30);
+    }));
+    $('again').onclick = () => { $('result').style.display = 'none'; $('form').style.display = 'block'; window.scrollTo({ top: 0 }); };
+    $('share').onclick = async () => {
+      // 공유 문구에는 이름·생년월일을 넣지 않습니다
+      const text = `🌸 내 사주 바람기 지수는 ${a.score}점, ${a.type.e} ${a.type.n}!${B ? ` 연인과의 관계 안정도는 ${window.BARAM.couple(a, B.r).s}점.` : ''} 너도 해 봐 👉`;
+      const url = location.href.split('?')[0].split('#')[0];
+      try { if (navigator.share) { await navigator.share({ title: '사주 바람기 테스트', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
+      try { await navigator.clipboard.writeText(text + ' ' + url); toast('공유 문구를 복사했어요'); } catch (e) { toast('복사에 실패했어요'); }
+    };
+  }
+
+  function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 1800); }
+
+  $('go').addEventListener('click', () => {
+    $('err').textContent = '';
+    if (!window.SAJU || !window.SAJU.LIB) { $('err').textContent = '만세력 엔진을 불러오지 못했습니다. 새로고침해 주세요.'; return; }
+    try {
+      const A = read('a', '나의'); A.r = window.BARAM.calc(A.b, A.male);
+      let B = null;
+      if (pOn) { B = read('b', '연인의'); B.r = window.BARAM.calc(B.b, B.male); }
+      render(A, B);
+    } catch (e) {
+      $('err').textContent = typeof e === 'string' ? e : (String(e.message || e).includes('음력') ? '없는 음력 날짜입니다. 윤달 여부를 확인해 주세요.' : '날짜를 계산하지 못했습니다. 입력을 확인해 주세요.');
+    }
+  });
+})();
+</script>
+</body>
+</html>
