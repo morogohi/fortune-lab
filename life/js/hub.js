@@ -292,6 +292,7 @@ const Hub = (() => {
         <button id="mExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개</small></button>
         <button id="mShop"><span>🛍️</span><b>상점</b><small>행운패스 · 리포트 · 신년운세</small></button>
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
+        ${native ? '' : '<button id="mBaram"><span>🌸</span><b>사주 바람기 테스트</b><small>도화살·홍염살로 보는 연애 체질</small></button>'}
       </div>
       <div class="hcard"><h3 class="ht">🔔 매일 운세 알림</h3>
         <p class="hsub">${native ? '정한 시각에 그날의 총운 점수와 한 줄 운세를 보내 드려요.' : '알림은 앱에서만 받을 수 있어요.'}</p>
@@ -301,6 +302,7 @@ const Hub = (() => {
   }
   function bindMore() {
     $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile;
+    const mb = $('#mBaram'); if (mb) mb.onclick = () => { location.href = '../baram/'; };
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
     const save = async () => {
       const nt = { on: $('#nOn').checked, t: $('#nT').value };
