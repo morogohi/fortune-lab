@@ -294,6 +294,103 @@
   .shopitem button:disabled{opacity:.4}
   .hlinks a{color:var(--dim);text-decoration:underline;margin-right:14px;font-size:13px;cursor:pointer}
   .row2 .chk{display:flex;align-items:center;gap:6px;color:var(--ink)}
+
+  /* ===== v6 육성·반응 업그레이드 ===== */
+  .ln{animation:lnIn .35s ease-out}
+  @keyframes lnIn{from{opacity:0;transform:translateX(-8px)}}
+  .ln.good{background:linear-gradient(90deg,#5be08f1a,transparent)}.ln.bad{background:linear-gradient(90deg,#ff6b811a,transparent)}
+  .act{transition:transform .12s,box-shadow .2s;position:relative}
+  .act.rec{box-shadow:0 0 0 2px var(--hap),0 0 14px #ffcc4d66;animation:recGlow 1.6s ease-in-out infinite}
+  .act.rec::after{content:'추천';position:absolute;top:-6px;right:-4px;background:var(--hap);color:#1b1530;font-size:10px;border-radius:8px;padding:1px 5px;font-family:'Jua'}
+  @keyframes recGlow{50%{box-shadow:0 0 0 2px var(--hap),0 0 22px #ffcc4daa}}
+  .act.mini{background:linear-gradient(180deg,#5a3fa0,#432f7d)}
+  .act.auto{transform:scale(.9);background:#6b56b8}
+  #ageBtn.nudge{animation:nudge 1.2s ease-in-out infinite}
+  @keyframes nudge{0%,100%{transform:none}50%{transform:translateY(-3px) scale(1.02);box-shadow:0 8px 0 #157a42,0 0 22px #6ee7a088}}
+  #autoBar{display:flex;gap:6px;align-items:center;padding:6px 10px 0;background:var(--card)}
+  .polbtn{background:#ffffff12;border-radius:12px;padding:7px 10px;font-size:13px;flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .spd{display:flex;background:#00000033;border-radius:12px;padding:2px}
+  .spd button{background:none;padding:6px 9px;font-size:13px;border-radius:10px;color:var(--dim)}
+  .spd button.on{background:var(--accent);color:#fff}
+  #game.autoing #stageWrap::after{content:'🤖 자동 진행 중';position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:#000a;padding:4px 12px;border-radius:999px;font-family:'Jua';font-size:12px;animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.5}}
+  .polgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .polgrid button{background:var(--card2);border-radius:14px;padding:12px 10px;text-align:left;display:flex;flex-direction:column;gap:2px;border:2px solid transparent}
+  .polgrid button.on{border-color:var(--hap);background:#4a3c7a}
+  .polgrid span{font-size:26px}.polgrid b{font-weight:400;font-size:15px}.polgrid small{font-family:'Gowun Dodum';font-size:11px;color:var(--dim);line-height:1.35}
+  .polgrid button:last-child{grid-column:1/3}
+  .polchk{display:flex;gap:8px;align-items:center;font-size:13px;color:var(--dim);margin:12px 2px 0}
+  #rollPolicy{width:100%;text-align:center;margin-bottom:8px}
+  .polrow{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
+  .polrow button{background:var(--card2);border-radius:12px;padding:6px 4px;font-size:20px;width:58px;border:2px solid transparent}
+  .polrow button small{display:block;font-family:'Gowun Dodum';font-size:10px;color:var(--dim);line-height:1.2;margin-top:2px}
+  .polrow button.on{border-color:var(--hap);background:#4a3c7a;transform:scale(1.06)}
+  .poldesc{font-size:12px;color:var(--dim);margin-top:6px;min-height:16px}
+  .choice{animation:chIn .32s ease-out backwards;transition:transform .1s}
+  @keyframes chIn{from{opacity:0;transform:translateY(12px)}}
+  .choice:active{transform:scale(.97)}
+  .choice.suggest{box-shadow:inset 0 0 0 2px #ffcc4d88}
+  .choice.suggest::before{content:'⭐ ';}
+  .choice.picked{background:#6b56b8;transform:scale(.97)}
+  .autopick{display:block;width:100%;background:none;border:1px dashed #ffcc4d77;color:var(--hap);border-radius:12px;padding:9px;margin-top:6px;font-size:14px}
+  #sheet .em{animation:emBounce .6s cubic-bezier(.3,1.6,.5,1)}
+  @keyframes emBounce{from{transform:scale(.3) rotate(-15deg)}}
+  #sheet.big{animation:bigPulse .5s ease-in-out 3}
+  @keyframes bigPulse{50%{box-shadow:0 -6px 30px #ffcc4d99}}
+  .stat.up .bar i{box-shadow:0 0 10px currentColor;animation:barUp .7s}.stat.up .lab span:last-child{color:var(--money);animation:numPop .5s}
+  .stat.down .lab span:last-child{color:var(--hp);animation:numPop .5s}.stat.down .bar{animation:barDown .45s}
+  @keyframes barUp{0%{filter:brightness(2)}100%{filter:none}}
+  @keyframes barDown{25%{transform:translateX(-3px)}75%{transform:translateX(3px)}}
+  @keyframes numPop{40%{transform:scale(1.5)}}
+  .stat .lab span:last-child{display:inline-block}
+  #moneyBox.up{animation:moneyUp .6s}#moneyBox.down{animation:barDown .45s}
+  @keyframes moneyUp{40%{transform:scale(1.08);color:var(--money)}}
+  #stageWrap.shake{animation:shake .45s}
+  @keyframes shake{20%{transform:translate(-6px,2px)}40%{transform:translate(5px,-2px)}60%{transform:translate(-4px,1px)}80%{transform:translate(3px,0)}}
+  #ageBig.bump{animation:numPop .5s}
+  .conf{position:absolute;top:-10px;width:8px;height:12px;border-radius:2px;animation:conf 1.6s ease-in forwards}
+  @keyframes conf{to{transform:translate(var(--dx),260px) rotate(var(--r));opacity:0}}
+  .agepop{position:absolute;left:50%;top:38%;transform:translate(-50%,-50%);font-family:'Jua';font-size:34px;text-shadow:0 4px 14px #000c;animation:agePop 1.1s ease-out forwards;white-space:nowrap;text-align:center;color:#fff}
+  .agepop.stage{font-size:40px;color:var(--hap);animation:agePop 2s ease-out forwards}
+  .agepop small{display:block;font-size:14px;color:#fff}.agepop em{display:block;font-style:normal;font-size:16px;color:#fff}
+  @keyframes agePop{0%{opacity:0;transform:translate(-50%,-30%) scale(.5)}20%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}35%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-70%)}}
+  .growrep .stars{text-align:center;font-size:26px;color:var(--hap);letter-spacing:2px}.growrep .stars span{color:#ffffff22}
+  .growrep .gtip{margin:4px 0 10px!important}
+  .grow-r{display:grid;grid-template-columns:76px 1fr 38px;gap:8px;align-items:center;font-size:13px;margin:5px 0}
+  .grow-r b{text-align:right;font-family:'Jua';font-weight:400}.grow-r b.up{color:var(--money)}.grow-r b.down{color:var(--hp)}
+  .grow-r .hbar{margin:0}
+  .gtags{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;margin:10px 0 4px}.gtags span{background:var(--card2);border-radius:999px;padding:3px 9px;font-size:12px}
+  .gnext{font-size:13px!important;margin:8px 0 0!important}
+  #mini{position:absolute;inset:0;background:radial-gradient(circle at 50% 20%,#4a2f7a,#140f26 75%);z-index:25;display:none;flex-direction:column;padding:14px}
+  #mini.on{display:flex}
+  .mhead{display:flex;justify-content:space-between;align-items:center;font-family:'Jua';font-size:22px}
+  .mhead b{font-size:30px;color:var(--hap);display:inline-block}.mhead b.pop{animation:numPop .35s}
+  .mtip{color:var(--dim);font-size:13px;margin:2px 0 8px}
+  .marena{flex:1;position:relative;overflow:hidden;border-radius:18px;background:#ffffff0c;display:flex;flex-direction:column;align-items:center;justify-content:center}
+  .mtime{height:8px;background:#ffffff14;border-radius:4px;margin-top:10px;overflow:hidden}.mtime i{display:block;height:100%;width:100%;background:linear-gradient(90deg,var(--money),var(--hap))}
+  .mcount{font-family:'Jua';font-size:90px;color:var(--hap);animation:numPop .6s}
+  .mitem{position:absolute;bottom:-60px;font-size:44px;background:none;padding:6px;animation:floatUp linear forwards}
+  .mitem.hit{animation:none;transform:scale(1.4);transition:transform .2s}
+  @keyframes floatUp{to{transform:translateY(calc(-100vh + 60px))}}
+  .mq{font-family:'Jua';font-size:46px;margin-bottom:20px}
+  .mopts{display:flex;gap:10px}.mopts button{background:var(--card2);border-radius:16px;font-size:28px;width:84px;padding:14px 0}
+  .mopts button.ok{background:var(--money)}.mopts button.no{background:var(--hp);animation:barDown .3s}
+  .mgauge{position:relative;width:88%;height:36px;background:#ffffff14;border-radius:18px;overflow:hidden}
+  .mgauge .zone{position:absolute;top:0;bottom:0;background:#5be08f88;border-radius:8px}
+  .mgauge .needle{position:absolute;top:-4px;bottom:-4px;width:6px;margin-left:-3px;background:#fff;border-radius:3px;box-shadow:0 0 10px #fff}
+  .mres{font-family:'Jua';font-size:28px;height:40px;margin:16px 0}.mres.ok{color:var(--money);animation:numPop .4s}.mres.no{color:var(--hp)}
+  .mtap{background:linear-gradient(180deg,#ff9d55,#ff6b2d);border-radius:50%;width:120px;height:120px;font-size:26px;box-shadow:0 6px 0 #b8461a}
+  .mtap:active{transform:translateY(4px);box-shadow:0 2px 0 #b8461a}
+  .mcards{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;width:92%}
+  .mcards button{aspect-ratio:3/4;border-radius:12px;background:linear-gradient(135deg,#6b56b8,#433080);font-size:34px;transition:transform .3s}
+  .mcards button span{opacity:0;transition:opacity .2s}
+  .mcards button.flip{background:#fff8e6;transform:rotateY(180deg)}.mcards button.flip span{opacity:1;display:inline-block;transform:rotateY(180deg)}
+  .mcards button.ok{background:#c9f5da}
+  .mend{margin:auto;text-align:center;width:100%}
+  .mgrade{font-family:'Jua';font-size:110px;line-height:1;animation:emBounce .7s cubic-bezier(.3,1.6,.5,1)}
+  .mgrade.gS{color:var(--hap);text-shadow:0 0 30px #ffcc4daa}.mgrade.gA{color:var(--money)}.mgrade.gB{color:var(--smart)}.mgrade.gC{color:var(--dim)}
+  .mend h3{font-family:'Jua';font-size:24px;margin:6px 0}.mend p{color:var(--dim)}
+  .mgain{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0 18px;font-family:'Jua';font-size:18px}
 </style>
 </head>
 <body>
@@ -421,6 +518,7 @@
 <script src="js/life2.js"></script>
 <script src="js/game.js"></script>
 <script src="js/biz.js"></script>
+<script src="js/grow.js"></script>
 <script src="js/hub.js"></script>
 
 </body>

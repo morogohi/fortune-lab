@@ -266,19 +266,31 @@ function renderHud(){
   if(!P||!P.bucket)return;const b=$('#bucketBtn');if(b)b.textContent=`🎯 ${P.bucket.filter(x=>x.done).length}/3`;
   const L=Saju.luckAt(P.saju,P.age),sb=$('#sajuBtn');if(sb)sb.textContent=L?`📜 ${L.e}${L.name}`:'📜 사주';
 }
-function renderActions(){
+function actionList(){
   const list=ACTS[stageOf(P.age).k].slice();
   if(P.age>=17&&P.age<=60&&!P.rel&&!P.married)list.unshift({e:'💘',n:'만남',f:openMeet,free:1});
   if(P.rel&&!P.married)list.unshift({e:'💑',n:'데이트',f:openDate,free:1});
   if(P.age>=19)list.push({e:'🏠',n:'집',f:openHome,free:1});
   if(P.job&&!P.retired&&P.age>=22)list.push({e:'🚪',n:'이직·퇴사',f:openQuit,free:1});
   if(P.age>=18&&!P.job&&!P.retired&&P.age<65)list.unshift({e:'🔍',n:'구직',f:jobHunt,free:1});
+  if(window.Grow)Grow.extraActions(list);
+  return list;
+}
+/* 행동 실행 (손으로 누를 때와 자동 진행이 같은 길을 씀) */
+function doAct(a){
+  if(modalQ.length||!P.alive)return false;
+  if(!a.free){if(P.energy<=0)return false;P.energy--}
+  buzz(15);Snd.sfx('tap');if(!a.free)playAnim(ACT_POSE[a.n]);a.f();renderActions();checkBucket();checkDeath();return true;
+}
+function renderActions(){
+  const list=actionList(),rec=window.Grow?Grow.recommend(list):null;
   $('#actions').innerHTML='';
-  list.forEach(a=>{const b=document.createElement('button');b.className='act';b.innerHTML=`<span class="e">${a.e}</span>${a.n}`;
+  list.forEach(a=>{const b=document.createElement('button');b.className='act'+(rec&&rec.n===a.n?' rec':'')+(a.mini?' mini':'');b.innerHTML=`<span class="e">${a.e}</span>${a.n}`;
     b.disabled=!P.alive||(!a.free&&P.energy<=0);
-    b.onclick=()=>{if(modalQ.length||!P.alive)return;if(!a.free){if(P.energy<=0)return;P.energy--}buzz(15);Snd.sfx('tap');if(!a.free)playAnim(ACT_POSE[a.n]);a.f();renderActions();checkBucket();checkDeath()};
+    b.onclick=()=>{if(window.Grow)Grow.userTouched();doAct(a)};
     $('#actions').appendChild(b)});
   $('#energy').innerHTML='행동력<br>'+('⚡'.repeat(P.energy)||'—');
+  $('#ageBtn').classList.toggle('nudge',P.alive&&P.energy<=0&&!modalQ.length);
 }
 
 /* ================= 모달 ================= */
@@ -289,11 +301,12 @@ function openNext(){
   const d=ev.dyn?ev.dyn(P):ev.d;
   $('#sheet').innerHTML=`<div class="em">${ev.e}</div><h3>${ev.t}</h3>${ev.html?ev.html(P):`<p>${d||''}</p>`}`;
   $('#sheet').classList.toggle('grid',!!ev.grid);const gw=document.createElement('div');gw.className='chs';$('#sheet').appendChild(gw);
-  ev.ch.forEach((c,ci)=>{const b=document.createElement('button');b.className='choice';b.innerHTML=c.t+(c.s?`<small>${c.s}</small>`:'');
+  ev.ch.forEach((c,ci)=>{const b=document.createElement('button');b.className='choice';b.style.animationDelay=(ci*45)+'ms';b.innerHTML=c.t+(c.s?`<small>${c.s}</small>`:'');
     b.onclick=()=>{buzz(20);Snd.sfx('tap');modalQ.shift();const fxk=EV_FX[ev.id];if(fxk)playAnim(Array.isArray(fxk)?(fxk[ci]||fxk[0]):fxk);lastLog='';c.f();
       if(ev.id&&KEY_EV.has(ev.id))P.moments.push({a:P.age,e:ev.e,t:ev.t,c:c.t.replace(/<[^>]+>/g,''),r:lastLog});
       renderActions();checkBucket();if(checkDeath())return;openNext()};
     gw.appendChild(b)});
+  if(window.Grow)Grow.decorateModal(ev,gw);
   $('#modal').classList.add('on');
 }
 
@@ -322,7 +335,9 @@ function ageUp(){
   P.age++;P.energy=P.age<4||P.age>=60?2:3;
   const kidEv=yearlyKids();
   yearHeader();Snd.sfx('age');
-  if(stageOf(P.age).k!==stageOf(P.age-1).k){snapAlbum();log(`📸 ${stageOf(P.age).n} 시기가 시작됐다`);Snd.mood(stageOf(P.age).k)}
+  const stageChanged=stageOf(P.age).k!==stageOf(P.age-1).k;
+  if(stageChanged){snapAlbum();log(`📸 ${stageOf(P.age).n} 시기가 시작됐다`);Snd.mood(stageOf(P.age).k);if(window.Grow)Grow.stageReport()}
+  if(window.Grow)Grow.agePop(stageChanged)
   const L0=Saju.luckAt(P.saju,P.age-1),L1=Saju.luckAt(P.saju,P.age);
   if(L1&&L0&&L1.start!==L0.start){log(`🔮 새 대운 시작 (${L1.txt}): ${L1.e} ${L1.name} — ${L1.desc}`,'good');cutin('🔮',`${L1.name}의 10년`,L1.desc);P.moments.push({a:P.age,e:'🔮',t:'대운 전환',c:L1.name,r:L1.txt})}
   const T=TIER[P.tier];
