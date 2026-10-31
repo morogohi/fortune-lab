@@ -80,8 +80,55 @@ window.BARAM = (() => {
 
     const raw = 26 + F.reduce((s, f) => s + f.pt, 0);
     const score = Math.max(3, Math.min(97, Math.round(raw)));
-    return { p, me, male, gc, el, F, score, type: typeOf(score, F), pillars: pos.map(c => (c ? S.ST[c.s] + S.BR[c.b] : '??')), pillarsK: pos.map(c => (c ? S.STK[c.s] + S.BRK[c.b] : '??')), ddi: S.ANI[p.y.b], dm: S.DMX[me], years: yearFlow(p, me, male) };
+    return { p, me, male, gc, el, F, score, type: typeOf(score, F), pillars: pos.map(c => (c ? S.ST[c.s] + S.BR[c.b] : '??')), pillarsK: pos.map(c => (c ? S.STK[c.s] + S.BRK[c.b] : '??')), ddi: S.ANI[p.y.b], dm: S.DMX[me], years: yearFlow(p, me, male), mbti: sajuMbti(gc, el, names, pos, me, ym) };
   }
+
+
+  /* ===== 사주 MBTI — 오행·십신·음양으로 MBTI 네 축을 추정 (운명 연구소 자체 공식) =====
+     E/I: 식상·재성·양간·화 기운(밖으로 뻗음) ↔ 인성·수 기운(안으로 모음)
+     S/N: 토·금·재성(현실·실물) ↔ 목·수·인성(가능성·상상)
+     T/F: 금·관성·비겁(판단·원칙) ↔ 화·식신·인성(공감·정서)
+     J/P: 정관·정재·정인·토(질서·계획) ↔ 상관·편재·편인·역마(자유·즉흥)
+     MID 값은 무작위 생년월일 분포의 중앙값으로 맞춰 각 축이 대략 반반 나오게 했습니다. */
+  const MID = [2.1, 0.6, 0.5, 0.1];
+  function sajuMbti(gc, el, names, pos, me, ym) {
+    const n = k => names.filter(x => x === k).length;
+    const yang = pos.filter(Boolean).reduce((a, c) => a + (c.s % 2 === 0 ? 1 : 0), 0);
+    const ax = [
+      gc[1] + gc[2] * 0.5 + el[1] * 0.8 + el[0] * 0.3 + yang * 0.6 + (me % 2 === 0 ? 0.7 : 0) - gc[4] - el[4] * 0.8 - el[3] * 0.3,
+      el[2] + el[3] * 0.7 + gc[2] * 0.6 - el[0] * 0.8 - el[4] * 0.9 - gc[4] * 0.7,
+      el[3] + gc[3] * 0.8 + gc[0] * 0.4 - el[1] * 0.8 - n('식신') * 0.8 - gc[4] * 0.4 - el[0] * 0.3,
+      n('정관') + n('정재') + n('정인') + el[2] * 0.5 - n('상관') - n('편재') - n('편인') - (ym ? 1 : 0) - el[4] * 0.3,
+    ].map((v, i) => v - MID[i]);
+    const L = [['E', 'I'], ['S', 'N'], ['T', 'F'], ['J', 'P']];
+    const type = ax.map((v, i) => (v >= 0 ? L[i][0] : L[i][1])).join('');
+    // 첫 글자 쪽 비율(%) — 화면 막대용
+    const pct = ax.map(v => Math.round(Math.max(8, Math.min(92, 50 + v * 9))));
+    return { type, pct, raw: ax };
+  }
+
+  // MBTI별 연애·유혹 성향 (사이트 자체 해설)
+  const MBL = {
+    ISTJ: ['약속은 계약서', '한번 정한 관계를 규칙처럼 지킵니다. 유혹이 와도 "그건 아니지" 하고 선을 긋는 쪽입니다.'],
+    ISFJ: ['헌신형 수호자', '상대를 챙기느라 다른 데 눈 돌릴 틈이 없습니다. 다만 서운함이 쌓이면 마음이 조용히 식습니다.'],
+    INFJ: ['영혼의 단짝 탐색가', '깊이 통하는 한 사람을 찾습니다. 정신적으로 끌리는 상대가 나타나면 마음이 흔들릴 수 있습니다.'],
+    INTJ: ['전략적 일편단심', '감정보다 판단이 앞서 충동적인 일탈은 드뭅니다. 관계가 비효율적이라고 느끼면 깔끔하게 정리합니다.'],
+    ISTP: ['쿨한 자유인', '구속을 싫어하지만 굳이 문제를 만들지도 않습니다. 혼자만의 시간을 지켜 주면 오래갑니다.'],
+    ISFP: ['감성 충만 예술가', '분위기와 감정에 약해 설렘에 쉽게 반응합니다. 다정한 표현을 자주 받으면 안정됩니다.'],
+    INFP: ['로맨스 몽상가', '머릿속 연애는 화려하지만 실제 행동은 신중합니다. 이상형을 만나면 마음이 크게 출렁입니다.'],
+    INTP: ['연애도 연구 중', '관심이 사람보다 생각에 가 있어 바람 피울 여유가 없습니다. 무심함이 오해를 부르기는 합니다.'],
+    ESTP: ['스릴 추구 모험가', '새로운 자극과 즉흥을 즐겨 유혹에 가장 노출되기 쉬운 유형입니다. 함께 노는 연인이 최고의 예방책입니다.'],
+    ESFP: ['파티의 주인공', '어디서든 인기가 많아 오해받기 쉽습니다. 마음은 진심이지만 관심 받는 걸 너무 좋아합니다.'],
+    ENFP: ['설렘 수집가', '새로운 사람에게 금방 마음을 열어 썸이 자주 생깁니다. 지루함이 최대의 적입니다.'],
+    ENTP: ['밀당의 토론가', '재치 있는 대화로 이성을 끌어당깁니다. 장난처럼 시작한 플러팅이 선을 넘지 않게 조심하세요.'],
+    ESTJ: ['책임감 리더', '관계에도 원칙이 분명해 바람은 "말도 안 되는 일"로 여깁니다. 다만 일이 우선이라 연인이 외로울 수 있습니다.'],
+    ESFJ: ['다정한 분위기 메이커', '모두에게 친절해 질투를 사기 쉽습니다. 본인 마음은 한 사람에게 머무는 편입니다.'],
+    ENFJ: ['헌신적인 연인', '상대를 성장시키는 연애를 합니다. 누군가를 돕다 정이 들 수 있으니 선을 분명히 하세요.'],
+    ENTJ: ['목표 지향 파트너', '관계도 계획적으로 이끕니다. 일탈보다 일에 빠지는 쪽이라 연락이 뜸해지는 게 문제입니다.'],
+  };
+  const MBADJ = { E: 2, I: -2, N: 1, S: -1, F: 1, T: -1, P: 2, J: -2 };
+  function mbtiInfo(t) { return { t, nick: MBL[t][0], txt: MBL[t][1], adj: [...t].reduce((a, c) => a + MBADJ[c], 0) }; }
+  const MBTIS = Object.keys(MBL);
 
   const TYPES = [
     { min: 0, e: '🛡️', n: '철벽 수호형', d: '눈앞에 누가 와도 흔들리지 않는 철벽입니다. 연애를 시작하기까지 오래 걸리지만, 한번 정하면 끝까지 갑니다.' },
@@ -148,5 +195,5 @@ window.BARAM = (() => {
     return out.slice(0, 3);
   }
 
-  return { calc, couple, tips, TYPES };
+  return { calc, couple, tips, TYPES, mbtiInfo, MBTIS, MID };
 })();

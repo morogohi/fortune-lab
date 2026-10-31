@@ -68,6 +68,13 @@ ul.tips{margin:0;padding-left:20px}ul.tips li{margin:6px 0}
 .cmp b{font-family:"Jua";font-size:34px;display:block;line-height:1.1}
 .bar{height:12px;background:var(--card2);border-radius:99px;overflow:hidden;margin:6px 0 10px}
 .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--gold),var(--pink));border-radius:99px}
+.mbx{display:flex;align-items:center;justify-content:center;gap:10px;margin:4px 0 12px}
+.mbx b{font-family:"Jua";font-size:44px;letter-spacing:3px;background:linear-gradient(135deg,#ffc76b,#ff6fa5);-webkit-background-clip:text;background-clip:text;color:transparent}
+.ax{display:grid;grid-template-columns:22px 1fr 22px;align-items:center;gap:8px;margin:7px 0;font-family:"Jua";font-size:16px;text-align:center}
+.ax .tr{height:10px;background:#7ea8f255;border-radius:99px;overflow:hidden}.ax .tr i{display:block;height:100%;background:var(--pink)}
+.ax .on{color:var(--pink)}
+.match{display:flex;gap:6px;justify-content:center;margin:10px 0}.match span{width:38px;height:38px;border-radius:10px;display:grid;place-items:center;font-family:"Jua";font-size:20px;background:var(--card2)}
+.match span.y{background:#ff6fa5;color:#2a0a1d}
 .note{font-size:12.5px;color:var(--sub);line-height:1.55}
 .label{display:inline-block;font-size:11.5px;color:var(--gold);border:1px solid #ffc76b66;border-radius:6px;padding:1px 6px;margin-left:4px;vertical-align:2px;font-family:"Gowun Dodum"}
 footer{text-align:center;margin-top:26px}
@@ -129,7 +136,9 @@ footer a{color:var(--sub)}
       <input id="${pre}date" type="date" min="1920-01-01" max="2015-12-31" value="">
       <label for="${pre}time">태어난 시각</label>
       <input id="${pre}time" type="time">
-      <label class="chk"><input type="checkbox" id="${pre}unk"> 태어난 시각을 몰라요</label>`;
+      <label class="chk"><input type="checkbox" id="${pre}unk"> 태어난 시각을 몰라요</label>
+      <label for="${pre}mbti">실제 MBTI (선택)</label>
+      <select id="${pre}mbti"><option value="">모르겠어요 · 사주로만 볼게요</option>${window.BARAM.MBTIS.map(t => `<option>${t}</option>`).join('')}</select>`;
     root.querySelectorAll('.seg').forEach(seg => seg.addEventListener('click', e => {
       const b = e.target.closest('button'); if (!b) return;
       seg.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
@@ -152,7 +161,7 @@ footer a{color:var(--sub)}
     const [y, m, d] = dv.split('-').map(Number);
     const unk = $(pre + 'unk').checked || !$(pre + 'time').value;
     const [hh, mm] = ($(pre + 'time').value || '12:00').split(':').map(Number);
-    return { name: $(pre + 'name').value.trim(), male: g === 'm', b: { cal: segVal(pre + 'cal'), y, m, d, hh, mm, unk, corr: true } };
+    return { name: $(pre + 'name').value.trim(), mbti: $(pre + 'mbti').value, male: g === 'm', b: { cal: segVal(pre + 'cal'), y, m, d, hh, mm, unk, corr: true } };
   }
 
   function gauge(score) {
@@ -173,12 +182,13 @@ footer a{color:var(--sub)}
     const yrs = a.years.map(y => `<div class="yr"><span class="tag ${y.lv}">${y.lv}</span><div><b>${y.y}년 ${y.gz}(${y.gzK})</b><p class="note" style="font-size:14.5px;margin:2px 0 0">${y.msg.join('. ')}.</p></div></div>`).join('');
     const tips = window.BARAM.tips(a).map(t => `<li>${esc(t)}</li>`).join('');
 
+    const mb = mbtiCard(A);
     let duo = '';
     if (B) {
       const b = B.r, c = window.BARAM.couple(a, b), bn = esc(B.name || '연인');
       duo = `<div class="card pop"><h2>💑 ${nm} × ${bn}</h2>
-        <div class="cmp"><div><span class="note">${nm}</span><b>${a.score}</b><span class="note">${a.type.e} ${a.type.n}</span></div>
-        <div><span class="note">${bn}</span><b>${b.score}</b><span class="note">${b.type.e} ${b.type.n}</span></div></div>
+        <div class="cmp"><div><span class="note">${nm}</span><b>${a.score}</b><span class="note">${a.type.e} ${a.type.n}</span><span class="note" style="display:block">사주 MBTI ${a.mbti.type}${A.mbti ? ` · 실제 ${A.mbti}` : ''}</span></div>
+        <div><span class="note">${bn}</span><b>${b.score}</b><span class="note">${b.type.e} ${b.type.n}</span><span class="note" style="display:block">사주 MBTI ${b.mbti.type}${B.mbti ? ` · 실제 ${B.mbti}` : ''}</span></div></div>
         <div style="display:flex;justify-content:space-between"><b>관계 안정도</b><b>${c.s}점</b></div>
         <div class="bar"><i style="width:${c.s}%"></i></div>
         <ul class="tips">${c.why.map(w => `<li>${esc(w)}</li>`).join('')}</ul>
@@ -195,6 +205,7 @@ footer a{color:var(--sub)}
       </div>
       <div class="card pop"><h2>왜 이런 점수일까? <span class="label">전통 신살·십신 계산</span></h2>${fx}
         <p class="note">기본 26점에서 시작해 요인별 점수를 더하고 뺍니다. 점수 공식은 운명 연구소 자체 해설입니다.</p></div>
+      ${mb}
       <div class="card pop"><h2>${a.dm.nm} 일간의 연애 스타일</h2><p style="margin:0">${a.dm.연애}</p></div>
       <div class="card pop"><h2>올해·내년 이성운</h2>${yrs}</div>
       ${duo}
@@ -211,11 +222,40 @@ footer a{color:var(--sub)}
     $('again').onclick = () => { $('result').style.display = 'none'; $('form').style.display = 'block'; window.scrollTo({ top: 0 }); };
     $('share').onclick = async () => {
       // 공유 문구에는 이름·생년월일을 넣지 않습니다
-      const text = `🌸 내 사주 바람기 지수는 ${a.score}점, ${a.type.e} ${a.type.n}!${B ? ` 연인과의 관계 안정도는 ${window.BARAM.couple(a, B.r).s}점.` : ''} 너도 해 봐 👉`;
+      const text = `🌸 내 사주 바람기 지수는 ${a.score}점, ${a.type.e} ${a.type.n}! 사주로 본 MBTI는 ${a.mbti.type}.${B ? ` 연인과의 관계 안정도는 ${window.BARAM.couple(a, B.r).s}점.` : ''} 너도 해 봐 👉`;
       const url = location.href.split('?')[0].split('#')[0];
       try { if (navigator.share) { await navigator.share({ title: '사주 바람기 테스트', text, url }); return; } } catch (e) { if (e && e.name === 'AbortError') return; }
       try { await navigator.clipboard.writeText(text + ' ' + url); toast('공유 문구를 복사했어요'); } catch (e) { toast('복사에 실패했어요'); }
     };
+  }
+
+  // 사주 MBTI 카드: 사주가 추정한 유형 + (입력 시) 실제 MBTI 비교·종합 지수
+  function mbtiCard(A) {
+    const a = A.r, sm = a.mbti, L = [['E', 'I', '외향', '내향'], ['S', 'N', '현실', '직관'], ['T', 'F', '사고', '감정'], ['J', 'P', '계획', '즉흥']];
+    const SRC = ['식상·재성·화 기운이 밖으로 뻗는 힘, 인성·수 기운이 안으로 모으는 힘', '토·금·재성의 현실 감각, 목·수·인성의 상상력', '금·관성의 원칙, 화·식신·인성의 공감', '정관·정재·정인의 질서, 상관·편재·편인·역마의 자유'];
+    const bars = L.map((l, i) => { const p = sm.pct[i], first = sm.type[i] === l[0];
+      return `<div class="ax"><span class="${first ? 'on' : ''}">${l[0]}</span><div class="tr"><i style="width:${p}%"></i></div><span class="${first ? '' : 'on'}">${l[1]}</span></div>`; }).join('');
+    const si = window.BARAM.mbtiInfo(sm.type);
+    let real = '';
+    if (A.mbti) {
+      const ri = window.BARAM.mbtiInfo(A.mbti), same = [...A.mbti].filter((c, i) => c === sm.type[i]).length;
+      const total = Math.max(3, Math.min(97, a.score + ri.adj));
+      const verdict = ['사주와 실제 성격이 정반대! 타고난 기질을 노력으로 바꿔 온 사람입니다.', '사주와 꽤 다르게 살고 있습니다. 환경이 성격을 많이 바꿔 놓았네요.', '반은 타고나고 반은 만들어진 성격입니다.', '거의 타고난 대로 살고 있습니다.', '사주 그대로! 타고난 기질을 고스란히 지닌 사람입니다.'][same];
+      real = `<h3 class="jua" style="margin:16px 0 4px;font-size:18px">실제 MBTI ${A.mbti}와 비교</h3>
+        <div class="match">${[...A.mbti].map((c, i) => `<span class="${c === sm.type[i] ? 'y' : ''}">${c}</span>`).join('')}</div>
+        <p style="margin:0;text-align:center"><b>${same}/4 일치</b> · ${verdict}</p>
+        <div class="fx" style="margin-top:10px"><span class="pt up" style="width:auto;padding:3px 8px">${A.mbti}</span><div><b>${ri.nick}</b><p>${ri.txt}</p></div></div>
+        <div style="display:flex;justify-content:space-between;margin-top:8px"><b>MBTI까지 반영한 종합 바람기</b><b>${total}점</b></div>
+        <div class="bar"><i style="width:${total}%"></i></div>
+        <p class="note">사주 지수 ${a.score}점에 MBTI 보정 ${ri.adj > 0 ? '+' : ''}${ri.adj}점(E·P·N·F 쪽일수록 +, I·J·S·T 쪽일수록 −)을 더했습니다.</p>`;
+    }
+    return `<div class="card pop"><h2>사주 MBTI <span class="label">사이트 자체 해설</span></h2>
+      <p class="note" style="margin:0;text-align:center">오행·십신·음양으로 추정한 타고난 성격 유형</p>
+      <div class="mbx"><b>${sm.type}</b></div>
+      <p style="margin:0 0 8px;text-align:center"><b>${si.nick}</b> — ${si.txt}</p>
+      ${bars}
+      <p class="note">${L.map((l, i) => `${l[0]}/${l[1]}: ${SRC[i]}`).join('<br>')}</p>
+      ${real || '<p class="note" style="text-align:center">실제 MBTI를 입력하면 사주와 비교하고 MBTI까지 반영한 종합 바람기 지수를 보여 드려요.</p>'}</div>`;
   }
 
   function toast(m) { const t = $('toast'); t.textContent = m; t.classList.add('on'); setTimeout(() => t.classList.remove('on'), 1800); }
