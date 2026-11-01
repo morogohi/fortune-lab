@@ -119,9 +119,10 @@ const Grow = (() => {
   function paintAuto() {
     const b = $('#autoBar'); if (!b) return;
     const p = pol();
-    b.innerHTML = `<button id="polBtn" class="polbtn">${P && P.policy ? p.e + ' ' + p.n : '🧭 방침 정하기'}</button>
+    b.innerHTML = `<button id="saveBtn" class="savebtn" title="중간 저장">💾</button><button id="polBtn" class="polbtn">${P && P.policy ? p.e + ' ' + p.n : '🧭 방침 정하기'}</button>
       <div class="spd"><button data-s="0" class="${speed === 0 ? 'on' : ''}">⏸</button><button data-s="1" class="${speed === 1 ? 'on' : ''}">▶ 자동</button><button data-s="2" class="${speed === 2 ? 'on' : ''}">⏩ 빠르게</button></div>`;
     $('#polBtn').onclick = () => { Snd.sfx('tap'); openPolicy(true); };
+    $('#saveBtn').onclick = () => { Snd.sfx('tap'); stop(); if (window.Save) Save.openSlots('save'); };
     b.querySelectorAll('[data-s]').forEach(x => x.onclick = () => {
       Snd.sfx('tap'); buzz(12);
       if (+x.dataset.s && !P.policy) { openPolicy(true, () => setSpeed(+x.dataset.s)); return; }
@@ -339,7 +340,7 @@ const Grow = (() => {
     const _rs = renderStats; renderStats = function () { _rs(); afterStats(); };
     const _die = die; die = function (r) { stop(); return _die(r); };
   }
-  return { init, extraActions, recommend, decorateModal, stageReport, agePop, userTouched, confetti, setSpeed, POL };
+  return { refresh: () => paintAuto(), init, extraActions, recommend, decorateModal, stageReport, agePop, userTouched, confetti, setSpeed, POL };
 })();
 window.Grow = Grow;
 Grow.init();

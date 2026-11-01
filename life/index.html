@@ -415,6 +415,22 @@
   .mtype span{font-family:'Jua';font-size:44px;line-height:1;background:#ffffff14;border-radius:12px;width:54px;padding:6px 0;animation:emBounce .6s cubic-bezier(.3,1.6,.5,1) backwards}
   #fReal{width:100%;margin-top:4px;background:#1b1530;color:var(--ink);border:1px solid #ffffff26;border-radius:12px;padding:10px;font-size:15px;font-family:inherit}
   .fmatch{margin-top:8px;background:#ffcc4d18;border-radius:12px;padding:10px;font-size:14px;text-align:center}.fmatch b{font-family:'Jua';font-size:22px;color:var(--hap)}
+
+  /* ===== 중간 저장 ===== */
+  .savebtn{background:#ffffff12;border-radius:12px;padding:7px 9px;font-size:15px}
+  .savebtn.saved{animation:saved .8s}
+  @keyframes saved{30%{background:var(--money);transform:scale(1.15)}}
+  #continueBox{display:flex;flex-direction:column;align-items:center;gap:4px;margin-bottom:10px}
+  .contbtn{background:linear-gradient(180deg,#6ee7a0,#26b867);box-shadow:0 6px 0 #157a42,0 10px 24px #0008;font-size:20px;padding:12px 28px}
+  .contbtn small{display:block;font-family:'Gowun Dodum';font-size:12px;opacity:.9;margin-top:2px}
+  .contbtn:active{box-shadow:0 2px 0 #157a42}
+  .svslot{display:flex;gap:10px;align-items:center;background:var(--card2);border-radius:14px;padding:12px;margin:8px 0}
+  .svslot>div:first-child{flex:1;min-width:0}.svslot b{font-family:'Jua';font-weight:400;font-size:15px;display:block}
+  .svslot span{display:block;font-size:14px}.svslot small{display:block;color:var(--dim);font-size:11px;margin-top:2px}
+  .svslot.empty{opacity:.75}
+  .svbtns{display:flex;gap:5px;flex-shrink:0}
+  .svslot button{background:#ffffff14;border-radius:10px;padding:8px 9px;font-size:13px}
+  .svslot button.pri{background:var(--accent)}.svslot button.del{background:none;color:var(--dim)}
 </style>
 </head>
 <body>
@@ -545,6 +561,7 @@
 <script src="js/grow.js"></script>
 <script src="js/hub.js"></script>
 <script src="js/fun.js"></script>
+<script src="js/save.js"></script>
 
 </body>
 </html>
