@@ -391,6 +391,30 @@
   .mgrade.gS{color:var(--hap);text-shadow:0 0 30px #ffcc4daa}.mgrade.gA{color:var(--money)}.mgrade.gB{color:var(--smart)}.mgrade.gC{color:var(--dim)}
   .mend h3{font-family:'Jua';font-size:24px;margin:6px 0}.mend p{color:var(--dim)}
   .mgain{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin:12px 0 18px;font-family:'Jua';font-size:18px}
+
+  /* ===== 재미 테스트 (바람기 · 사주 MBTI) ===== */
+  .hmenu button.hot{background:linear-gradient(135deg,#5a2f6e,#3a2c66);box-shadow:inset 0 0 0 1px #ff9ecf55}
+  .hfun{display:flex;gap:8px;margin:0 0 6px}.hfun button{flex:1;background:linear-gradient(135deg,#5a2f6e,#3a2c66);border-radius:14px;padding:11px;font-size:15px}
+  .fchips{display:flex;gap:6px;overflow-x:auto;margin:-2px 0 10px;scrollbar-width:none}
+  .fchips button{flex:0 0 auto;background:var(--card2);border-radius:999px;padding:6px 12px;font-size:13px;font-family:'Gowun Dodum'}
+  .fchips button.on{background:var(--bond);color:#1b1530;font-family:'Jua'}
+  .fhero{display:flex;gap:12px;align-items:center;background:linear-gradient(135deg,#5a2f6e,#2a2247);border-radius:18px;padding:14px}
+  .fhero p{margin:4px 0 0;font-size:13px;color:#efe6ff;line-height:1.55}
+  .fmeter{--v:50;flex:0 0 92px;height:92px;border-radius:50%;background:conic-gradient(var(--bond) calc(var(--v)*1%),#ffffff18 0);display:flex;flex-direction:column;align-items:center;justify-content:center;position:relative;animation:emBounce .7s cubic-bezier(.3,1.6,.5,1)}
+  .fmeter::before{content:'';position:absolute;inset:8px;border-radius:50%;background:#3a2550}
+  .fmeter b,.fmeter small{position:relative}.fmeter b{font-family:'Jua';font-size:30px;line-height:1}.fmeter small{font-size:10px;color:var(--dim)}
+  .ftype{font-family:'Jua';font-size:20px;color:var(--bond)}
+  .fbox{background:var(--card2);border-radius:14px;padding:10px 12px;margin:10px 0}
+  .fax{display:grid;grid-template-columns:62px 1fr 62px;gap:6px;align-items:center;margin:6px 0;font-size:12px}
+  .fax b{font-weight:400;color:var(--dim);font-family:'Jua'}.fax b:last-child{text-align:right}.fax b.on{color:var(--ink)}
+  .fax>i{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#ffffff14}.fax>i>i{display:block;height:100%;transition:width .8s}
+  .fval{display:block;font-size:11px;color:var(--dim);margin:-4px 0 4px 68px}
+  .mhero{text-align:center;background:linear-gradient(135deg,#2f3f7a,#2a2247);border-radius:18px;padding:14px}
+  .mhero small{color:var(--dim);font-size:12px}.mhero b{font-family:'Jua';font-weight:400;font-size:19px;color:var(--hap)}.mhero p{margin:4px 0 0;font-size:13px;line-height:1.55}
+  .mtype{display:flex;justify-content:center;gap:6px;margin:6px 0}
+  .mtype span{font-family:'Jua';font-size:44px;line-height:1;background:#ffffff14;border-radius:12px;width:54px;padding:6px 0;animation:emBounce .6s cubic-bezier(.3,1.6,.5,1) backwards}
+  #fReal{width:100%;margin-top:4px;background:#1b1530;color:var(--ink);border:1px solid #ffffff26;border-radius:12px;padding:10px;font-size:15px;font-family:inherit}
+  .fmatch{margin-top:8px;background:#ffcc4d18;border-radius:12px;padding:10px;font-size:14px;text-align:center}.fmatch b{font-family:'Jua';font-size:22px;color:var(--hap)}
 </style>
 </head>
 <body>
@@ -520,6 +544,7 @@
 <script src="js/biz.js"></script>
 <script src="js/grow.js"></script>
 <script src="js/hub.js"></script>
+<script src="js/fun.js"></script>
 
 </body>
 </html>

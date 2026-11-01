@@ -182,6 +182,8 @@ const Hub = (() => {
       <div class="hmenu">
         <button id="hRep"><span>📜</span><b>프리미엄 사주 리포트</b><small>${Store.has('report') ? Store.why('report') || '열림' : Store.price('report')}</small></button>
         <button id="hNY"><span>🧧</span><b>2027 정미년 신년운세</b><small>${Store.has('newyear') ? Store.why('newyear') || '열림' : '총운 무료 · 전체 ' + Store.price('newyear')}</small></button>
+        <button id="hFlirt" class="hot"><span>💘</span><b>사주 바람기 테스트</b><small>도화살·홍염살로 보는 연애 기질</small></button>
+        <button id="hMbti" class="hot"><span>🧩</span><b>사주 MBTI</b><small>오행·십성으로 본 성격 유형</small></button>
         <button id="hLearn"><span>🧮</span><b>내 사주 계산 원리</b><small>년·월·일·시주가 나오는 과정</small></button>
         <button id="hEdit"><span>✏️</span><b>사주 정보 수정</b><small>생년월일·시간·성별</small></button>
       </div>`;
@@ -191,6 +193,8 @@ const Hub = (() => {
     $('#hNY').onclick = () => openNewYear(p, a);
     $('#hLearn').onclick = openLearn;
     $('#hEdit').onclick = editProfile;
+    $('#hFlirt').onclick = () => Fun.openFlirt(0);
+    $('#hMbti').onclick = () => Fun.openMbti(0);
   }
   function openNewYear(p, a) {
     const n = Fortune.newYear(a, 2027), open = Store.has('newyear');
@@ -220,6 +224,7 @@ const Hub = (() => {
     const list = people().map((q, i) => ({ q, i, b: analyzeP(q) })).filter(x => x.b).map(x => ({ ...x, c: Saju.compatPair(a, x.b) })).sort((x, y) => y.c.score - x.c.score);
     const sij = SIJIN.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
     return `<div class="hhead"><small>내 사주와 상대 사주를 겹쳐 봐요</small><h2>💞 궁합</h2></div>
+      <div class="hfun"><button id="cFlirt">💘 바람기 테스트</button><button id="cMbti">🧩 사주 MBTI</button></div>
       <div class="hcard"><div class="form hform">
         <label>상대 이름<input type="text" id="cName" maxlength="10" placeholder="예: 김서연"></label>
         <label>생년월일<div class="row2"><input type="date" id="cDate" min="1900-01-01" max="2030-12-31"><select id="cCal"><option value="s">양력</option><option value="l">음력</option></select></div></label>
@@ -232,6 +237,8 @@ const Hub = (() => {
           : '<p class="hsub">궁합을 본 사람이 여기에 순위로 저장돼요. 가족·친구·연인을 등록해 보세요.</p>'}</div>`;
   }
   function bindCompat(p, a) {
+    $('#cFlirt').onclick = () => Fun.openFlirt(people().length ? 1 : 0);
+    $('#cMbti').onclick = () => Fun.openMbti(people().length ? 1 : 0);
     document.querySelectorAll('#cSex button').forEach(b => b.onclick = () => { document.querySelectorAll('#cSex button').forEach(x => x.classList.toggle('on', x === b)); Snd.sfx('tap'); });
     $('#cGo').onclick = () => {
       const q = { name: $('#cName').value.trim() || '상대', date: $('#cDate').value, cal: $('#cCal').value, time: $('#cTime').value, sex: document.querySelector('#cSex .on').dataset.v };
@@ -357,6 +364,6 @@ const Hub = (() => {
     tab = 'today'; show('hub'); render();
     scheduleNoti();
   }
-  return { init, go, render, mission, toast };
+  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP };
 })();
 Hub.init();
