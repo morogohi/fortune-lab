@@ -311,6 +311,7 @@ const Hub = (() => {
     $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile;
     const mb = $('#mBaram'); if (mb) mb.onclick = () => { location.href = '../baram/'; };
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
+    let qa = 0; const nt0 = document.querySelector('.hlinks .sjnote'); if (nt0) nt0.onclick = () => { if (++qa >= 5) { store.set('p8b_qa', !store.get('p8b_qa', false)); toast(store.get('p8b_qa', false) ? '🧪 테스트 도구 켜짐 (게임 화면의 QA 버튼)' : '테스트 도구 꺼짐'); qa = 0; } };
     const save = async () => {
       const nt = { on: $('#nOn').checked, t: $('#nT').value };
       if (nt.on && !(await notiPermission())) { nt.on = false; $('#nOn').checked = false; toast('알림 권한이 꺼져 있어요. 설정에서 허용해 주세요.'); }

@@ -431,6 +431,44 @@
   .svbtns{display:flex;gap:5px;flex-shrink:0}
   .svslot button{background:#ffffff14;border-radius:10px;padding:8px 9px;font-size:13px}
   .svslot button.pri{background:var(--accent)}.svslot button.del{background:none;color:var(--dim)}
+
+  /* ===== v7 세계 확장 ===== */
+  #placeBar{position:absolute;left:10px;right:10px;bottom:10px;display:none;align-items:center;gap:6px;pointer-events:none;z-index:3}
+  #placeBar.on{display:flex}
+  #placeBar .pl-sign{background:#000b;padding:4px 12px;border-radius:999px;font-family:'Jua';font-size:13px;white-space:nowrap}
+  #placeBar.stay .pl-sign,#placeBar.same .pl-sign{margin:0 auto 0 0}
+  #placeBar.same .pl-sign{animation:numPop .4s}
+  #placeBar .pl-from,#placeBar .pl-to{font-size:22px;filter:drop-shadow(0 2px 4px #000a)}
+  #placeBar .pl-road{flex:1;height:6px;border-radius:3px;background:repeating-linear-gradient(90deg,#fff8 0 10px,transparent 10px 18px);position:relative}
+  #placeBar .pl-road i{position:absolute;top:-16px;left:0;font-style:normal;font-size:22px;animation:rideGo .85s ease-in-out forwards}
+  @keyframes rideGo{to{left:calc(100% - 24px)}}
+  #placeBar.move .pl-sign{position:absolute;left:50%;top:-30px;transform:translateX(-50%)}
+  #game.autoing #stageWrap::after{bottom:auto;top:52px}
+  .bar{position:relative}
+  .bar em.pot,.potbar em.pot{position:absolute;top:-2px;bottom:-2px;width:2px;margin-left:-1px;background:#fff;opacity:.75;border-radius:1px}
+  .bar em.pot.over{background:var(--hap);box-shadow:0 0 6px var(--hap)}
+  .potbar{position:relative;overflow:visible!important}
+  .rstage{flex:1;position:relative;display:grid;grid-template-columns:repeat(4,1fr);gap:6px;background:#ffffff0a;border-radius:16px;overflow:hidden;margin-top:6px}
+  .rlane{position:relative;border-left:1px solid #ffffff10}
+  .rnote{position:absolute;left:12%;right:12%;height:22px;top:-30px;border-radius:8px;background:linear-gradient(180deg,#ffcc4d,#ff8a3d);box-shadow:0 0 12px #ffcc4d88;animation:rfall linear forwards}
+  .rnote.hit{animation:none;opacity:0;transition:opacity .15s}
+  @keyframes rfall{to{top:calc(82% - 11px)}}
+  .rline{position:absolute;left:0;right:0;top:82%;height:4px;background:#fff8;box-shadow:0 0 10px #fff}
+  .rjudge{position:absolute;left:0;right:0;top:40%;text-align:center;font-family:'Jua';font-size:30px;opacity:0}
+  .rjudge.pop{animation:judgePop .7s ease-out}
+  @keyframes judgePop{0%{opacity:0;transform:scale(.5)}20%{opacity:1;transform:scale(1.15)}70%{opacity:1}100%{opacity:0;transform:translateY(-20px)}}.rjudge.ok{color:var(--hap)}.rjudge.no{color:var(--hp)}
+  .rkeys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;margin-top:8px}
+  .rkeys button{background:#fff;color:#1b1530;border-radius:0 0 12px 12px;height:84px;font-size:18px;box-shadow:0 5px 0 #b9addb;touch-action:none}
+  .rkeys button.down{transform:translateY(4px);box-shadow:0 1px 0 #b9addb;background:#ffe9a8}
+  .tripsum div{display:flex;justify-content:space-between;padding:6px 2px;border-bottom:1px dashed #ffffff18;font-size:14px}
+  .tripsum .tot{font-family:'Jua';font-size:17px;color:var(--hap);border:0}.tripsum p{text-align:center;margin:8px 0 0!important}
+  .passhead{text-align:center;font-size:14px;margin-bottom:8px}.passhead b{font-family:'Jua';font-size:30px;color:var(--smart)}.passhead small{display:block;color:var(--dim);font-size:11px;margin-top:4px}
+  .passtbl{width:100%;border-collapse:collapse;font-size:12px}.passtbl th,.passtbl td{border-bottom:1px solid #ffffff14;padding:7px 4px;text-align:left;vertical-align:middle}
+  .passtbl th{color:var(--dim);font-weight:400;width:36px;text-align:center}.passtbl th.open{color:var(--smart);font-family:'Jua'}
+  .passtbl td{color:var(--dim)}.passtbl td.open{color:var(--ink)}
+  .passtbl button{background:var(--accent);border-radius:8px;padding:3px 8px;font-size:12px;margin-left:4px}
+  .qapre{white-space:pre-wrap;font-size:11px;background:#0005;border-radius:10px;padding:10px;max-height:50vh;overflow:auto;user-select:text}
+  .spd button{padding:6px 7px}
 </style>
 </head>
 <body>
@@ -562,6 +600,9 @@
 <script src="js/hub.js"></script>
 <script src="js/fun.js"></script>
 <script src="js/save.js"></script>
+<script src="js/world.js"></script>
+<script src="js/money.js"></script>
+<script src="js/net.js"></script>
 
 </body>
 </html>

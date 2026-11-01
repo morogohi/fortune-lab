@@ -10,12 +10,12 @@ const Grow = (() => {
   const POL = [
     { k: 'study', e: '📚', n: '공부 우등생', d: '공부·자격증 위주 → 명문대·전문직',
       kw: ['공부', '수학', '과학', '영어', '국어', '코딩', '사회', '책', '대학', '자격', '시험', '독서', '바둑', '진학', '전공', '그림책', '배우'],
-      act: { '공부': 6, '자기계발': 5, '그림책': 4, '취미': 1.5, '가족시간': 1, '운동': 1.2, '구직': 6 }, stat: 'smart' },
+      act: { '공부': 6, '자기계발': 4, '그림책': 4, '취미': 1.5, '가족시간': 1, '운동': 1.2, '구직': 6 }, stat: 'smart' },
     { k: 'art', e: '🎨', n: '예체능 스타', d: '취미·대회 위주 → 예술가·운동선수',
       kw: ['노래', '음악', '미술', '그림', '체육', '피아노', '기타', '춤', '댄스', '축구', '농구', '수영', '대회', '출전', '그리기', '운동', '줄넘기', '자전거', '공놀이'],
       act: { '취미': 6, '노래': 5, '놀이': 5, '꾸미기': 3, '운동': 3, '옹알이': 3, '구직': 4 }, stat: 'look' },
     { k: 'money', e: '💼', n: '성공 사업가', d: '일·투자 위주 → 부자 되기',
-      kw: ['투자', '사업', '창업', '돈', '알바', '이직', '승진', '계약', '도전', '영업', '주식', '부동산', '수입', '연봉', '매수', '산다'],
+      kw: ['투자', '사업', '창업', '돈', '알바', '이직', '승진', '계약', '도전', '영업', '주식', '부동산', '수입', '연봉', '매수', '산다', '금융', '세미나', '예금'],
       act: { '추가근무': 5, '투자': 5, '알바': 5, '자기계발': 3, '구직': 8, '공부': 2, '집': 1.5 }, stat: 'money' },
     { k: 'family', e: '💗', n: '가족 행복', d: '가족·연애 위주 → 따뜻한 가정',
       kw: ['가족', '결혼', '사랑', '함께', '아이', '고백', '프러포즈', '데이트', '친구', '부모', '만남', '받아', '좋아', '응원', '안아', '화해', '사과'],
@@ -26,7 +26,7 @@ const Grow = (() => {
     { k: 'balance', e: '⚖️', n: '균형 잡힌 삶', d: '가장 부족한 능력을 채워 가며 고르게', kw: [], act: { '구직': 6 }, stat: null },
     { k: 'free', e: '🎲', n: '운명에 맡기기', d: '그때그때 무작위로 — 예측불가 인생', kw: [], act: {}, stat: null },
   ];
-  const NEG = ['그만', '쉬자', '닫기', '다음에', '아직', '포기', '거절', '참는다', '무시', '계속 다닌다'];
+  const NEG = ['그만', '쉬자', '닫기', '다음에', '아직', '포기', '거절', '참는다', '무시', '계속 다닌다', '취소', '나중에', '안 할래', '안 빌릴래'];
   const STAT_ACTS = {
     hp: ['운동', '검진', '병원', '산책', '잠자기'], hap: ['여행', '놀이', '친구들', '취미', '노래', '옹알이'],
     smart: ['공부', '자기계발', '그림책', '회고록'], bond: ['가족시간', '집안일', '자식 연락', '울기'], look: ['꾸미기', '운동', '취미'],
@@ -65,6 +65,8 @@ const Grow = (() => {
     if (NEG.some(w => t.includes(w))) s -= 3;
     if (t.includes('★')) s += 2;
     if (['병원', '치료', '약을', '의사', '진료'].some(w => t.includes(w))) s += P.hp < 55 ? 6 : 3;   // 아플 땐 치료가 먼저
+    const pc = t.match(/가능성 (\d+)%/); if (pc) s += +pc[1] / 12;                       // 합격 가능성이 높은 곳
+    if (t.includes('지원 가능')) s += 5; if (t.includes('필요 (지금') || t.includes('조건:')) s -= 6;
     const lv = t.match(/Lv(\d+)/); if (lv) s += +lv[1] * .4;
     const pay = t.match(/연 수입 약/); if (pay && p.k === 'money') s += 3;
     if (p.k === 'balance') { const w = weakest(), map = { hp: '건강', hap: '행복', smart: '공부', bond: '가족', look: '꾸미' }; if (t.includes(map[w])) s += 3; }
@@ -80,22 +82,24 @@ const Grow = (() => {
   const BIG = ['결혼', '프러포즈', '청혼', '고백', '이별', '헤어', '창업', '이민', '전공', '이상형'];
   function isBig(ev) {
     if (ev.auto) return false;
+    if (ev.big) return true;
     if (ev.id && BIG_ID.has(ev.id)) return true;
     return BIG.some(w => (ev.t || '').includes(w));
   }
 
   /* ---------- 자동 진행 ---------- */
-  let timer = null, speed = 0, holdUntil = 0;
+  let timer = null, speed = 0, holdUntil = 0, ffTo = 0;
   const cfg = () => store.get('p8b_auto', { stopBig: true });
   function setSpeed(v) {
     speed = v; clearInterval(timer); timer = null;
-    if (v) { timer = setInterval(tick, v === 2 ? 380 : 900); }
+    if (v) { timer = setInterval(tick, v === 3 ? 90 : v === 2 ? 380 : 900); }
     paintAuto();
   }
   function stop(msg) { if (speed) { setSpeed(0); if (msg) toastG(msg); } }
   function tick() {
     if (!P || !P.alive || !$('#game').classList.contains('on')) { stop(); return; }
     if (performance.now() < holdUntil || $('#mini').classList.contains('on')) return;
+    if (ffTo && P.age >= ffTo) { ffTo = 0; stop(`⏭️ ${P.age}살이 됐어요`); return; }
     const ev = modalQ[0];
     if (ev) {
       if (cfg().stopBig && isBig(ev)) { stop('✋ 중요한 선택이에요. 직접 골라 주세요!'); markBig(); return; }
@@ -120,12 +124,13 @@ const Grow = (() => {
     const b = $('#autoBar'); if (!b) return;
     const p = pol();
     b.innerHTML = `<button id="saveBtn" class="savebtn" title="중간 저장">💾</button><button id="polBtn" class="polbtn">${P && P.policy ? p.e + ' ' + p.n : '🧭 방침 정하기'}</button>
-      <div class="spd"><button data-s="0" class="${speed === 0 ? 'on' : ''}">⏸</button><button data-s="1" class="${speed === 1 ? 'on' : ''}">▶ 자동</button><button data-s="2" class="${speed === 2 ? 'on' : ''}">⏩ 빠르게</button></div>`;
+      <div class="spd"><button data-s="0" class="${speed === 0 ? 'on' : ''}">⏸</button><button data-s="1" class="${speed === 1 ? 'on' : ''}">▶ 자동</button><button data-s="2" class="${speed === 2 ? 'on' : ''}">⏩ 빠르게</button><button data-s="3" class="${speed === 3 ? 'on' : ''}">⏭️ 5년</button></div>`;
     $('#polBtn').onclick = () => { Snd.sfx('tap'); openPolicy(true); };
     $('#saveBtn').onclick = () => { Snd.sfx('tap'); stop(); if (window.Save) Save.openSlots('save'); };
     b.querySelectorAll('[data-s]').forEach(x => x.onclick = () => {
       Snd.sfx('tap'); buzz(12);
-      if (+x.dataset.s && !P.policy) { openPolicy(true, () => setSpeed(+x.dataset.s)); return; }
+      if (+x.dataset.s && !P.policy) { openPolicy(true, () => { if (+x.dataset.s === 3) ffTo = P.age + 5; setSpeed(+x.dataset.s); }); return; }
+      if (+x.dataset.s === 3) { ffTo = P.age + 5; holdUntil = 0; }
       setSpeed(+x.dataset.s);
     });
     $('#game').classList.toggle('autoing', !!speed);
@@ -340,7 +345,7 @@ const Grow = (() => {
     const _rs = renderStats; renderStats = function () { _rs(); afterStats(); };
     const _die = die; die = function (r) { stop(); return _die(r); };
   }
-  return { refresh: () => paintAuto(), init, extraActions, recommend, decorateModal, stageReport, agePop, userTouched, confetti, setSpeed, POL };
+  return { get auto() { return speed > 0; }, refresh: () => paintAuto(), init, extraActions, recommend, decorateModal, stageReport, agePop, userTouched, confetti, setSpeed, POL };
 })();
 window.Grow = Grow;
 Grow.init();

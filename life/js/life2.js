@@ -410,6 +410,7 @@ function proposalEvent() {
 }
 function weddingEvent() {
   const r = P.rel;
+  if (!r) return { e: '💔', t: '결혼이 무산됐다', d: '두 사람의 사이가 그사이 멀어져 버렸다…', ch: [{ t: '확인', f: () => { } }] };
   const done = (cost, st, style) => {
     fx(Object.assign({ money: -M(cost) }, st));
     P.married = true; P.spouseName = r.name; r.aff = clamp(r.aff + 10);
