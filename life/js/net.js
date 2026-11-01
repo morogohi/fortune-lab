@@ -42,6 +42,7 @@ const Net = (() => {
     showModal({
       e: '🌐', t: `넷시티 · ${s.e} ${s.n}`, d: `지금 ${online.toLocaleString()}명 접속 중 · 시즌 종료까지 ${s.days}일 · 시즌 포인트 ${st.pts}`, big: 0,
       ch: [
+        { t: '🏫 온라인 어학교', s: `원어민 화상 수업 · 7개 언어 · 효과 1.5배 · 시즌 +1`, f: () => { if (P.age < 8) { log('온라인 어학교는 8살부터 들을 수 있어요'); return; } World.openLang('online'); } },
         { t: '🎹 합주 콘서트', s: plv >= 2 ? `세계 친구 3명과 합주 (피아노 Lv${plv}) · 시즌 +4` : '피아노 Lv2부터 참가할 수 있어요', f: () => {
           if (plv < 2) { log('피아노를 조금 더 배워야 합주에 낄 수 있어요'); return; }
           if (!useEnergy()) return;

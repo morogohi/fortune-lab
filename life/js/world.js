@@ -84,7 +84,7 @@ const World = (() => {
     const young = P.age <= 25;
     KS.forEach(k => {
       const gap = P.pot[k] - P[k];
-      if (gap > 0 && young) P[k] = clamp(P[k] + Math.max(1, Math.round(gap * .1)));   // 사주가 정한 기본치까지는 저절로
+      if (gap > 0 && young) { const g0 = P[k]; P[k] = clamp(P[k] + Math.max(1, Math.round(gap * .1))); P.basePts = (P.basePts || 0) + (P[k] - g0); }   // 사주가 정한 기본치까지는 저절로
       if (P.age >= 15 && P[k] >= P.pot[k] + 20 && !(P.over || {})[k]) {
         P.over = P.over || {}; P.over[k] = P.age;
         log(`🔥 운명 극복! ${LAB[k]}이(가) 사주가 정한 기본치(${P.pot[k]})를 노력으로 넘어섰다`, 'good');
@@ -126,14 +126,15 @@ const World = (() => {
     return { tier, idx: pool.slice(0, 2), review: !fresh.length };
   }
   function openLang(where) {
-    const cost = M(400), atAcademy = where !== 'library';
+    const online = where === 'online', cost = online ? M(150) : M(400), atAcademy = where !== 'library', mult = online ? 1.5 : atAcademy ? 1.8 : 1;
     showModal({
-      e: '🗣️', t: atAcademy ? '어학원 수업' : '도서관 독학', d: `${atAcademy ? '수업료 ' + usd(cost) + ' · 효과 2배' : '무료 · 효과 보통'} · 실제 생활 표현을 배우고 퀴즈로 확인해요`, grid: 1,
+      e: online ? '🌐' : '🗣️', t: online ? '넷시티 온라인 어학교' : atAcademy ? '어학원 수업' : '도서관 독학', d: `${online ? '원어민 화상 수업 ' + usd(cost) + ' · 효과 1.5배 · 집에서 수강' : atAcademy ? '수업료 ' + usd(cost) + ' · 효과 2배' : '무료 · 효과 보통'} · 실제 생활 표현을 배우고 퀴즈로 확인해요`, grid: 1,
       ch: [...LANGS.filter(l => l.k !== P.native).map(l => ({
         t: `<span class="ge">${l.e}</span>${l.n}<small>${L(l.k)} · ${lv(L(l.k))}${l.k === focusLang() ? ' ★' : ''}</small>`, f: () => {
           if (!useEnergy()) return;
           if (atAcademy && P.age >= 18) { if (P.money < cost) log('수업료가 부족해 도서관에서 독학했다'); else fx({ money: -cost }); }
-          lesson(l, atAcademy);
+          if (online) { P.onlineLang = (P.onlineLang || 0) + 1; if (window.Net && Net.addPts) Net.addPts(1, '온라인 어학교'); }
+          lesson(l, mult);
         }
       })), { t: '📒 내 단어장', f: () => vocab() }, { t: '그만', f: () => { } }],
     });
@@ -149,7 +150,7 @@ const World = (() => {
         <p class="lq">퀴즈: <b>${q[0]}</b> 의 뜻은?</p>`,
       ch: opts.map(o => ({ t: o[2], f: () => {
         const ok = o === q, young = P.age < 13 ? 1.3 : P.age < 20 ? 1.1 : P.age > 50 ? .7 : 1;
-        const g = Math.max(1, Math.round(R(3, 6) * (academy ? 1.8 : 1) * young * (.6 + P.smart / 120) * (1 - L(k) / 140) * (ok ? 1.3 : .9)));
+        const g = Math.max(1, Math.round(R(3, 6) * (academy === true ? 1.8 : academy || 1) * young * (.6 + P.smart / 120) * (1 - L(k) / 140) * (ok ? 1.3 : .9)));
         const before = L(k); P.lang[k] = Math.min(100, before + g); fx({ smart: 1 });
         nx.idx.forEach(i => { if (!P.learned[k].includes(i)) P.learned[k].push(i); });
         playAnim('read'); Snd.sfx(ok ? 'good' : 'bad'); say(q[0].length < 22 ? q[0] : q[0].slice(0, 20) + '…');
@@ -179,6 +180,7 @@ const World = (() => {
         ...(own ? [{ t: '🏠 집에서 연습', s: '무료 · 실력 조금', f: () => { if (!useEnergy()) return; pianoXp(R(2, 3)); fx({ hap: 1 }); playAnim('sing'); log('🎹 집에서 스케일 연습'); } }]
           : [{ t: '🛒 피아노 들여놓기', s: `디지털 피아노 ${usd(M(2500))}`, f: () => { if (P.money < M(2500)) { log('돈이 부족해요 (알바·용돈을 모아 보세요)', 'bad'); return; } fx({ money: -M(2500), hap: 5 }); P.ownPiano = true; log('🎹 집에 피아노가 생겼다!', 'good'); } }]),
         ...(plv() >= 2 ? [{ t: `🎤 연주회 · ${song().n}`, s: `난이도 ${'★'.repeat(Math.max(1, Math.ceil(diff() / 2)))} · 건반 ${song().lanes}개`, f: () => { if (!useEnergy()) return; rhythm('연주회', r => { fx({ hap: 4 + Math.round(r * 8), look: Math.round(r * 4) }); P.fame += r > .8 ? 1 : 0; pianoXp(2); if (r >= .85 && plv() >= 6) { P.art = true; badge('피아노 콩쿠르 입상'); cutin('🏆', '콩쿠르 입상!', '예술가의 길이 열렸다'); } }); } }] : []),
+        ...(window.Piano2 ? Piano2.choices() : []),
         { t: '닫기', f: () => { } }],
     });
   }
@@ -463,7 +465,7 @@ const World = (() => {
     if (window.Grow) { [['study', { '어학': 6, '피아노': 2, '해외': 2, '동네 지도': .5 }], ['art', { '피아노': 6, '어학': 1.5 }], ['money', { '어학': 2, '해외': 2 }], ['family', { '해외': .5 }], ['health', {}], ['balance', { '어학': 2, '피아노': 2 }]]
       .forEach(([k, o]) => { const p = Grow.POL.find(x => x.k === k); if (p) Object.assign(p.act, o); }); }
   }
-  return { init, goTo, openMap, openLang, lesson, vocab, diff, song, openPiano, openTrip, openUni, openGJobs, openAbroad, rhythm, potential, L, lv, LANGS, UNIS, GJOBS, CITY, legOpts, PL, ACT_PLACE };
+  return { init, pianoXp, plv, goTo, openMap, openLang, lesson, vocab, diff, song, openPiano, openTrip, openUni, openGJobs, openAbroad, rhythm, potential, L, lv, LANGS, UNIS, GJOBS, CITY, legOpts, PL, ACT_PLACE };
 })();
 window.World = World;
 World.init();

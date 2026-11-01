@@ -34,6 +34,7 @@ const Save = (() => {
     if (o.job) o.job = JOBS.find(j => j.id === o.job.id) || o.job;
     ['marks', 'badges', 'seen', 'certs'].forEach(k => { if (!(o[k] instanceof Set)) o[k] = new Set(Array.isArray(o[k]) ? o[k] : []); });
     o.saju = Saju.analyze(o.birth, o.male);
+    if (o.saju && o.gaeun && o.gaeun.done && o.gaeun.el != null) o.saju = { ...o.saju, el: o.saju.el.map((v, i) => i === o.gaeun.el ? v + 2 : v) };   // v9 개운 반영
     if (o.mate && o.mate.birth) { o.mate.saju = Saju.analyze(o.mate.birth, o.mate.male); if (o.saju && o.mate.saju) o.mate.c = Saju.compatPair(o.saju, o.mate.saju); }
     o.bubble = null; o.pendingAd = null;
     return o;
