@@ -65,7 +65,7 @@ const World = (() => {
     bank: { d: '저축·대출·금융 공부', age: p => p.age >= 12, go: () => window.Money && Money.openBank() },
     realty: { d: '내 집·부동산 투자', age: p => p.age >= 19, go: () => window.Money && Money.openRealty() },
     airport: { d: '세계여행·유학·해외 취업', age: p => p.age >= 16, go: () => openAbroad() },
-    netcity: { d: '시즌 이벤트·합주·동창회', age: p => p.age >= 10, go: () => window.Net && Net.open() },
+    netcity: { d: '시즌 이벤트·합주·동창회', age: p => p.age >= 10 && (!window.Hist || Hist.era('internet')), go: () => window.Net && Net.open() },
   };
 
   /* ===================== ② 사주 잠재력 + 노력 ===================== */
@@ -116,25 +116,55 @@ const World = (() => {
   }
   // 주력 언어: 가장 잘하는 외국어, 없으면 영어(영어가 모국어면 중국어)
   function focusLang() { const e = Object.entries(P.lang || {}).filter(([k]) => k !== P.native).sort((a, b) => b[1] - a[1])[0]; return e && e[1] >= 15 ? e[0] : P.native === 'en' ? 'zh' : 'en'; }
+  /* 생활 외국어 레슨: 표현 카드 2장 + 뜻 맞히기 퀴즈 → 정답이면 실력이 더 오름 */
+  function speak(t, k) { try { const u = new SpeechSynthesisUtterance(t.replace(/\(.*?\)/g, '')); u.lang = CONTENT.L[k].tts; u.rate = .85; speechSynthesis.cancel(); speechSynthesis.speak(u); } catch (e) { } }
+  function nextItems(k) {
+    const it = CONTENT.L[k].items, v = L(k), tier = v < 20 ? 0 : v < 45 ? 1 : 2, base = tier * 6;
+    P.learned = P.learned || {}; const got = P.learned[k] = P.learned[k] || [];
+    const fresh = [0, 1, 2, 3, 4, 5].map(i => base + i).filter(i => !got.includes(i));
+    const pool = fresh.length ? fresh : [0, 1, 2, 3, 4, 5].map(i => base + i).sort(() => Math.random() - .5);
+    return { tier, idx: pool.slice(0, 2), review: !fresh.length };
+  }
   function openLang(where) {
     const cost = M(400), atAcademy = where !== 'library';
     showModal({
-      e: '🗣️', t: atAcademy ? '어학원 수업' : '도서관 독학', d: `${atAcademy ? '수업료 ' + usd(cost) + ' · 효과 2배' : '무료 · 효과 보통'} · 어릴수록 빨리 늘어요`, grid: 1,
+      e: '🗣️', t: atAcademy ? '어학원 수업' : '도서관 독학', d: `${atAcademy ? '수업료 ' + usd(cost) + ' · 효과 2배' : '무료 · 효과 보통'} · 실제 생활 표현을 배우고 퀴즈로 확인해요`, grid: 1,
       ch: [...LANGS.filter(l => l.k !== P.native).map(l => ({
         t: `<span class="ge">${l.e}</span>${l.n}<small>${L(l.k)} · ${lv(L(l.k))}${l.k === focusLang() ? ' ★' : ''}</small>`, f: () => {
           if (!useEnergy()) return;
-          if (atAcademy) { if (P.money < cost && P.age >= 18) { log('수업료가 부족해 도서관에서 독학했다'); } else if (P.age >= 18) fx({ money: -cost }); }
-          const young = P.age < 13 ? 1.3 : P.age < 20 ? 1.1 : P.age > 50 ? .7 : 1;
-          const g = Math.max(1, Math.round(R(3, 6) * (atAcademy ? 1.8 : 1) * young * (.6 + P.smart / 120) * (1 - L(l.k) / 140)));   // 잘할수록 느리게
-          const before = L(l.k); P.lang[l.k] = Math.min(100, before + g); fx({ smart: 1 });
-          playAnim('read'); Snd.sfx('page');
-          say(`${l.k === 'en' ? 'Hello!' : l.k === 'zh' ? '你好!' : l.k === 'ja' ? 'こんにちは!' : l.k === 'es' ? '¡Hola!' : l.k === 'fr' ? 'Bonjour!' : l.k === 'de' ? 'Hallo!' : '안녕하세요!'}`);
-          log(`${l.e} ${l.n} +${g} (→ ${P.lang[l.k]}, ${lv(P.lang[l.k])})`);
-          if (lv(before) !== lv(P.lang[l.k]) && P.lang[l.k] >= 45) { cutin(l.e, `${l.n} ${lv(P.lang[l.k])}!`, '세계로 가는 문이 넓어졌다'); Snd.sfx('levelup'); }
-          if (Object.values(P.lang).filter(v => v >= 70).length >= 3) badge('다개국어 능통자');
+          if (atAcademy && P.age >= 18) { if (P.money < cost) log('수업료가 부족해 도서관에서 독학했다'); else fx({ money: -cost }); }
+          lesson(l, atAcademy);
         }
-      })), { t: '그만', f: () => { } }],
+      })), { t: '📒 내 단어장', f: () => vocab() }, { t: '그만', f: () => { } }],
     });
+  }
+  function lesson(l, academy) {
+    const k = l.k, C = CONTENT.L[k], nx = nextItems(k), cards = nx.idx.map(i => C.items[i]);
+    const q = cards[0], wrong = C.items.filter(x => x[2] !== q[2]).sort(() => Math.random() - .5).slice(0, 2);
+    const opts = [q, ...wrong].sort(() => Math.random() - .5);
+    const tierN = ['단어', '생활 표현', '문장'][nx.tier];
+    showModal({
+      e: l.e, t: `${l.n} ${tierN}${nx.review ? ' 복습' : ''}`, auto: 1, noAuto: 1,
+      html: () => `<div class="lcards">${cards.map((c, j) => `<div class="lcard"><button class="lspk" data-s="${j}">🔊</button><b>${c[0]}</b><span>${c[1]}</span><em>${c[2]}</em><small>${c[3]}</small></div>`).join('')}</div>
+        <p class="lq">퀴즈: <b>${q[0]}</b> 의 뜻은?</p>`,
+      ch: opts.map(o => ({ t: o[2], f: () => {
+        const ok = o === q, young = P.age < 13 ? 1.3 : P.age < 20 ? 1.1 : P.age > 50 ? .7 : 1;
+        const g = Math.max(1, Math.round(R(3, 6) * (academy ? 1.8 : 1) * young * (.6 + P.smart / 120) * (1 - L(k) / 140) * (ok ? 1.3 : .9)));
+        const before = L(k); P.lang[k] = Math.min(100, before + g); fx({ smart: 1 });
+        nx.idx.forEach(i => { if (!P.learned[k].includes(i)) P.learned[k].push(i); });
+        playAnim('read'); Snd.sfx(ok ? 'good' : 'bad'); say(q[0].length < 22 ? q[0] : q[0].slice(0, 20) + '…');
+        log(`${l.e} ${l.n} ${tierN}: "${q[0]}" (${q[2]}) ${ok ? '✅ 정답' : '❌ 오답'} · +${g} → ${P.lang[k]} ${lv(P.lang[k])}`, ok ? 'good' : '');
+        if (lv(before) !== lv(P.lang[k]) && P.lang[k] >= 45) { cutin(l.e, `${l.n} ${lv(P.lang[k])}!`, '세계로 가는 문이 넓어졌다'); Snd.sfx('levelup'); }
+        if (Object.values(P.lang).filter(v => v >= 70).length >= 3) badge('다개국어 능통자');
+      } })),
+    });
+    setTimeout(() => { document.querySelectorAll('.lspk').forEach(b => b.onclick = e => { e.stopPropagation(); speak(cards[+b.dataset.s][0], k); }); if (!(window.Grow && Grow.auto)) speak(cards[0][0], k); }, 50);
+  }
+  function vocab() {
+    const rows = LANGS.filter(l => (P.learned || {})[l.k] && P.learned[l.k].length).map(l => `<div class="vhead">${l.e} ${l.n} · ${P.learned[l.k].length}개 · ${lv(L(l.k))}</div>` +
+      P.learned[l.k].map(i => { const c = CONTENT.L[l.k].items[i]; return `<div class="vrow"><button class="vspk" data-k="${l.k}" data-i="${i}">🔊</button><b>${c[0]}</b><span>${c[1]}</span><em>${c[2]}</em></div>`; }).join('')).join('');
+    openOverlay('📒 내 단어장', rows || '<p class="sjtxt" style="text-align:center">아직 배운 표현이 없어요. 어학원이나 도서관에서 수업을 들어 보세요.</p>', [{ t: '닫기' }]);
+    document.querySelectorAll('.vspk').forEach(b => b.onclick = () => speak(CONTENT.L[b.dataset.k].items[+b.dataset.i][0], b.dataset.k));
   }
 
   /* ============================= ④ 피아노 ============================= */
@@ -145,47 +175,56 @@ const World = (() => {
     showModal({
       e: '🎹', t: '피아노', d: `지금 Lv${plv()} · ${own ? '집에 피아노 있음' : '집에 피아노 없음'}`,
       ch: [
-        { t: '🎓 학원 레슨', s: `수업료 ${usd(fee)} · 실력 2배로 늘어요`, f: () => { if (!useEnergy()) return; if (P.age >= 15) fx({ money: -fee }); pianoXp(R(4, 6)); fx({ hap: 2, smart: 1 }); P.sub.music = clamp(P.sub.music + 3); playAnim('sing'); log('🎹 피아노 학원 레슨: 바이엘 → 체르니 진도'); } },
+        { t: '🎓 학원 레슨', s: `수업료 ${usd(fee)} · 실력 2배로 늘어요`, f: () => { if (!useEnergy()) return; if (P.pianoFirst == null) P.pianoFirst = P.age; if (P.age >= 15) fx({ money: -fee }); pianoXp(R(4, 6)); fx({ hap: 2, smart: 1 }); P.sub.music = clamp(P.sub.music + 3); playAnim('sing'); log('🎹 피아노 학원 레슨: 바이엘 → 체르니 진도'); } },
         ...(own ? [{ t: '🏠 집에서 연습', s: '무료 · 실력 조금', f: () => { if (!useEnergy()) return; pianoXp(R(2, 3)); fx({ hap: 1 }); playAnim('sing'); log('🎹 집에서 스케일 연습'); } }]
           : [{ t: '🛒 피아노 들여놓기', s: `디지털 피아노 ${usd(M(2500))}`, f: () => { if (P.money < M(2500)) { log('돈이 부족해요 (알바·용돈을 모아 보세요)', 'bad'); return; } fx({ money: -M(2500), hap: 5 }); P.ownPiano = true; log('🎹 집에 피아노가 생겼다!', 'good'); } }]),
-        ...(plv() >= 2 ? [{ t: '🎤 작은 연주회 (리듬게임)', s: '실력이 좋을수록 보상 큼', f: () => { if (!useEnergy()) return; rhythm('연주회', r => { fx({ hap: 4 + Math.round(r * 8), look: Math.round(r * 4) }); P.fame += r > .8 ? 1 : 0; pianoXp(2); if (r >= .85 && plv() >= 6) { P.art = true; badge('피아노 콩쿠르 입상'); cutin('🏆', '콩쿠르 입상!', '예술가의 길이 열렸다'); } }); } }] : []),
+        ...(plv() >= 2 ? [{ t: `🎤 연주회 · ${song().n}`, s: `난이도 ${'★'.repeat(Math.max(1, Math.ceil(diff() / 2)))} · 건반 ${song().lanes}개`, f: () => { if (!useEnergy()) return; rhythm('연주회', r => { fx({ hap: 4 + Math.round(r * 8), look: Math.round(r * 4) }); P.fame += r > .8 ? 1 : 0; pianoXp(2); if (r >= .85 && plv() >= 6) { P.art = true; badge('피아노 콩쿠르 입상'); cutin('🏆', '콩쿠르 입상!', '예술가의 길이 열렸다'); } }); } }] : []),
         { t: '닫기', f: () => { } }],
     });
   }
   /* 리듬게임: 4개 건반, 떨어지는 음표를 판정선에서 누르기 (net: 합주) */
   let actx = null;
   function note(freq) { try { actx = actx || new (window.AudioContext || window.webkitAudioContext)(); const o = actx.createOscillator(), g = actx.createGain(); o.type = 'triangle'; o.frequency.value = freq; g.gain.setValueAtTime(.18, actx.currentTime); g.gain.exponentialRampToValueAtTime(.001, actx.currentTime + .5); o.connect(g); g.connect(actx.destination); o.start(); o.stop(actx.currentTime + .5); } catch (e) { } }
-  const SONG = [0, 0, 2, 2, 3, 3, 2, 1, 1, 0, 0, 3, 3, 2, 2, 1]; // 반짝반짝 작은별을 4건반으로 단순화
+  // 난이도 = 피아노 레벨×0.7 + 연습 연차/3(최대 3) + 나이(13살 +0.5, 18살 +0.5) → 곡·속도·건반 수·판정이 달라짐
+  function diff() { const yrs = P.pianoFirst != null ? P.age - P.pianoFirst : 0; return Math.min(10, Math.round(plv() * .7 + Math.min(3, yrs / 3) + (P.age >= 13 ? .5 : 0) + (P.age >= 18 ? .5 : 0))); }
+  function song() { const d = diff(); return CONTENT.SONGS.filter(s => s.d <= d).pop(); }
   function rhythm(title, done, mates) {
-    if (window.Grow && Grow.auto) {   // 자동 진행 중엔 피아노 실력으로 결과를 바로 계산
-      const r = Math.min(1, .35 + plv() * .06 + Math.random() * .2), gr = r >= .85 ? 'S' : r >= .65 ? 'A' : r >= .4 ? 'B' : 'C';
-      log(`🎹 ${title} ${gr}등급 (자동 · 정확도 ${Math.round(r * 100)}%)`, r >= .65 ? 'good' : ''); done && done(r, gr); return;
+    const s = song(), d = diff();
+    if (window.Grow && Grow.auto) {   // 자동 진행 중엔 실력으로 결과를 바로 계산
+      const r = Math.min(1, .35 + plv() * .06 - (s.d - d) * .02 + Math.random() * .2), gr = r >= .85 ? 'S' : r >= .65 ? 'A' : r >= .4 ? 'B' : 'C';
+      log(`🎹 ${title} · ${s.n} ${gr}등급 (자동 · 정확도 ${Math.round(r * 100)}%)`, r >= .65 ? 'good' : ''); done && done(r, gr); return;
     }
-    const el = $('#mini'), lanes = ['도', '미', '솔', '도↑'], fq = [262, 330, 392, 523];
-    const fall = Math.max(1.1, 1.8 - plv() * .06), gap = Math.max(.42, .62 - plv() * .02);
-    el.innerHTML = `<div class="mhead"><span>🎹 ${title}${mates ? ' · ' + mates : ''}</span><b id="rScore">0</b></div><div class="mtip">음표가 판정선에 닿을 때 건반을 눌러요!</div>
-      <div class="rstage">${lanes.map((l, i) => `<div class="rlane" data-l="${i}"></div>`).join('')}<div class="rline"></div><div id="rJudge" class="rjudge"></div></div>
-      <div class="rkeys">${lanes.map((l, i) => `<button data-k="${i}">${l}</button>`).join('')}</div>`;
+    const el = $('#mini'), N = s.lanes, lane = n => Math.round(n * (N - 1) / 7), lab = i => CONTENT.NOTE_N[Math.round(i * 7 / (N - 1))];
+    const extra = Math.max(0, d - s.d), gap = s.gap * (1 - extra * .05), fall = s.fall * (1 - extra * .04);
+    const PER = Math.max(55, 95 - d * 4), GRE = PER + 60, GOO = GRE + 60;
+    el.innerHTML = `<div class="mhead"><span>🎹 ${title}${mates ? ' · ' + mates : ''}</span><b id="rScore">0</b></div>
+      <div class="mtip">🎼 ${s.n} (${s.by}) · 난이도 ${'★'.repeat(Math.max(1, Math.ceil(d / 2)))} · 건반 ${N}개</div>
+      <div class="rstage" style="grid-template-columns:repeat(${N},1fr)">${Array.from({ length: N }, (_, i) => `<div class="rlane" data-l="${i}"></div>`).join('')}<div class="rline"></div><div id="rJudge" class="rjudge"></div></div>
+      <div class="rkeys" style="grid-template-columns:repeat(${N},1fr)">${Array.from({ length: N }, (_, i) => `<button data-k="${i}" class="${N > 6 ? 'sm' : ''}">${lab(i)}</button>`).join('')}</div>`;
     el.classList.add('on');
-    const t0 = performance.now() + 900, notes = SONG.map((ln, i) => ({ ln, t: t0 + i * gap * 1000, hit: false }));
+    const t0 = performance.now() + 1000, notes = [];
+    s.notes.forEach((n, i) => { const t = t0 + i * gap * 1000; notes.push({ ln: lane(n), f: CONTENT.FREQ[n], t }); if (s.chords && d >= 9 && i % 4 === 0) notes.push({ ln: (lane(n) + 3) % N, f: CONTENT.FREQ[(n + 4) % 8], t }); });
     const stage = el.querySelector('.rstage');
-    notes.forEach(n => { const d = document.createElement('i'); d.className = 'rnote'; d.style.animationDuration = fall + 's'; d.style.animationDelay = ((n.t - performance.now()) / 1000 - fall) + 's'; stage.querySelector(`[data-l="${n.ln}"]`).appendChild(d); n.el = d; });
-    let score = 0, combo = 0, max = notes.length;
+    notes.forEach(n => { const x = document.createElement('i'); x.className = 'rnote'; x.style.animationDuration = fall + 's'; x.style.animationDelay = ((n.t - performance.now()) / 1000 - fall) + 's'; stage.querySelector(`[data-l="${n.ln}"]`).appendChild(x); n.el = x; });
+    let score = 0, combo = 0, best0 = 0; const max = notes.length;
     const judge = (txt, cls) => { const j = $('#rJudge'); j.textContent = txt; j.className = 'rjudge ' + cls; void j.offsetWidth; j.classList.add('pop'); };
     el.querySelectorAll('[data-k]').forEach(b => b.onpointerdown = e => {
-      e.preventDefault(); const k = +b.dataset.k, now = performance.now(); note(fq[k]); b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120);
-      let best = null, bd = 1e9; notes.forEach(n => { if (!n.hit && n.ln === k) { const d = Math.abs(n.t - now); if (d < bd) { bd = d; best = n; } } });
-      if (!best || bd > 220) { combo = 0; judge('MISS', 'no'); return; }
-      best.hit = true; best.el.classList.add('hit'); combo++;
-      const pts = bd < 80 ? 1 : bd < 150 ? .7 : .4; score += pts; judge(bd < 80 ? `PERFECT ${combo}` : bd < 150 ? `GREAT ${combo}` : `GOOD ${combo}`, 'ok'); buzz(8);
+      e.preventDefault(); const k = +b.dataset.k, now = performance.now(); b.classList.add('down'); setTimeout(() => b.classList.remove('down'), 120);
+      let best = null, bd = 1e9; notes.forEach(n => { if (!n.hit && n.ln === k) { const dd = Math.abs(n.t - now); if (dd < bd) { bd = dd; best = n; } } });
+      note(best && bd <= GOO ? best.f : CONTENT.FREQ[Math.round(k * 7 / (N - 1))]);
+      if (!best || bd > GOO) { combo = 0; judge('MISS', 'no'); return; }
+      best.hit = true; best.el.classList.add('hit'); combo++; best0 = Math.max(best0, combo);
+      const pts = bd < PER ? 1 : bd < GRE ? .7 : .4; score += pts; judge(bd < PER ? `PERFECT ${combo}` : bd < GRE ? `GREAT ${combo}` : `GOOD ${combo}`, 'ok'); buzz(8);
       $('#rScore').textContent = Math.round(score * 10);
     });
+    const endT = (t0 - performance.now()) + s.notes.length * gap * 1000 + fall * 300 + 900;
     setTimeout(() => {
       const r = Math.min(1, score / max), gr = r >= .85 ? 'S' : r >= .65 ? 'A' : r >= .4 ? 'B' : 'C';
-      el.innerHTML = `<div class="mend"><div class="mgrade g${gr}">${gr}</div><h3>${title} ${gr === 'S' ? '기립박수!' : gr === 'A' ? '큰 박수!' : gr === 'B' ? '무사히 끝!' : '긴장했나 봐요'}</h3><p>정확도 ${Math.round(r * 100)}%</p><button class="bigbtn sm" id="rDone">좋아요!</button></div>`;
+      el.innerHTML = `<div class="mend"><div class="mgrade g${gr}">${gr}</div><h3>${s.n} ${gr === 'S' ? '기립박수!' : gr === 'A' ? '큰 박수!' : gr === 'B' ? '무사히 끝!' : '긴장했나 봐요'}</h3><p>정확도 ${Math.round(r * 100)}% · 최고 콤보 ${best0}</p>
+        <p class="sjnote">다음 곡까지: ${(CONTENT.SONGS.find(x => x.d > d) || {}).n ? `${CONTENT.SONGS.find(x => x.d > d).n} (난이도 ${CONTENT.SONGS.find(x => x.d > d).d} 필요, 지금 ${d})` : '최고 난이도 도달!'}</p><button class="bigbtn sm" id="rDone">좋아요!</button></div>`;
       Snd.sfx(gr === 'S' || gr === 'A' ? 'fanfare' : 'pop'); if (gr === 'S' && window.Grow) Grow.confetti();
-      $('#rDone').onclick = () => { el.classList.remove('on'); log(`🎹 ${title} ${gr}등급 (정확도 ${Math.round(r * 100)}%)`, r >= .65 ? 'good' : ''); done && done(r, gr); renderActions(); };
-    }, (t0 - performance.now()) + SONG.length * gap * 1000 + 700);
+      $('#rDone').onclick = () => { el.classList.remove('on'); log(`🎹 ${title} · ${s.n} ${gr}등급 (정확도 ${Math.round(r * 100)}%)`, r >= .65 ? 'good' : ''); done && done(r, gr); renderActions(); };
+    }, endT);
   }
 
   /* ========================= ⑤ 세계여행 · 교통 ========================= */
@@ -212,6 +251,8 @@ const World = (() => {
   }
   function startCity() { const nat = P.native; return CITY.find(c => c.l === nat && c.n === '서울') || { n: P.country.n, e: P.country.f, r: P.country.r === 'eu' ? 'eu' : ['m', 'la'].includes(P.country.r) ? 'am' : ['af', 'me'].includes(P.country.r) ? 'af' : 'asia' }; }
   function openTrip(evMode) {
+    if (window.Hist && Hist.era('travelBan')) { log('😷 코로나19로 국경이 닫혀 해외여행을 갈 수 없다', 'bad'); return; }
+    if (window.Hist && !Hist.era('travel')) { log(`🛂 ${P.birth.y + P.age}년엔 아직 해외여행이 자유롭지 않다 (한국은 1989년 전면 자유화)`, 'bad'); return; }
     showModal({
       e: '🎒', t: evMode ? '스무 살, 세계로!' : '세계여행 계획', d: `모은 돈 ${usd(P.money)} · 구간마다 비행기·기차·배를 골라요`, big: 1,
       ch: [...ROUTES.map(r => ({ t: `${r.e} ${r.n}`, s: r.c.join(' → '), f: () => planLegs(r.c.map(n => CITY.find(c => c.n === n))) })),
@@ -422,7 +463,7 @@ const World = (() => {
     if (window.Grow) { [['study', { '어학': 6, '피아노': 2, '해외': 2, '동네 지도': .5 }], ['art', { '피아노': 6, '어학': 1.5 }], ['money', { '어학': 2, '해외': 2 }], ['family', { '해외': .5 }], ['health', {}], ['balance', { '어학': 2, '피아노': 2 }]]
       .forEach(([k, o]) => { const p = Grow.POL.find(x => x.k === k); if (p) Object.assign(p.act, o); }); }
   }
-  return { init, goTo, openMap, openLang, openPiano, openTrip, openUni, openGJobs, openAbroad, rhythm, potential, L, lv, LANGS, UNIS, GJOBS, CITY, legOpts, PL, ACT_PLACE };
+  return { init, goTo, openMap, openLang, lesson, vocab, diff, song, openPiano, openTrip, openUni, openGJobs, openAbroad, rhythm, potential, L, lv, LANGS, UNIS, GJOBS, CITY, legOpts, PL, ACT_PLACE };
 })();
 window.World = World;
 World.init();

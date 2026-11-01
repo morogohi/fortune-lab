@@ -283,6 +283,7 @@ function yearlyCareer() {
 function promotionEvent() {
   const l = ladder(), next = l[P.rank + 1], L = Saju.luckAt(P.saju, P.age), lb = L && L.g === 3 ? 10 : 0;
   const win = () => {
+    if (!P.job) return;
     P.rank++; P.rankYears = 0; P.perf = clamp(P.perf - 15); fx({ hap: 10 });
     cutin('🎉', `${next} 승진!`, `${P.job.n} · ${P.age}살`); Snd.sfx('fanfare'); playAnim('newjob', 2.5); say(`${next}이다!`);
     log(`🎉 ${next}(으)로 승진! 연봉이 올랐다`, 'good');

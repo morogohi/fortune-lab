@@ -469,6 +469,22 @@
   .passtbl button{background:var(--accent);border-radius:8px;padding:3px 8px;font-size:12px;margin-left:4px}
   .qapre{white-space:pre-wrap;font-size:11px;background:#0005;border-radius:10px;padding:10px;max-height:50vh;overflow:auto;user-select:text}
   .spd button{padding:6px 7px}
+
+  /* ===== v8 학습·역사 ===== */
+  .lcards{display:flex;flex-direction:column;gap:8px;margin:4px 0 6px}
+  .lcard{position:relative;background:linear-gradient(135deg,#2f3f7a,#2a2247);border-radius:16px;padding:12px 48px 12px 14px;text-align:left}
+  .lcard b{display:block;font-size:20px;font-family:'Jua';font-weight:400;line-height:1.3}
+  .lcard span{display:block;font-size:13px;color:var(--hap);margin-top:2px}
+  .lcard em{display:block;font-style:normal;font-size:14px;margin-top:4px}
+  .lcard small{display:inline-block;margin-top:4px;font-size:11px;color:var(--dim);background:#ffffff12;border-radius:999px;padding:1px 8px}
+  .lspk,.vspk{position:absolute;right:10px;top:50%;transform:translateY(-50%);background:#ffffff1a;border-radius:50%;width:36px;height:36px;font-size:16px;padding:0}
+  .lq{font-size:15px!important;color:var(--ink)!important;margin:8px 0 2px!important}
+  .vhead{font-family:'Jua';font-size:16px;margin:12px 0 4px;color:var(--hap)}
+  .vrow{position:relative;background:var(--card2);border-radius:12px;padding:8px 52px 8px 12px;margin:5px 0;font-size:13px}
+  .vrow b{display:block;font-size:15px}.vrow span{color:var(--hap);font-size:12px;margin-right:8px}.vrow em{font-style:normal;color:var(--dim)}
+  .fincard{background:#5be08f14;border:1px solid #5be08f44;border-radius:14px;padding:12px;text-align:left;margin-bottom:6px}
+  .fincard b{font-family:'Jua';font-weight:400;font-size:16px;color:var(--money)}.fincard p{margin:6px 0 0!important;text-align:left!important;font-size:14px!important;color:#e6dcf7!important}
+  .rkeys button.sm{font-size:13px;height:74px}
 </style>
 </head>
 <body>
@@ -600,7 +616,9 @@
 <script src="js/hub.js"></script>
 <script src="js/fun.js"></script>
 <script src="js/save.js"></script>
+<script src="js/content.js"></script>
 <script src="js/world.js"></script>
+<script src="js/history.js"></script>
 <script src="js/money.js"></script>
 <script src="js/net.js"></script>
 

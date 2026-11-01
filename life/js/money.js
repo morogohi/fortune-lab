@@ -24,8 +24,9 @@ const Money = (() => {
   ];
 
   /* ---------- 경기 ---------- */
-  function market() { if (P.mktAge !== P.age) { P.mktAge = P.age; const r = Math.random(); P.mkt = r < .18 ? -.12 + Math.random() * -.08 : r < .7 ? .02 + Math.random() * .06 : .1 + Math.random() * .1; } return P.mkt; }
-  const mktWord = () => P.mkt <= -.1 ? '📉 불황' : P.mkt < .06 ? '➡️ 보합' : '📈 호황';
+  const year = () => P.birth.y + P.age;
+  function market() { if (P.mktAge !== P.age) { P.mktAge = P.age; P.mkt = window.Hist ? Hist.market(year()) : (Math.random() * .3 - .1); } return P.mkt; }
+  const mktWord = () => { market(); return P.mkt <= -.1 ? '📉 불황' : P.mkt < .06 ? '➡️ 보합' : '📈 호황'; };
 
   /* ---------- 용돈 · 알바 ---------- */
   function allowance() {
@@ -63,8 +64,8 @@ const Money = (() => {
         ...(b.save > 0 ? [{ t: '💸 예금 찾기', s: usd(b.save), f: () => { P.money += b.save; log(`🏦 예금 ${usd(b.save)} 인출`); b.save = 0; renderStats(); } }] : []),
         ...(P.age >= 19 ? [{ t: '📝 대출 받기', s: `한도 약 ${usd(limit() - b.loan)} · 금리 ${r}%`, f: () => askBorrow() }] : []),
         ...(b.loan > 0 && P.money > 0 ? [{ t: '✅ 대출 갚기', s: `${usd(Math.min(P.money, b.loan))} 상환 · 신용점수 ↑`, f: () => { const v = Math.min(P.money, b.loan); P.money -= v; b.loan -= v; b.credit = Math.min(950, b.credit + 15); log(`✅ 대출 ${usd(v)} 상환 (신용 ${b.credit})`, 'good'); renderStats(); } }] : []),
-        { t: '📈 투자하기', s: `올해 경기 ${mktWord()}`, f: () => openInvest() },
-        { t: '🎓 금융 세미나 듣기', s: '금융 지식 ↑ · 행동력 1', f: () => study('bank') },
+        { t: '📈 투자하기', s: `${climate()} · 보유 ${usd(pv())}`, f: () => openInvest() },
+        { t: '🎓 금융 세미나 (퀴즈)', s: '금융 지식 ↑ · 행동력 1', f: () => study('bank') },
         { t: '닫기', f: () => { } }],
     });
     setTimeout(() => { const p = document.querySelector('#sheet p'); if (p) p.style.whiteSpace = 'pre-line'; }, 0);
@@ -85,35 +86,80 @@ const Money = (() => {
   }
   function study(where) {
     if (!useEnergy()) return; World.goTo(where === 'library' ? 'library' : 'bank');
-    const g = R(5, 10); P.fin = Math.min(100, fin() + g); const tip = TIPS[(P.fin + P.age) % TIPS.length];
-    fx({ smart: 1 }); playAnim('read'); say(`${tip[0]}! 💡`); log(`💹 금융 공부 +${g} (→ ${P.fin}) · ${tip[0]}: ${tip[1]}`);
-    if (P.fin >= 60) badge('금융 박사');
-  }
-
-  /* ---------- 투자 ---------- */
-  const INV = [
-    { k: 'etf', e: '📊', n: '지수 ETF', risk: .6, d: '저위험 · 경기 따라감' }, { k: 'stock', e: '📈', n: '개별 주식', risk: 1.3, d: '중위험 · 공부할수록 유리' },
-    { k: 'coin', e: '🪙', n: '코인', risk: 2.6, d: '초고위험 · 대박 또는 쪽박' },
-  ];
-  function openInvest() {
-    const base = Math.max(0, P.money);
-    if (base < M(300)) { log('투자할 현금이 부족해요'); return; }
+    P.finSeen = P.finSeen || [];
+    const pool = CONTENT.FIN.map((_, i) => i).filter(i => !P.finSeen.includes(i)), i = (pool.length ? pool : CONTENT.FIN.map((_, j) => j))[R(0, (pool.length || CONTENT.FIN.length) - 1)];
+    const [topic, desc, q, ans, w1, w2] = CONTENT.FIN[i];
     showModal({
-      e: '📈', t: '어디에 투자할까?', d: `현금 ${usd(P.money)} · 올해 경기 ${mktWord()} · 금융 지식 ${fin()}`,
-      ch: [...INV.map(i => ({ t: `${i.e} ${i.n} (현금의 30%)`, s: i.d, f: () => invest(i, Math.round(base * .3)) })), { t: '안 할래', f: () => { } }],
+      e: '💹', t: `금융 수업: ${topic}`, auto: 1, noAuto: 1,
+      html: () => `<div class="fincard"><b>💡 ${topic}</b><p>${desc}</p></div><p class="lq">퀴즈: ${q}</p>`,
+      ch: [ans, w1, w2].sort(() => Math.random() - .5).map(o => ({ t: o, f: () => {
+        const ok = o === ans, g = ok ? R(8, 12) : R(2, 4);
+        P.fin = Math.min(100, fin() + g); if (!P.finSeen.includes(i)) P.finSeen.push(i);
+        fx({ smart: 1 }); playAnim('read'); Snd.sfx(ok ? 'good' : 'bad');
+        log(`💹 금융 수업 「${topic}」 ${ok ? '✅ 정답' : `❌ 오답 (정답: ${ans})`} · 금융 지식 +${g} → ${P.fin}`, ok ? 'good' : '');
+        if (P.fin >= 60) badge('금융 박사');
+      } })),
     });
   }
-  function invest(i, amt) {
+
+  /* ---------- 투자: 실제로 사서 들고 있으면 해마다 그해 시장(실제 역사)에 따라 오르내림 ---------- */
+  const port = () => (P.port = P.port || { etf: 0, stock: 0, coin: 0, cost: { etf: 0, stock: 0, coin: 0 } });
+  const INV = [
+    { k: 'etf', e: '📊', n: '지수 ETF (S&P 500)', alt: '주식형 펀드', era: 'etf', d: '미국 대기업 500곳에 나눠 투자. 시장 평균을 그대로 따라가요.', lesson: '하나만 산다면 이것. 수수료가 낮고 한 기업이 망해도 크게 다치지 않아요. 대신 시장 전체가 떨어지는 해엔 함께 떨어져요.' },
+    { k: 'stock', e: '📈', n: '개별 주식', d: '몇몇 회사를 골라 투자. 시장보다 더 크게 오르내려요.', lesson: '회사의 실적과 미래를 공부할수록 유리해요(금융 지식이 수익에 반영). 시장이 좋아도 고른 회사가 나쁘면 잃을 수 있어요.' },
+    { k: 'coin', e: '🪙', n: '코인 (비트코인)', era: 'coin', d: '2009년에 생긴 디지털 화폐. 1년에 몇 배가 되거나 반토막이 나요.', lesson: '변동성이 가장 커요. 잃어도 괜찮은 돈만 넣는 게 원칙이에요.' },
+  ];
+  const pv = () => { const q = port(); return q.etf + q.stock + q.coin; };
+  const pct = v => `${v >= 0 ? '+' : ''}${Math.round(v * 100)}%`;
+  function climate() {
+    const Y = year(), ev = window.Hist ? Hist.events(Y) : [], m = market();
+    return `${Y}년${ev.length ? ' · ' + ev.map(e => e.e + ' ' + e.n).join(', ') : ''}${window.Hist && Hist.known(Y) ? '' : ''}`;
+  }
+  function openInvest() {
+    const q = port(), Y = year();
+    const hold = INV.filter(i => q[i.k] > 0).map(i => `${i.e} ${q[i.k] > 0 ? usd(q[i.k]) : ''} (${pct(q[i.k] / Math.max(1, q.cost[i.k]) - 1)})`).join(' · ');
+    showModal({
+      e: '📈', t: '투자', d: `${climate()}\n현금 ${usd(P.money)} · 보유 ${hold || '없음'} · 금융 지식 ${fin()}`,
+      ch: [...INV.filter(i => !i.era || !window.Hist || Hist.era(i.era)).map(i => ({ t: `${i.e} ${i.k === 'etf' && window.Hist && !Hist.era('etf') ? i.alt : i.n} 사기`, s: `현금의 30% · ${i.d}`, f: () => buy(i) })),
+        ...INV.filter(i => q[i.k] > 0).map(i => ({ t: `💰 ${i.e} ${i.n} 전부 팔기`, s: `평가액 ${usd(q[i.k])} · 손익 ${usd(q[i.k] - q.cost[i.k])}`, f: () => sell(i) })),
+        ...(INV.some(i => i.era === 'coin') && window.Hist && !Hist.era('coin') ? [] : []),
+        { t: '📚 투자 수업 듣기', s: '금융 퀴즈 · 행동력 1', f: () => study('bank') }, { t: '닫기', f: () => { } }],
+    });
+    setTimeout(() => { const p = document.querySelector('#sheet p'); if (p) p.style.whiteSpace = 'pre-line'; }, 0);
+  }
+  function buy(i) {
+    const amt = Math.round(Math.max(0, P.money) * .3);
+    if (amt < M(200)) { log('투자할 현금이 부족해요'); return; }
     if (!useEnergy()) return; World.goTo('bank');
-    const L = Saju.luckAt(P.saju, P.age), luck = L && L.g === 2 ? .06 : 0, m = market();
-    const skill = (fin() - 30) / 400;                 // 금융 지식이 높을수록 기대수익 ↑
-    let r = m * (i.k === 'etf' ? 1 : .8) + skill + luck + (Math.random() - .5) * .5 * i.risk;
-    if (i.k === 'coin' && Math.random() < .08) r = 3 + Math.random() * 4;          // 가끔 대박
-    r = Math.max(-.9, r);
-    const v = Math.round(amt * r); fx({ money: v, hap: v > 0 ? 3 : -3 });
-    say(v > 0 ? '수익 났다 📈' : '물렸다 📉'); playAnim(v > 0 ? 'jackpot' : 'sad');
-    log(`${i.e} ${i.n} ${usd(amt)} → ${v >= 0 ? '+' : ''}${usd(v)} (${Math.round(r * 100)}%)${skill > 0 ? ' · 공부한 보람' : ''}`, v >= 0 ? 'good' : 'bad');
-    if (r > 2) { cutin('🚀', '코인 대박!', `+${usd(v)}`); badge('코인 대박'); }
+    const q = port(); q[i.k] += amt; q.cost[i.k] += amt; P.money -= amt;
+    showModal({ e: i.e, t: `${i.n} 매수 · ${usd(amt)}`, auto: 1, noAuto: 1, html: () => `<div class="fincard"><b>📚 알아 두기</b><p>${i.lesson}</p><p>이제부터 해마다 그해 실제 시장 흐름에 따라 평가액이 바뀌어요. 팔 때 손익이 확정돼요.</p></div>`, ch: [{ t: '알겠어요', f: () => { } }] });
+    log(`${i.e} ${i.n} ${usd(amt)} 매수 (${climate()})`); playAnim('give'); Snd.sfx('coin'); renderStats();
+  }
+  function sell(i) {
+    const q = port(), v = q[i.k], gain = v - q.cost[i.k];
+    P.money += v; q[i.k] = 0; q.cost[i.k] = 0; fx({ hap: gain > 0 ? 5 : -3 });
+    log(`💰 ${i.e} ${i.n} 매도 ${usd(v)} (손익 ${gain >= 0 ? '+' : ''}${usd(gain)})`, gain >= 0 ? 'good' : 'bad');
+    if (gain > 0 && gain > M(50000)) badge('투자 수익 실현');
+  }
+  function yearlyPort() {
+    const q = port(); if (pv() <= 0) return;
+    const Y = year(), m = market(), skill = (fin() - 30) / 500, L = Saju.luckAt(P.saju, P.age), luck = L && L.g === 2 ? .03 : 0;
+    const before = pv(), rets = {};
+    rets.etf = m;
+    rets.stock = m * 1.15 + skill + luck + (Math.random() - .5) * .4;
+    const c = window.Hist ? Hist.coin(Y) : null; rets.coin = c == null ? 0 : c + (Math.random() - .5) * .3;
+    ['etf', 'stock', 'coin'].forEach(k => { if (q[k] > 0) q[k] = Math.max(0, Math.round(q[k] * (1 + Math.max(-.95, rets[k])))); });
+    const after = pv(), known = window.Hist && Hist.known(Y);
+    const ev = window.Hist ? Hist.events(Y).filter(e => e.fx).map(e => e.n)[0] : '';
+    log(`📈 ${Y}년 내 투자 ${usd(before)} → ${usd(after)} (${pct(after / before - 1)})${q.etf ? ` · ETF ${pct(rets.etf)}${known ? ` = 실제 S&P 500 ${Hist.SP[Y]}%` : ''}` : ''}${ev ? ` · ${ev}` : ''}`, after >= before ? 'good' : 'bad');
+    // 폭락장 수업: 실제 투자자들이 가장 많이 실수하는 순간
+    if (m <= -.15 && before > M(1000) && !P.crashLesson?.[Y]) {
+      (P.crashLesson = P.crashLesson || {})[Y] = 1;
+      showModal({ e: '📉', t: `${Y}년 폭락장, 어떻게 할까?`, d: `내 투자가 ${pct(after / before - 1)} 떨어졌어요. ${ev || '시장 전체가 흔들리고 있어요'}.`,
+        ch: [{ t: '🧘 그대로 들고 버틴다 (장기 투자)', f: () => { log('🧘 폭락장에서 버티기로 했다. 역사적으로 큰 폭락은 몇 년 뒤 회복된 경우가 많았다'); P.fin = Math.min(100, fin() + 3); } },
+          { t: '🛒 싸졌을 때 조금 더 산다 (분할 매수)', f: () => { const a = Math.round(Math.max(0, P.money) * .15); if (a > 0) { q.etf += a; q.cost.etf += a; P.money -= a; } log(`🛒 하락장에서 ${usd(a)} 추가 매수 (분할 매수)`); P.fin = Math.min(100, fin() + 4); } },
+          { t: '😱 무서워서 다 판다 (손절)', f: () => { INV.forEach(i => { if (q[i.k] > 0) sell(i); }); log('😱 공포에 모두 팔았다. 손실이 확정됐다 — 다음엔 비상금과 분산이 답이다', 'bad'); } }] });
+    }
   }
 
   /* ---------- 부동산 투자 ---------- */
@@ -156,6 +202,7 @@ const Money = (() => {
     const b = bank(), m = market(), r = rate() / 100;
     allowance();
     if (b.save > 0) { const it = Math.round(b.save * (.03 + fin() / 2000)); b.save += it; }
+    yearlyPort();
     let interest = Math.round(b.loan * r);
     (P.props || []).forEach(p => {
       const vac = Math.random() < p.vac + (m < 0 ? .1 : 0);
@@ -170,7 +217,7 @@ const Money = (() => {
     if (b.credit < 480 && !P.marks.has('badcredit')) { P.marks.add('badcredit'); log('🚫 신용불량 위기… 빚부터 정리해야 한다', 'bad'); }
     if ((P.props || []).length || b.loan || b.save) { if (P.age % 2 === 0) log(`🏦 올해 경기 ${mktWord()} · 예금 ${usd(b.save)} · 대출 ${usd(b.loan)}${P.props && P.props.length ? ` · 부동산 ${P.props.length}채 ${usd(P.props.reduce((s, p) => s + p.value, 0))}` : ''}`); }
   }
-  function worth() { const b = P.bank || { save: 0, loan: 0 }; return b.save - b.loan + (P.props || []).reduce((s, p) => s + p.value - p.loan, 0); }
+  function worth() { const b = P.bank || { save: 0, loan: 0 }; return b.save - b.loan + (P.port ? pv() : 0) + (P.props || []).reduce((s, p) => s + p.value - p.loan, 0); }
 
   function extra(list) {
     if (!P || !P.alive) return;

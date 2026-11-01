@@ -109,7 +109,7 @@ const Net = (() => {
 
   function extra(list) {
     if (!P || !P.alive) return;
-    if (P.age >= 10) list.push({ e: '🌐', n: '넷시티', f: () => { World.goTo('netcity'); open(); }, free: 1 });
+    if (P.age >= 10 && (!window.Hist || Hist.era('internet'))) list.push({ e: '🌐', n: '넷시티', f: () => { World.goTo('netcity'); open(); }, free: 1 });
     if (qaOn()) list.push({ e: '🧪', n: 'QA', f: qaPanel, free: 1, mini: 1 });
   }
   function init() {
