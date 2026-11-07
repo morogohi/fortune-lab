@@ -19,7 +19,7 @@ window.Ads = (() => {
   const listeners = new Set();
   const notify = () => listeners.forEach(f => { try { f() } catch (e) {} });
 
-  const day = () => new Date().toISOString().slice(0, 10);
+  const day = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };   // 출석과 같은 기기 현지 날짜
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d } catch (e) { return d } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} },

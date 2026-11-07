@@ -22,10 +22,13 @@ function openShop(focus) {
   const rows = Store.list().map(k => {
     const it = Store.item(k), own = Store.has(k) && !it.consumable, why = Store.why(k);
     return `<div class="shopitem${focus === k ? ' focus' : ''}"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}</div>
-      <button data-k="${k}" class="${own ? 'own' : ''}">${own ? '보유 중' : Store.price(k)}</button></div>`;
+      ${!Store.native && !own ? `<small style="opacity:.7">앱 가격 ${Store.price(k)}</small>` : ''}</div>
+      <button data-k="${k}" class="${own ? 'own' : ''}">${own ? '보유 중' : Store.native ? Store.price(k) : '앱 전용'}</button></div>`;
   }).join('');
-  const note = Store.native ? '구매 내역은 스토어 계정에 저장돼요.' : '웹 체험판에서는 결제가 없어요. 앱에서 구매할 수 있어요.';
-  openOverlay('🛍️ 상점', rows + `<p class="sjnote" style="text-align:center">${note}</p>`,
+  const note = Store.native ? '구매 내역은 스토어 계정에 저장돼요. 기기를 바꾸면 「구매 복원」을 눌러 주세요.' : '웹 체험판에서는 결제가 없어요. 앱에서 구매할 수 있어요.';
+  const top = (Store.native ? '' : '<div class="webtrial">🌐 웹 체험판 · 결제 불가<br>표시된 가격은 앱 기준 안내예요. 「웹 체험판 무료 개방」 상품은 지금 바로 써 볼 수 있어요.</div>')
+    + '<p class="sjnote">🚫 <b>광고 제거</b>는 한 번 사면 영구 적용 · 🍀 <b>행운패스</b>는 정해진 기간만 광고가 없고 출석 복주머니가 2배예요. 광고 제거를 이미 가지고 있다면 패스는 복주머니 2배 효과만 남아요.</p>';
+  openOverlay('🛍️ 상점', top + rows + `<p class="sjnote" style="text-align:center">${note}</p>`,
     [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { const n = await Store.restore(); log && P && log(`구매 ${n}건 복원`); openShop(); } }] : []), { t: '닫기' }]);
   document.querySelectorAll('#osheet .shopitem button').forEach(b => b.onclick = () => {
     const k = b.dataset.k, it = Store.item(k);
@@ -78,13 +81,13 @@ function mateEvent() {
   P.mateMet = true;
   const c = m.c || { score: 70, word: '' };
   return {
-    e: '💞', t: '운명의 상대 등장!', d: `${m.name}을(를) 만났다. 사주 궁합 ${c.score}% · ${c.word}`, ch: [
+    e: '💞', t: '운명의 상대 등장!', d: `${m.name}을(를) 만났다. 사주 궁합 지수 ${c.score}점 · ${c.word}`, ch: [
       {
         t: '💘 다가간다', f: () => {
           P.rel = { name: m.name, job: pick(['회사원', '디자이너', '교사', '개발자', '요리사', '간호사']), traits: [{ t: '운명처럼 끌림', k: P.ideal || 'kind' }], compat: c.score, aff: 45 + Math.round(c.score / 3), since: P.age, match: true, mate: true };
-          P.partner = m.name; fx({ hap: 12 }); playAnim('love'); Snd.sfx('love'); cutin('💞', '운명의 상대!', `${m.name} · 궁합 ${c.score}%`);
-          log(`💞 운명의 상대 ${m.name}와(과) 사귀기 시작했다 (사주 궁합 ${c.score}%)`, 'good');
-          P.moments.push({ a: P.age, e: '💞', t: '운명의 상대', c: m.name, r: `궁합 ${c.score}%` });
+          P.partner = m.name; fx({ hap: 12 }); playAnim('love'); Snd.sfx('love'); cutin('💞', '운명의 상대!', `${m.name} · 궁합 지수 ${c.score}점`);
+          log(`💞 운명의 상대 ${m.name}와(과) 사귀기 시작했다 (사주 궁합 지수 ${c.score}점)`, 'good');
+          P.moments.push({ a: P.age, e: '💞', t: '운명의 상대', c: m.name, r: `궁합 지수 ${c.score}점` });
         }
       },
       { t: '🍃 지금은 아니야', f: () => { log(`${m.name}와(과) 스쳐 지나갔다…`); say('언젠가 다시 만날까?'); } }]
@@ -93,11 +96,11 @@ function mateEvent() {
 function mateLine() {
   const m = P && P.mate; if (!m) return '';
   const sc = m.c ? m.c.score : '?';
-  if (P.spouseName === m.name) return `💍 사주 궁합 ${sc}%의 ${m.name}와(과) 평생을 함께했다`;
-  if (P.exes.includes(m.name)) return `💔 ${m.name}와(과) 만났지만 인연이 이어지지 않았다 (궁합 ${sc}%)`;
-  if (P.rel && P.rel.name === m.name) return `💕 ${m.name}와(과) 끝까지 연인으로 지냈다 (궁합 ${sc}%)`;
-  if (P.mateMet) return `🍃 ${m.name}와(과)는 스쳐 지나간 인연이었다 (궁합 ${sc}%)`;
-  return `⏳ 이번 생에서는 ${m.name}을(를) 만나지 못했다 (궁합 ${sc}%)`;
+  if (P.spouseName === m.name) return `💍 사주 궁합 지수 ${sc}점의 ${m.name}와(과) 평생을 함께했다`;
+  if (P.exes.includes(m.name)) return `💔 ${m.name}와(과) 만났지만 인연이 이어지지 않았다 (궁합 지수 ${sc}점)`;
+  if (P.rel && P.rel.name === m.name) return `💕 ${m.name}와(과) 끝까지 연인으로 지냈다 (궁합 지수 ${sc}점)`;
+  if (P.mateMet) return `🍃 ${m.name}와(과)는 스쳐 지나간 인연이었다 (궁합 지수 ${sc}점)`;
+  return `⏳ 이번 생에서는 ${m.name}을(를) 만나지 못했다 (궁합 지수 ${sc}점)`;
 }
 
 /* ---------- 운명 조작 팩 (설정 화면) ---------- */

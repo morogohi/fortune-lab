@@ -332,16 +332,16 @@ function showCandidates(route) {
     e: route.e, t: `${route.n}에서 만난 사람`, d: '마음이 가는 사람을 골라보세요', ch: [
       ...cs.map(c => ({
         t: `${P.male ? '👩' : '👨'} ${c.name} (${c.age}) · ${c.job}`,
-        s: `${c.traits.map(t => t.t).join(' · ')}${c.match ? ' · 💖이상형' : ''}${c.hobby ? ' · ' + c.hobby + ' 동호회' : ''} · 🔮 사주 궁합 ${c.compat}%`,
+        s: `${c.traits.map(t => t.t).join(' · ')}${c.match ? ' · 💖이상형' : ''}${c.hobby ? ' · ' + c.hobby + ' 동호회' : ''} · 🔮 사주 궁합 지수 ${c.compat}점`,
         f: () => {
           if (!useEnergy()) return;
           const ch = .32 + P.look / 260 + c.compat / 350 + (c.match ? .12 : 0) + (route.id === 'work' ? .08 : 0) + (route.id === 'app' ? -.05 : 0) + (c.hobby ? .1 : 0);
           if (Math.random() < ch) {
             P.rel = { name: c.name, job: c.job, traits: c.traits, compat: c.compat, aff: 38 + Math.round(c.compat / 6) + (c.match ? 8 : 0), since: P.age, match: c.match };
             P.partner = c.name; P.dateCount = (P.dateCount || 0) + 1;
-            fx({ hap: 10 }); playAnim('love'); Snd.sfx('love'); cutin('💕', '연애 시작!', `${c.name} · 궁합 ${c.compat}%`);
-            log(`💕 ${c.name}(${c.job})와(과) 사귀기 시작했다 · 궁합 ${c.compat}%`, 'good');
-            P.moments.push({ a: P.age, e: '💕', t: '연애 시작', c: c.name, r: `궁합 ${c.compat}%` });
+            fx({ hap: 10 }); playAnim('love'); Snd.sfx('love'); cutin('💕', '연애 시작!', `${c.name} · 궁합 지수 ${c.compat}점`);
+            log(`💕 ${c.name}(${c.job})와(과) 사귀기 시작했다 · 궁합 지수 ${c.compat}점`, 'good');
+            P.moments.push({ a: P.age, e: '💕', t: '연애 시작', c: c.name, r: `궁합 지수 ${c.compat}점` });
           } else { fx({ hap: -4 }); playAnim('sad'); say('읽씹… 🥲'); log(`${c.name}에게 거절당했다`, 'bad'); }
         }
       })), { t: '마음에 드는 사람이 없어', f: () => { } }]
@@ -350,7 +350,7 @@ function showCandidates(route) {
 function openDate() {
   const r = P.rel;
   showModal({
-    e: '💑', t: `${r.name}와(과) 데이트`, d: `호감도 ${r.aff}/100 · 궁합 ${r.compat}% · 사귄 지 ${P.age - r.since}년`, grid: 1, ch: [
+    e: '💑', t: `${r.name}와(과) 데이트`, d: `호감도 ${r.aff}/100 · 궁합 지수 ${r.compat}점 · 사귄 지 ${P.age - r.since}년`, grid: 1, ch: [
       ...DATES.map(d => ({
         t: `<span class="ge">${d.e}</span>${d.n}<small>${d.cost ? usd(M(d.cost)) : '무료'}</small>`, f: () => {
           if (!useEnergy()) return;

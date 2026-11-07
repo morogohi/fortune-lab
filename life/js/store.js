@@ -7,14 +7,14 @@
 window.STORE_CONFIG = {
   // 스토어 콘솔(Play Console · App Store Connect)에 같은 ID로 '일회성 상품'을 만들어야 합니다
   products: {
-    report: { id: 'p8b_saju_report', e: '📜', n: '프리미엄 사주 리포트', d: '올해 운세 · 10년 대운 상세 · 성격·연애·재물·건강 풀이 (평생 무제한)', price: '₩2,900', consumable: false },
-    noads:  { id: 'p8b_remove_ads', e: '🚫', n: '광고 제거', d: '배너·전면 광고 영구 제거 (보상형 광고는 원할 때만)', price: '₩3,900', consumable: false },
+    report: { id: 'p8b_saju_report', e: '📜', n: '프리미엄 사주 리포트', d: '올해 운세 · 10년 대운 상세 · 성격·연애·재물·건강 풀이 (한 번 구매로 기간 제한 없이, 내 정보를 바꿔도 계속 열람)', price: '₩2,900', consumable: false },
+    noads:  { id: 'p8b_remove_ads', e: '🚫', n: '광고 제거', d: '배너·전면 광고 영구 제거 (기간 없음 · 보상형 광고는 원할 때만)', price: '₩3,900', consumable: false },
     fate:   { id: 'p8b_fate_pack', e: '🎛️', n: '운명 조작 팩', d: '태어날 가정형편과 타고난 재능을 직접 선택', price: '₩2,500', consumable: false },
     karma:  { id: 'p8b_karma_100', e: '✨', n: '카르마 100', d: '다시 태어나기 6번 또는 기적 2번', price: '₩1,200', consumable: true, karma: 100 },
-    pass7:  { id: 'p8b_pass_7d', e: '🍀', n: '행운패스 7일', d: '7일 동안 모든 광고 없이 + 패스 기간 출석 복주머니 2배 (구매할 때마다 기간 연장)', price: '₩1,500', consumable: true, passDays: 7 },
-    pass30: { id: 'p8b_pass_30d', e: '🌈', n: '행운패스 30일', d: '30일 동안 모든 광고 없이 + 패스 기간 출석 복주머니 2배', price: '₩3,900', consumable: true, passDays: 30 },
+    pass7:  { id: 'p8b_pass_7d', e: '🍀', n: '행운패스 7일', d: '7일 동안 광고 없음 + 출석 복주머니 2배 (기간제, 구매할 때마다 7일 연장)', price: '₩1,500', consumable: true, passDays: 7 },
+    pass30: { id: 'p8b_pass_30d', e: '🌈', n: '행운패스 30일', d: '30일 동안 광고 없음 + 출석 복주머니 2배 (기간제, 자동 갱신 없음)', price: '₩3,900', consumable: true, passDays: 30 },
     newyear:{ id: 'p8b_newyear_2027', e: '🧧', n: '2027 신년운세', d: '정미년 분야별 운세 + 12개월 흐름 + 좋은 달·조심할 달', price: '₩3,900', consumable: false },
-    compat: { id: 'p8b_compat_detail', e: '💞', n: '궁합 상세 풀이', d: '두 사람의 성격·연애 성향·올해 연애운까지 (모든 상대 무제한)', price: '₩1,900', consumable: false },
+    compat: { id: 'p8b_compat_detail', e: '💞', n: '궁합 상세 풀이', d: '두 사람의 성격·연애 성향·올해 연애운까지 (관계도에 등록한 모든 상대, 기간 제한 없음)', price: '₩1,900', consumable: false },
   },
   webDemoFree: ['report', 'newyear', 'compat'],          // 웹 체험판에서 무료로 여는 상품
   newYearFree: ['report'],          // 신년 이벤트 기간 무료 상품

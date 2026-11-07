@@ -16,6 +16,10 @@ const Hub = (() => {
     const [y, m, d] = p.date.split('-').map(Number), t = p.time;
     return { cal: p.cal || 's', y, m, d, hh: t ? +t.split(':')[0] : 12, mm: t ? +t.split(':')[1] : 0, unk: !t };
   }
+  /* 실제 사용자·궁합 상대 프로필은 오늘 이후 날짜 불가 (게임 속 가상 인물은 별도 허용) */
+  const todayStr = () => Fortune.ymd(new Date());
+  const futureMsg = d => d > todayStr() ? '오늘 이후 날짜는 입력할 수 없어요.' : '';
+  const TRIAL = () => Store.native ? '' : '<div class="webtrial">🌐 웹 체험판 · 결제 기능이 없어요. 가격은 앱 기준 안내이며 일부 상품은 무료로 열려 있어요.</div>';
   function analyzeP(p) { const b = birthOf(p); return b ? Saju.analyze(b, p.sex !== 'f') : null; }
   const keyOf = p => `${p.date}|${p.time || ''}|${p.sex}`;
 
@@ -80,10 +84,10 @@ const Hub = (() => {
     p = p || {};
     const sij = SIJIN.map(([v, l]) => `<option value="${v}"${p.time === v ? ' selected' : ''}>${l}</option>`).join('');
     return `<div class="hcard"><h3 class="ht">${p.date ? '✏️ 내 사주 정보 수정' : '🔮 나의 사주로 시작해요'}</h3>
-      <p class="hsub">생년월일만 있으면 돼요. 가입은 필요 없고, 정보는 이 기기 안에만 저장돼요.</p>
+      <p class="hsub">생년월일만 있으면 돼요. 가입은 필요 없고, 입력한 이름(별명)·생년월일·태어난 시간·성별은 이 기기 안에만 저장돼요.</p>${TRIAL()}
       <div class="form hform">
         <label>이름(별명)<input type="text" id="hName" maxlength="10" value="${esc(p.name || '')}" placeholder="예: 김민준"></label>
-        <label>생년월일<div class="row2"><input type="date" id="hDate" min="1900-01-01" max="2030-12-31" value="${p.date || ''}">
+        <label>생년월일<div class="row2"><input type="date" id="hDate" min="1900-01-01" max="${todayStr()}" value="${p.date || ''}">
           <select id="hCal"><option value="s">양력</option><option value="l"${p.cal === 'l' ? ' selected' : ''}>음력</option><option value="ll"${p.cal === 'll' ? ' selected' : ''}>음력(윤달)</option></select></div></label>
         <label>태어난 시간<select id="hTime"><option value="">모름</option>${sij}</select></label>
         <label>성별<div class="seg" id="hSex"><button data-v="m" class="${p.sex !== 'f' ? 'on' : ''}">👦 남자</button><button data-v="f" class="${p.sex === 'f' ? 'on' : ''}">👧 여자</button></div></label>
@@ -97,6 +101,7 @@ const Hub = (() => {
     $('#hSave').onclick = () => {
       const date = $('#hDate').value;
       if (!date) { $('#hErr').textContent = '생년월일을 입력해 주세요.'; return; }
+      if (futureMsg(date)) { $('#hErr').textContent = futureMsg(date); return; }
       const old = getMe() || {};
       const p = { ...old, name: $('#hName').value.trim() || '나', date, cal: $('#hCal').value, time: $('#hTime').value, sex: document.querySelector('#hSex .on').dataset.v };
       if (!analyzeP(p)) { $('#hErr').textContent = '날짜를 확인해 주세요. (존재하지 않는 음력 날짜일 수 있어요)'; return; }
@@ -114,7 +119,7 @@ const Hub = (() => {
     const bands = f.bands.map(b => `<div class="hband"><small>${b.lab} · ${b.time}</small><b>${S.STK[b.gz.s]}${S.BRK[b.gz.b]}시</b><em style="color:${gColor(b.sc)}">${b.sc}</em><span>${b.txt}</span></div>`).join('');
     const ms = MISSIONS.map(m => `<div class="hms${d.ms[m.k] ? ' done' : ''}"><span>${m.e} ${m.n}</span>${d.ms[m.k] ? '<b>✓ +1</b>' : `<button data-m="${m.k}">하러 가기</button>`}</div>`).join('');
     const pass = Store.passOn() ? `<b style="color:var(--money)">🍀 행운패스 사용 중 · ${passLeft()}</b>` : '광고 없이 쾌적하게 보고 싶다면';
-    return `<div class="hhead"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd}) · 오늘은 <b>${f.gzTxt}일</b> ${f.gzHan}</small>
+    return `${TRIAL()}<div class="hhead"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd}) · 오늘은 <b>${f.gzTxt}일</b> ${f.gzHan}</small>
         <h2>${esc(p.name)}님의 오늘</h2></div>
       <div class="hcard hmain">
         <div class="hring" style="--v:${f.sc[0]};--c:${gColor(f.sc[0])}"><b>${f.sc[0]}</b><small>${f.grade}</small></div>
@@ -227,13 +232,13 @@ const Hub = (() => {
       <div class="hfun"><button id="cFlirt">💘 바람기 테스트</button><button id="cMbti">🧩 사주 MBTI</button></div>
       <div class="hcard"><div class="form hform">
         <label>상대 이름<input type="text" id="cName" maxlength="10" placeholder="예: 김서연"></label>
-        <label>생년월일<div class="row2"><input type="date" id="cDate" min="1900-01-01" max="2030-12-31"><select id="cCal"><option value="s">양력</option><option value="l">음력</option></select></div></label>
+        <label>생년월일<div class="row2"><input type="date" id="cDate" min="1900-01-01" max="${todayStr()}"><select id="cCal"><option value="s">양력</option><option value="l">음력</option><option value="ll">음력(윤달)</option></select></div></label>
         <label>태어난 시간<select id="cTime"><option value="">모름</option>${sij}</select></label>
         <label>성별<div class="seg" id="cSex"><button data-v="f" class="${p.sex === 'f' ? '' : 'on'}">👧 여자</button><button data-v="m" class="${p.sex === 'f' ? 'on' : ''}">👦 남자</button></div></label>
         <div id="cErr" class="herr"></div>
         <button class="bigbtn sm wide" id="cGo">💞 궁합 보기</button></div></div>
-      <div class="hcard"><h3 class="ht">👥 나의 관계도 <small>${list.length}/20명</small></h3>
-        ${list.length ? list.map((x, r) => `<div class="hppl" data-i="${x.i}"><span class="hrk">${r + 1}</span><div><b>${esc(x.q.name)}</b><small>${x.b.ddi}띠 · ${x.b.dm.nm}</small></div><em style="color:${gColor(x.c.score)}">${x.c.score}%<small>${x.c.word}</small></em><button data-del="${x.i}">✕</button></div>`).join('')
+      <div class="hcard"><h3 class="ht">👥 나의 관계도 <small>${list.length}/20명 · 재미로 보는 궁합 지수</small></h3>
+        ${list.length ? list.map((x, r) => `<div class="hppl" data-i="${x.i}"><span class="hrk">${r + 1}</span><div><b>${esc(x.q.name)}</b><small>${x.b.ddi}띠 · ${x.b.dm.nm}</small></div><em style="color:${gColor(x.c.score)}">${x.c.score}점<small>${x.c.word}</small></em><button data-del="${x.i}">✕</button></div>`).join('')
           : '<p class="hsub">궁합을 본 사람이 여기에 순위로 저장돼요. 가족·친구·연인을 등록해 보세요.</p>'}</div>`;
   }
   function bindCompat(p, a) {
@@ -243,6 +248,7 @@ const Hub = (() => {
     $('#cGo').onclick = () => {
       const q = { name: $('#cName').value.trim() || '상대', date: $('#cDate').value, cal: $('#cCal').value, time: $('#cTime').value, sex: document.querySelector('#cSex .on').dataset.v };
       if (!q.date) { $('#cErr').textContent = '상대 생년월일을 입력해 주세요.'; return; }
+      if (futureMsg(q.date)) { $('#cErr').textContent = futureMsg(q.date); return; }
       const b = analyzeP(q); if (!b) { $('#cErr').textContent = '날짜를 확인해 주세요.'; return; }
       const list = people().filter(x => !(x.name === q.name && x.date === q.date)); list.unshift(q); store.set('p8b_people', list.slice(0, 20));
       showCompat(p, a, q, b); mission('compat'); render();
@@ -262,7 +268,7 @@ const Hub = (() => {
       : `<div class="lock"><b>🔒 궁합 상세 풀이</b><small>두 사람의 성격·연애 스타일·올해 연애운 (모든 상대 무제한)</small></div>`;
     openOverlay('💞 궁합 결과', Saju.compatHTML(esc(p.name), a, esc(q.name), b) + detail + '<p class="sjnote" style="text-align:center">※ 궁합은 참고·재미용이에요. 관계는 서로의 노력이 만들어요.</p>',
       [...(open ? [] : [{ t: `🔓 상세 풀이 열기 (${Store.price('compat')})`, pri: 1, f: () => openShop('compat') }]),
-       { t: '🧮 두 사람 계산 과정 보기', f: () => { const pq = birthOf(q); openOverlay('🧮 궁합 계산 과정', `<iframe class="hlearn" src="learn.html?embed=1&d=${p.date}&cal=${p.cal === 's' ? 's' : 'l'}&sx=${p.sex}${p.time ? '&t=' + p.time : ''}&d2=${q.date}&cal2=${q.cal}&sx2=${q.sex}${q.time ? '&t2=' + q.time : ''}"></iframe>`, [{ t: '닫기' }]); } },
+       { t: '🧮 두 사람 계산 과정 보기', f: () => { const pq = birthOf(q); openOverlay('🧮 궁합 계산 과정', `<iframe class="hlearn" src="learn.html?embed=1&d=${p.date}&cal=${p.cal || 's'}&sx=${p.sex}${p.time ? '&t=' + p.time : ''}&d2=${q.date}&cal2=${q.cal}&sx2=${q.sex}${q.time ? '&t2=' + q.time : ''}"></iframe>`, [{ t: '닫기' }]); } },
        { t: '닫기' }]);
   }
 
@@ -304,13 +310,25 @@ const Hub = (() => {
       <div class="hcard"><h3 class="ht">🔔 매일 운세 알림</h3>
         <p class="hsub">${native ? '정한 시각에 그날의 총운 점수와 한 줄 운세를 보내 드려요.' : '알림은 앱에서만 받을 수 있어요.'}</p>
         <div class="row2"><label class="chk"><input type="checkbox" id="nOn" ${nt.on ? 'checked' : ''} ${native ? '' : 'disabled'}> 알림 받기</label><select id="nT" ${native ? '' : 'disabled'}>${times}</select></div></div>
-      <div class="hcard hlinks"><a href="privacy.html">개인정보 처리방침</a>${Ads.privacyRequired ? '<a id="mPriv">광고 개인정보 설정</a>' : ''}
+      <div class="hcard hlinks"><a href="privacy.html">개인정보 처리방침</a>${Ads.privacyRequired ? '<a id="mPriv">광고 개인정보 설정</a>' : ''}<a id="mWipe">내 정보·기록 지우기</a>
         <p class="sjnote">사주 풀이·운세·궁합·인생 게임 결과는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요. 만세력 계산: lunar-javascript (MIT).</p></div>`;
   }
   function bindMore() {
     $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile;
     const mb = $('#mBaram'); if (mb) mb.onclick = () => { location.href = '../baram/'; };
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
+    $('#mWipe').onclick = () => {
+      const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day']);   // 구매·패스·광고 제한은 유지
+      const wipe = all => {
+        const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i));
+        ks.filter(k => all ? (k.startsWith('p8b_') && !KEEP.has(k)) : ['p8b_me', 'p8b_people', 'p8b_mbti'].includes(k)).forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+        const ln = LN(); if (ln) ln.getPending().then(r => r.notifications.length && ln.cancel({ notifications: r.notifications.map(n => ({ id: n.id })) })).catch(() => {});
+        location.reload();
+      };
+      openOverlay('🗑️ 내 정보·기록 지우기', '<p class="sjnote">이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요. 구매 내역·행운패스는 남아요.</p>', [
+        { t: '내 사주·궁합 정보만 지우기', f: () => wipe(false) },
+        { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
+    };
     let qa = 0; const nt0 = document.querySelector('.hlinks .sjnote'); if (nt0) nt0.onclick = () => { if (++qa >= 5) { store.set('p8b_qa', !store.get('p8b_qa', false)); toast(store.get('p8b_qa', false) ? '🧪 테스트 도구 켜짐 (게임 화면의 QA 버튼)' : '테스트 도구 꺼짐'); qa = 0; } };
     const save = async () => {
       const nt = { on: $('#nOn').checked, t: $('#nT').value };

@@ -153,8 +153,8 @@ window.Saju = (() => {
   }
   function compatHTML(nameA, a, nameB, b) {
     const c = compatPair(a, b); if (!c) return '';
-    return `<div class="sajucard compat"><div class="cmph"><span>${nameA}<small>${a.dm.nm} · ${a.ddi}띠</small></span><b>💞 ${c.score}%</b><span>${nameB}<small>${b.dm.nm} · ${b.ddi}띠</small></span></div>
-      <div class="cmpw">${c.word}</div>${c.notes.map(n => `<div class="cmpn">· ${n}</div>`).join('')}</div>`;
+    return `<div class="sajucard compat"><div class="cmph"><span>${nameA}<small>${a.dm.nm} · ${a.ddi}띠</small></span><b>💞 ${c.score}점</b><span>${nameB}<small>${b.dm.nm} · ${b.ddi}띠</small></span></div>
+      <div class="cmpw">재미로 보는 궁합 지수 · ${c.word}</div><div class="cmpn" style="opacity:.75">점수 산정 요소 (오행 관계 기본점 ± 띠 합·충 · 부족한 기운 보완)</div>${c.notes.map(n => `<div class="cmpn">· ${n}</div>`).join('')}<div class="cmpn" style="opacity:.6">※ 관계가 잘될 확률이 아니라 재미용 지수예요.</div></div>`;
   }
 
   return { premiumHTML, compatPair, compatHTML, ok, randomBirth, analyze, applyStats, luckAt, compat, stemName, summaryHTML, fullHTML, GRPN, GRPE, ELSUB, ELE, ELC };
