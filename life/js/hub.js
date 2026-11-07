@@ -285,17 +285,20 @@ const Hub = (() => {
     { k: 'fate', e: '🎛️', n: '운명 조작 팩 (인생 게임)', c: 20, can: () => !Store.has('fate'), f: () => Store.grant('fate') },
     { k: 'report', e: '📜', n: '프리미엄 사주 리포트', c: 60, can: () => !Store.has('report'), f: () => Store.grant('report') },
   ];
-  const THEMES = [['목', '#3fbf7f'], ['화', '#ff6b5a'], ['토', '#e2b13c'], ['금', '#b9c3d6'], ['수', '#5f9cff']];
+  // [이름, 블랙 테마용, 화이트 테마용] — 흰 바탕에서도 글씨 대비 4.5:1 이상 되도록 밝기 분리
+  const THEMES = [['목', '#3fbf7f', '#1f7a4d'], ['화', '#ff6b5a', '#c8322b'], ['토', '#e2b13c', '#8a5a00'], ['금', '#b9c3d6', '#4f5d75'], ['수', '#5f9cff', '#1f5fb8']];
   const themesOwned = () => store.get('p8b_themes', []);
   function setTheme(i) {
     store.set('p8b_theme', i);
-    document.documentElement.style.setProperty('--accent', i == null ? '#ff8a3d' : THEMES[i][1]);
+    const light = window.Theme && Theme.current() === 'light';
+    if (i == null) document.documentElement.style.removeProperty('--accent');
+    else document.documentElement.style.setProperty('--accent', THEMES[i][light ? 2 : 1]);
   }
   function openExchange() {
     const n = pouch();
     openOverlay(`🎁 복주머니 교환 · 보유 ${n}개`, EXCH.map(x => `<div class="shopitem"><span class="se">${x.e}</span><div><b>${x.n}</b><small>복주머니 ${x.c}개</small></div>
       <button data-x="${x.k}" ${n >= x.c && x.can() ? '' : 'disabled'} class="${x.can() ? '' : 'own'}">${x.can() ? '교환' : '보유 중'}</button></div>`).join('')
-      + (themesOwned().length ? `<div class="hthemes"><small>내 테마</small>${themesOwned().map(i => `<button data-th="${i}" style="background:${THEMES[i][1]}">${THEMES[i][0]}</button>`).join('')}<button data-th="-1">기본</button></div>` : '')
+      + (themesOwned().length ? `<div class="hthemes"><small>내 테마</small>${themesOwned().map(i => `<button data-th="${i}" style="background:${THEMES[i][Theme.current() === 'light' ? 2 : 1]};color:#fff">${THEMES[i][0]}</button>`).join('')}<button data-th="-1">기본</button></div>` : '')
       + '<p class="sjnote" style="text-align:center">복주머니는 출석·미션·공유로 하루 최대 6개(연속 출석 보너스 별도) 모을 수 있어요.</p>');
     document.querySelectorAll('[data-x]').forEach(b => b.onclick = () => {
       const x = EXCH.find(e => e.k === b.dataset.x); if (pouch() < x.c || !x.can()) return;
@@ -313,6 +316,9 @@ const Hub = (() => {
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
         ${native ? '' : '<button id="mBaram"><span>🌸</span><b>사주 바람기 테스트</b><small>도화살·홍염살로 보는 연애 체질</small></button>'}
       </div>
+      <div class="hcard"><h3 class="ht">🎨 화면 테마</h3>
+        <p class="hsub">글씨가 잘 보이는 바탕을 고르세요. 화이트가 기본이에요.</p>
+        <div class="modeseg">${[['light', '화이트', '#f6f3ee'], ['dark', '블랙', '#111114'], ['system', '휴대폰 설정', 'linear-gradient(90deg,#f6f3ee 50%,#111114 50%)']].map(([m, n, c]) => `<button data-mode="${m}" class="${Theme.mode() === m ? 'on' : ''}"><i class="sw" style="background:${c}"></i>${n}</button>`).join('')}</div></div>
       <div class="hcard"><h3 class="ht">🔔 매일 운세 알림</h3>
         <p class="hsub">${native ? '정한 시각에 그날의 총운 점수와 한 줄 운세를 보내 드려요.' : '알림은 앱에서만 받을 수 있어요.'}</p>
         <div class="row2"><label class="chk"><input type="checkbox" id="nOn" ${nt.on ? 'checked' : ''} ${native ? '' : 'disabled'}> 알림 받기</label><select id="nT" ${native ? '' : 'disabled'}>${times}</select></div></div>
@@ -323,6 +329,7 @@ const Hub = (() => {
     $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile;
     const mb = $('#mBaram'); if (mb) mb.onclick = () => { location.href = '../baram/'; };
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
+    document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.mode); Snd.sfx('tap'); render(); });
     $('#mWipe').onclick = () => {
       const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day']);   // 구매·패스·광고 제한은 유지
       const wipe = all => {
@@ -388,6 +395,7 @@ const Hub = (() => {
     show = function (id) { base(id); if (id === 'end') mission('game'); syncTabs(); };
     document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => go(b.dataset.t));
     const th = store.get('p8b_theme', null); if (th != null) setTheme(th);
+    window.addEventListener('themechange', () => { const t = store.get('p8b_theme', null); if (t != null) setTheme(t); });
     Store.onChange(() => { if ($('#hub').classList.contains('on')) render(); });
     tab = 'today'; show('hub'); render();
     scheduleNoti();

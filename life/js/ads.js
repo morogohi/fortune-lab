@@ -179,8 +179,8 @@ window.Native = (() => {
     hideSplash() { if (native && C.Plugins.SplashScreen) C.Plugins.SplashScreen.hide().catch(() => {}); },
     statusBar() {
       if (native && C.Plugins.StatusBar) {
+        if (window.Theme) { Theme.apply(); return; }
         C.Plugins.StatusBar.setStyle({ style: 'DARK' }).catch(() => {});
-        if (C.getPlatform() === 'android') C.Plugins.StatusBar.setBackgroundColor({ color: '#1b1530' }).catch(() => {});
       }
     },
   };

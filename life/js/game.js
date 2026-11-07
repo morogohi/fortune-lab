@@ -444,7 +444,7 @@ function die(reason){
       <canvas id="portrait"></canvas>
       <h2>${P.name}</h2>
       <div style="color:var(--dim);font-size:14px">${P.country.f} ${P.country.n} · ${P.rural?'농촌':'도시'} · ${P.clsInfo.e} ${P.clsInfo.n} · 향년 ${P.age}세</div>
-      <div id="grade" style="color:${{S:'#ffcc4d',A:'#5be08f',B:'#5ec8ff',C:'#c58bff',D:'#ff6b81'}[grade]}">${grade}</div>
+      <div id="grade" style="color:${{S:'var(--hap)',A:'var(--money)',B:'var(--smart)',C:'var(--look)',D:'var(--hp)'}[grade]}">${grade}</div>
       <div id="lifeTitle">「${title}」</div>
       <div id="epitaph">${epi}</div>
       ${P.mate?`<div class="box" style="text-align:center;font-size:15px">${mateLine()}</div>`:''}
@@ -582,14 +582,14 @@ function drawGraph(){
   const tr=P.trace.length?P.trace:[{a:0,h:P.hap,m:0}];const maxA=Math.max(10,tr[tr.length-1].a);
   const ms=tr.map(x=>x.m),mmax=Math.max(1,...ms),mmin=Math.min(0,...ms);
   const X=a=>pl+(w-pl-6)*a/maxA,YH=v=>pt+(h-pt-pb)*(1-v/100),YM=v=>pt+(h-pt-pb)*(1-(v-mmin)/(mmax-mmin||1));
-  g.strokeStyle='#ffffff18';g.fillStyle='#b9addb';g.font='10px sans-serif';
+  const V=n=>Theme.cssVar(n);g.strokeStyle=V('--line2');g.fillStyle=V('--dim');g.font='10px sans-serif';
   for(let v=0;v<=100;v+=50){g.beginPath();g.moveTo(pl,YH(v));g.lineTo(w,YH(v));g.stroke();g.fillText(v,2,YH(v)+3)}
   for(let a=0;a<=maxA;a+=Math.ceil(maxA/50)*10){g.fillText(a+'세',X(a)-8,h-4)}
   if(mmin<0){g.strokeStyle='#5be08f44';g.setLineDash([3,3]);g.beginPath();g.moveTo(pl,YM(0));g.lineTo(w,YM(0));g.stroke();g.setLineDash([])}
   const line=(f,col)=>{g.strokeStyle=col;g.lineWidth=2.2;g.beginPath();tr.forEach((p,i)=>i?g.lineTo(X(p.a),f(p)):g.moveTo(X(p.a),f(p)));g.stroke()};
   // 행복 영역
   g.fillStyle='#ffcc4d22';g.beginPath();g.moveTo(X(tr[0].a),YH(0));tr.forEach(p=>g.lineTo(X(p.a),YH(p.h)));g.lineTo(X(tr[tr.length-1].a),YH(0));g.fill();
-  line(p=>YM(p.m),'#5be08f');line(p=>YH(p.h),'#ffcc4d');
+  line(p=>YM(p.m),V('--money'));line(p=>YH(p.h),V('--hap'));
   g.textAlign='center';g.font='13px serif';
   pickMoments().forEach((mo,i)=>{const p=tr.find(x=>x.a===mo.a)||tr[tr.length-1];const y=YH(p.h)-8-(i%2)*12;g.fillText(mo.e,X(mo.a),Math.max(12,y))});
 }
