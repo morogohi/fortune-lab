@@ -20,6 +20,16 @@ window.STORE_CONFIG = {
   newYearFree: ['report'],          // 신년 이벤트 기간 무료 상품
 };
 
+/* 상업용 테스트 모드 (life-test/ 페이지에서 window.P8B_MODE='commercial'로 켬)
+ *  1안: 초기 출시는 기간제 행운패스를 팔지 않고 일회성 상품만 — 재설치·기기 시간 변경에 따른 기간 분쟁 방지
+ *  웹 무료 개방 없음 → 잠긴 상품을 눌렀을 때 구매 의향을 묻는다 (실제 결제 없음) */
+window.P8B_COMMERCIAL = window.P8B_MODE === 'commercial';
+if (window.P8B_COMMERCIAL) {
+  delete STORE_CONFIG.products.pass7; delete STORE_CONFIG.products.pass30;
+  STORE_CONFIG.webDemoFree = [];
+  STORE_CONFIG.feedbackUrl = 'https://docs.google.com/forms/d/e/1FAIpQLSfXlre8_TN1aG8hTyk48EPvN2c1mW1M4abrpZ4cdjqMdnmOrA/viewform';
+}
+
 window.Store = (() => {
   const C = window.Capacitor;
   const native = !!(C && C.isNativePlatform && C.isNativePlatform());
@@ -55,7 +65,7 @@ window.Store = (() => {
     if (!native && CFG.webDemoFree.includes(k)) return '웹 체험판 무료 개방';
     return '';
   }
-  function price(k) { return prices[k] || CFG.products[k].price; }
+  function price(k) { return prices[k] || (CFG.products[k] ? CFG.products[k].price : ''); }
 
   async function init() {
     if (!native || !NP) return;

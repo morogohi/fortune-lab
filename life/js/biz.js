@@ -21,13 +21,14 @@ document.getElementById('overlay').addEventListener('click', e => { if (e.target
 function openShop(focus) {
   const rows = Store.list().map(k => {
     const it = Store.item(k), own = Store.has(k) && !it.consumable, why = Store.why(k);
-    return `<div class="shopitem${focus === k ? ' focus' : ''}"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}</div>
-      ${!Store.native && !own ? `<small style="opacity:.7">앱 가격 ${Store.price(k)}</small>` : ''}</div>
-      <button data-k="${k}" class="${own ? 'own' : ''}">${own ? '보유 중' : Store.native ? Store.price(k) : '앱 전용'}</button></div>`;
+    return `<div class="shopitem${focus === k ? ' focus' : ''}"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}${!Store.native && !window.P8B_COMMERCIAL && !own ? `<small style="opacity:.7">앱 가격 ${Store.price(k)}</small>` : ''}</div>
+      <button data-k="${k}" class="${own ? 'own' : ''}">${own ? '보유 중' : (Store.native || window.P8B_COMMERCIAL) ? Store.price(k) : '앱 전용'}</button></div>`;
   }).join('');
   const note = Store.native ? '구매 내역은 스토어 계정에 저장돼요. 기기를 바꾸면 「구매 복원」을 눌러 주세요.' : '웹 체험판에서는 결제가 없어요. 앱에서 구매할 수 있어요.';
-  const top = (Store.native ? '' : '<div class="webtrial">🌐 웹 체험판 · 결제 불가<br>표시된 가격은 앱 기준 안내예요. 「웹 체험판 무료 개방」 상품은 지금 바로 써 볼 수 있어요.</div>')
-    + '<p class="sjnote">🚫 <b>광고 제거</b>는 한 번 사면 영구 적용 · 🍀 <b>행운패스</b>는 정해진 기간만 광고가 없고 출석 복주머니가 2배예요. 광고 제거를 이미 가지고 있다면 패스는 복주머니 2배 효과만 남아요.</p>';
+  const top = (Store.native ? '' : window.P8B_COMMERCIAL ? '<div class="webtrial">🧪 상업용 테스트 · 실제 결제 없음<br>정식 출시 가격으로 표시돼요. 눌러 보시면 구매 의향만 여쭤봐요.</div>'
+    : '<div class="webtrial">🌐 웹 체험판 · 결제 불가<br>표시된 가격은 앱 기준 안내예요. 「웹 체험판 무료 개방」 상품은 지금 바로 써 볼 수 있어요.</div>')
+    + (Store.item('pass7') ? '<p class="sjnote">🚫 <b>광고 제거</b>는 한 번 사면 영구 적용 · 🍀 <b>행운패스</b>는 정해진 기간만 광고가 없고 출석 복주머니가 2배예요. 광고 제거를 이미 가지고 있다면 패스는 복주머니 2배 효과만 남아요.</p>'
+      : '<p class="sjnote">유료 상품은 모두 한 번 사면 기간 제한 없이 쓰는 일회성 상품이에요 (카르마만 쓰면 없어지는 소모성).</p>');
   openOverlay('🛍️ 상점', top + rows + `<p class="sjnote" style="text-align:center">${note}</p>`,
     [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { const n = await Store.restore(); log && P && log(`구매 ${n}건 복원`); openShop(); } }] : []), { t: '닫기' }]);
   document.querySelectorAll('#osheet .shopitem button').forEach(b => b.onclick = () => {
@@ -38,6 +39,12 @@ function openShop(focus) {
       if (ok) {
         if (it.karma) { karma += it.karma; saveMeta(); renderTitle(); }
         Snd.sfx('fanfare'); if (k === 'noads') Ads.banner(false); refreshFateLock(); openShop();
+      } else if (err === 'web' && window.P8B_COMMERCIAL) {
+        const form = () => window.open(STORE_CONFIG.feedbackUrl, '_blank', 'noopener');
+        openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">상업용 테스트 중이라 실제 결제는 없어요.<br>정식 출시 때 <b>${Store.price(k)}</b>이라면 사시겠어요?</p><p class="sjnote" style="text-align:center">${it.d}</p>`, [
+          { t: '👍 이 가격이면 살 것 같아요 (설문에 남기기)', pri: 1, f: form },
+          { t: '🤔 가격·구성이 아쉬워요 (의견 남기기)', f: form },
+          { t: '상점으로', f: () => openShop() }]);
       } else if (err === 'web') {
         openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">결제는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.<br>웹 체험판에서는 프리미엄 사주 리포트를 무료로 열어 두었어요.</p>`, [{ t: '상점으로', f: () => openShop() }]);
       } else if (err && !/cancel/i.test(err)) {

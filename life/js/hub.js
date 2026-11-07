@@ -19,7 +19,9 @@ const Hub = (() => {
   /* 실제 사용자·궁합 상대 프로필은 오늘 이후 날짜 불가 (게임 속 가상 인물은 별도 허용) */
   const todayStr = () => Fortune.ymd(new Date());
   const futureMsg = d => d > todayStr() ? '오늘 이후 날짜는 입력할 수 없어요.' : '';
-  const TRIAL = () => Store.native ? '' : '<div class="webtrial">🌐 웹 체험판 · 결제 기능이 없어요. 가격은 앱 기준 안내이며 일부 상품은 무료로 열려 있어요.</div>';
+  const TRIAL = () => Store.native ? '' : window.P8B_COMMERCIAL
+    ? '<div class="webtrial">🧪 상업용 테스트 페이지 · 실제 결제는 일어나지 않아요. 유료 상품을 누르면 구매 의향만 여쭤봐요.</div>'
+    : '<div class="webtrial">🌐 웹 체험판 · 결제 기능이 없어요. 가격은 앱 기준 안내이며 일부 상품은 무료로 열려 있어요.</div>';
   function analyzeP(p) { const b = birthOf(p); return b ? Saju.analyze(b, p.sex !== 'f') : null; }
   const keyOf = p => `${p.date}|${p.time || ''}|${p.sex}`;
 
@@ -119,8 +121,8 @@ const Hub = (() => {
     const bands = f.bands.map(b => `<div class="hband"><small>${b.lab} · ${b.time}</small><b>${S.STK[b.gz.s]}${S.BRK[b.gz.b]}시</b><em style="color:${gColor(b.sc)}">${b.sc}</em><span>${b.txt}</span></div>`).join('');
     const ms = MISSIONS.map(m => `<div class="hms${d.ms[m.k] ? ' done' : ''}"><span>${m.e} ${m.n}</span>${d.ms[m.k] ? '<b>✓ +1</b>' : `<button data-m="${m.k}">하러 가기</button>`}</div>`).join('');
     const pass = Store.passOn() ? `<b style="color:var(--money)">🍀 행운패스 사용 중 · ${passLeft()}</b>` : '광고 없이 쾌적하게 보고 싶다면';
-    return `${TRIAL()}<div class="hhead"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd}) · 오늘은 <b>${f.gzTxt}일</b> ${f.gzHan}</small>
-        <h2>${esc(p.name)}님의 오늘</h2></div>
+    return `<div class="hhead"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd}) · 오늘은 <b>${f.gzTxt}일</b> ${f.gzHan}</small>
+        <h2>${esc(p.name)}님의 오늘</h2></div>${TRIAL()}
       <div class="hcard hmain">
         <div class="hring" style="--v:${f.sc[0]};--c:${gColor(f.sc[0])}"><b>${f.sc[0]}</b><small>${f.grade}</small></div>
         <div class="hone"><span class="hkey">오늘의 키워드 · ${f.key}</span><p>${f.lines[0]}</p>
@@ -139,7 +141,7 @@ const Hub = (() => {
         <button class="ghost wide" id="hExch">🎁 복주머니로 보상 교환하기</button></div>
       <div class="hcard hpass"><div><b>🍀 행운패스</b><small>${pass}</small></div>
         <button class="adbtn" id="hPassAd" ${Ads.canReward() ? '' : 'disabled'}>📺 광고 보고 2시간 무료${Ads.canReward() ? '' : '<small>(지금은 불가)</small>'}</button>
-        <button class="ghost" id="hPassBuy">7일 ${Store.price('pass7')} · 30일 ${Store.price('pass30')}</button></div>
+        ${Store.item('pass7') ? `<button class="ghost" id="hPassBuy">7일 ${Store.price('pass7')} · 30일 ${Store.price('pass30')}</button>` : ''}</div>
       <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
   }
   function passLeft() {
@@ -159,7 +161,7 @@ const Hub = (() => {
     };
     $('#hExch').onclick = openExchange;
     $('#hPassAd').onclick = () => Ads.showReward(got => { if (got) { Store.addPass(2 * 36e5); Ads.banner(false); toast('🍀 2시간 동안 광고 없이!'); Snd.sfx('fanfare'); render(); } });
-    $('#hPassBuy').onclick = () => openShop('pass7');
+    const pb = $('#hPassBuy'); if (pb) pb.onclick = () => openShop('pass7');
   }
   function whyFortune(p, a) {
     const f = Fortune.today(a, keyOf(p)), me = a.me;
