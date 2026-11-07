@@ -1,0 +1,79 @@
+/* 토정비결 — 운명 연구소 본 사이트(js/app.js)와 같은 전통 작괘 계산
+ * 상괘 = (세는나이 + 태세수) ÷ 8, 중괘 = (그해 생월 날수 + 월건수) ÷ 6, 하괘 = (생일 + 일진수) ÷ 3
+ * 인생 게임에서 모은 카르마로 연다 (사람·연도별 1회) */
+window.Tojeong = (() => {
+  const ST = '甲乙丙丁戊己庚辛壬癸', BR = '子丑寅卯辰巳午未申酉戌亥';
+  const mod = (a, n) => ((a % n) + n) % n;
+  const gzi = s => ({ s: ST.indexOf(s[0]), b: BR.indexOf(s[1]) });
+  const yearGz = Y => { const i = mod(Y - 4, 60); return { s: i % 10, b: i % 12 }; };
+  function hash(n) { n = Math.imul(n ^ 61, 0x45d9f3b); n ^= n >>> 15; return Math.abs(n); }
+  const TAE={s:[9,8,7,6,5,9,8,7,6,5],b:[9,8,7,6,5,4,9,8,7,6,5,4]};
+  const UP=["봄바람에 얼음이 녹으니 막혔던 일이 풀린다","높은 산에 오르니 멀리 보이나 발밑을 살펴야 한다","구름이 걷히고 달이 나오니 귀인이 돕는다","거친 물결에 배를 띄우니 신중해야 이롭다","마른 땅에 단비가 내리니 노력한 만큼 거둔다","용이 여의주를 얻으니 이름이 널리 알려진다","꽃은 피었으나 열매는 늦으니 서두르지 마라","옛것을 지키면 길하고 새것을 탐하면 손해다"];
+  const UPX=["상반기에 묵은 문제가 해결되고 새로운 일을 시작할 힘이 생깁니다.","목표는 높게 잡되 기초 체력과 자금을 먼저 점검해야 합니다.","혼자 애쓰던 일에 도와줄 사람이 나타납니다. 인맥을 넓히세요.","변화가 많은 해입니다. 큰 결정은 두 번 생각하고 한 번 움직이세요.","땀 흘린 만큼 정직하게 보상받는 해입니다. 성실함이 최고의 전략입니다.","평판과 명예가 오르는 해입니다. 자신을 알릴 기회를 놓치지 마세요.","결과가 늦게 나타나는 해입니다. 하반기까지 꾸준히 밀고 가세요.","새로운 유혹보다 지금 가진 것을 다지는 쪽이 이롭습니다."];
+  const MID=["재물이 동쪽에서 들어오니 동업이 이롭다","작은 재물은 쌓이나 큰돈은 지키기 어렵다","문서와 계약에 기쁨이 있다","집안에 경사가 있고 식구가 는다","이동과 변화 속에 기회가 숨어 있다","남을 돕는 일이 결국 나를 돕는다"];
+  const LOW=["몸가짐을 바로 하면 구설이 사라진다","건강을 챙기면 한 해가 편안하다","사람을 가려 사귀면 액운이 비켜 간다"];
+  const MPOOL=["뜻밖의 소식이 기쁨을 준다","지출을 줄이면 재물이 남는다","윗사람의 도움이 있다","말조심하면 탈이 없다","이동하면 길하다","새 인연이 찾아온다","건강에 유의하라","계약 문서를 꼼꼼히 보라","노력한 일이 결실을 맺는다","가족과 함께하면 복이 온다","작은 손재수가 있으니 지갑을 지켜라","배움에 힘쓰면 이름이 난다","친구의 부탁은 신중히 들어라","동쪽에 귀인이 있다","쉬어 가는 것도 전략이다","기다리던 일이 풀린다"];
+  const UPD=["막혀 있던 일이 봄눈 녹듯 풀리는 괘입니다. 미뤄 둔 일을 상반기에 정리하면 하반기에 새 일을 시작할 여력이 생깁니다. 사람을 새로 만나는 자리에 적극적으로 나가세요.",
+ "높은 곳에 올라 시야가 넓어지는 괘입니다. 큰 목표가 보이지만 발밑이 미끄러우니 건강과 자금을 먼저 점검하세요. 한 번에 오르기보다 계단처럼 단계를 나누는 것이 좋습니다.",
+ "구름이 걷히고 달이 드러나는 귀인의 괘입니다. 혼자 애쓰던 일에 도움을 주는 사람이 나타납니다. 받은 도움을 기록해 두고 보답하면 인연이 오래 이어집니다.",
+ "거친 물결 위의 배와 같은 괘입니다. 변화와 변수가 많으니 큰 결정은 두 번 생각하고 한 번 움직이세요. 보험과 비상금을 챙기면 오히려 기회를 잡습니다.",
+ "마른 땅에 단비가 내리는 괘입니다. 땀 흘린 만큼 정직하게 보상받는 해이니 요령보다 성실함이 최고의 전략입니다.",
+ "용이 여의주를 얻는 명예의 괘입니다. 평판과 이름이 오르니 자신을 알릴 기회를 놓치지 마세요. 다만 높아진 만큼 말과 행동을 조심해야 합니다.",
+ "꽃은 피었으나 열매가 늦게 맺히는 괘입니다. 결과가 바로 나오지 않아도 하반기까지 꾸준히 밀고 가면 결실을 봅니다. 조급함이 가장 큰 적입니다.",
+ "옛것을 지키면 길한 괘입니다. 새 유혹이나 무리한 확장보다 지금 가진 것을 다지는 쪽이 이롭습니다. 익숙한 사람과 방식에서 답을 찾으세요."];
+  const MIDD=["동업과 협력에서 재물이 들어옵니다. 계약 조건만 분명히 하면 함께할수록 이롭습니다.","작은 돈은 쌓이지만 큰돈은 새기 쉽습니다. 목돈은 묶어 두고 소비를 관리하세요.","문서·계약·시험에 기쁜 소식이 있습니다. 서류를 꼼꼼히 챙기면 이득이 큽니다.","집안에 경사가 있고 식구가 늘어납니다. 가족과 보내는 시간이 운을 돋웁니다.","이동과 변화 속에 기회가 숨어 있습니다. 이사·이직·여행이 전환점이 될 수 있습니다.","남을 돕는 일이 결국 나에게 돌아옵니다. 베풀되 무리한 보증은 피하세요."];
+  const LOWD=["말과 몸가짐을 바로 하면 구설이 사라지고 신뢰가 쌓입니다.","건강을 먼저 챙기면 한 해가 편안합니다. 정기 검진과 수면을 우선하세요.","사람을 가려 사귀면 액운이 비켜 갑니다. 새 인연은 천천히 확인하세요."];
+  const MADV=["오전에 중요한 일을 처리하세요","가까운 사람에게 먼저 연락하세요","지출 목록을 한 번 정리하세요","새로운 것을 하나 배워 보세요","몸을 따뜻하게 하세요","약속은 문서로 남기세요","물가를 산책하면 좋습니다","서두르지 말고 한 박자 쉬세요","윗사람의 조언을 들으세요","작은 선물로 마음을 전하세요","정리정돈이 운을 엽니다","감사 일기를 써 보세요"];
+  const COST = 30;                                   // 카르마 30 = 인생 게임 2~4판
+  // 11월부터는 다음 해 토정비결 (연말에 새해 신수를 보는 전통)
+  const year = () => { const d = new Date(); return d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getFullYear(); };
+
+  // 생일 → 음력 생월·생일
+  function lunarBirth(p) {
+    const [y, m, d] = p.date.split('-').map(Number);
+    if (p.cal === 's') { const l = Solar.fromYmd(y, m, d).getLunar(); return { y: l.getYear(), m: Math.abs(l.getMonth()), d: l.getDay() }; }
+    return { y, m, d };
+  }
+  function calc(p, Y = year()) {
+    try {
+      const lb = lunarBirth(p), lm = lb.m, ld = lb.d, age = Y - lb.y + 1, yg = yearGz(Y);
+      const num = g => { const x = gzi(g); return TAE.s[x.s] + TAE.b[x.b]; };
+      const tae = TAE.s[yg.s] + TAE.b[yg.b], up = mod(age + tae, 8) || 8;
+      const dc = LunarYear.fromYear(Y).getMonth(lm).getDayCount(), L2 = Lunar.fromYmd(Y, lm, Math.min(ld, dc));
+      const wg = num(L2.getMonthInGanZhi()), ij = num(L2.getDayInGanZhi());
+      const mid = mod(dc + wg, 6) || 6, low = mod(ld + ij, 3) || 3, code = up * 100 + mid * 10 + low;
+      const tone = ['길(吉) · 순풍이 부는 해', '평(平) · 지키면 얻는 해', '주의 · 내실을 다지는 해'][(up + mid + low) % 3];
+      const perm = (n, seed) => { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = hash(seed * 31 + i) % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+      const pa = perm(MPOOL.length, code), pb = perm(MADV.length, code + 7);
+      const months = Array.from({ length: 12 }, (_, i) => ({ a: MPOOL[pa[i]], b: MADV[pb[i]], q: hash(code * 3 + i * 5) % 3 }));
+      return { Y, lm, ld, age, tae, up, dc, wg, ij, mid, low, code, tone, months };
+    } catch (e) { return null; }
+  }
+
+  // 잠금 해제 기록: 사람(생년월일·달력)·연도별
+  const KEY = 'p8b_tj';
+  const id = (p, Y) => `${Y}|${p.date}|${p.cal}`;
+  const opened = (p, Y = year()) => { try { return !!(JSON.parse(localStorage.getItem(KEY)) || {})[id(p, Y)]; } catch (e) { return false; } };
+  function open(p, Y = year()) { let m = {}; try { m = JSON.parse(localStorage.getItem(KEY)) || {}; } catch (e) {} m[id(p, Y)] = 1; try { localStorage.setItem(KEY, JSON.stringify(m)); } catch (e) {} }
+
+  // 무료 미리보기(총평 한 줄) + 잠긴 상세
+  function previewHTML(t) {
+    return `<div class="tjgwae"><b>${t.up}·${t.mid}·${t.low}</b><small>작괘 (상·중·하)</small></div>
+      <p class="tjtone">${t.tone}</p><p class="sjtxt" style="margin:0">${UP[t.up - 1]}.</p>`;
+  }
+  function fullHTML(t) {
+    const good = t.months.map((m, i) => m.q === 0 ? i + 1 : 0).filter(Boolean), bad = t.months.map((m, i) => m.q === 2 ? i + 1 : 0).filter(Boolean);
+    return `<div class="sjtxt">
+      <div class="tjgwae"><b>${t.up}·${t.mid}·${t.low}</b><small>작괘 (상·중·하)</small></div>
+      <h4>📜 총평 · ${t.tone}</h4><p>${UP[t.up - 1]}. ${UPX[t.up - 1]}</p>
+      <h4>상괘 ${t.up}</h4><p>${UPD[t.up - 1]}</p>
+      <h4>💰 재물·가정 (중괘 ${t.mid})</h4><p>${MID[t.mid - 1]}. ${MIDD[t.mid - 1]}</p>
+      <h4>🧭 처세 (하괘 ${t.low})</h4><p>${LOW[t.low - 1]}. ${LOWD[t.low - 1]}</p>
+      <h4>🌙 좋은 달 · 조심할 달 (음력)</h4><p>👍 ${good.length ? good.map(x => x + '월').join(' · ') : '고르게 평탄'} &nbsp; ⚠️ ${bad.length ? bad.map(x => x + '월').join(' · ') : '특별히 없음'}</p>
+      <h4>📅 월별 신수</h4>
+      <div class="tjmonths">${t.months.map((m, i) => `<div class="${['hi', '', 'lo'][m.q]}"><b>${i + 1}월</b><span>${m.a}<small>${['기운 좋음', '보통', '조심'][m.q]} · ${m.b}</small></span></div>`).join('')}</div>
+      <p class="sjnote">전통 계산: 작괘는 음력 생월·생일, ${t.Y}년 음력 ${t.lm}월의 크기(${t.dc}일), 태세·월건·일진의 수로 뽑았어요 (세는나이 ${t.age} + 태세수 ${t.tae} · ${t.dc} + 월건수 ${t.wg} · 생일 ${t.ld} + 일진수 ${t.ij}). 풀이 문장은 원전 괘사를 옮긴 것이 아니라 괘 번호에 맞춰 쓴 현대어 해설이에요. 재미로 보는 콘텐츠예요.</p>
+    </div>`;
+  }
+  return { COST, year, calc, opened, open, previewHTML, fullHTML };
+})();

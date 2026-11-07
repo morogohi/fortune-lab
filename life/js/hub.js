@@ -139,8 +139,36 @@ const Hub = (() => {
         ${ms}
         <div class="hms${d.shared ? ' done' : ''}"><span>📤 오늘의 운세 공유하기</span>${d.shared ? '<b>✓ +2</b>' : '<button id="hShare">공유 +2</button>'}</div>
         <button class="ghost wide" id="hExch">🎁 복주머니로 보상 교환하기</button></div>
+      ${tojeongCard(p)}
       ${passCard(pass)}
       <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
+  }
+  /* ---------- 토정비결: 인생 게임에서 모은 카르마로 열기 ---------- */
+  function tojeongCard(p) {
+    const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) return '';
+    const open = Tojeong.opened(p, Y), k = karma, need = Math.max(0, Tojeong.COST - k);
+    return `<div class="hcard tjcard"><h3 class="ht">📜 ${Y} 토정비결 <small>${open ? '열림' : '인생 게임 카르마로 열기'}</small></h3>
+      ${Tojeong.previewHTML(t)}
+      ${open ? '<button class="bigbtn" id="hTJ">📜 월별 신수까지 전체 보기</button>'
+        : `<div class="tjkarma"><div class="tjbar"><i style="width:${Math.min(100, k / Tojeong.COST * 100)}%"></i></div>
+           <small>✨ 카르마 ${k} / ${Tojeong.COST}${need ? ` · <b>${need}</b> 더 모으면 열려요` : ' · 지금 열 수 있어요!'}</small></div>
+           <button class="bigbtn" id="hTJ">${need ? '🌍 인생 게임하러 가기' : `✨ 카르마 ${Tojeong.COST}으로 열기`}</button>
+           <p class="sjnote" style="text-align:center;margin:6px 0 0">인생 한 판을 끝까지 살면 점수에 따라 카르마를 받아요. 잘 살수록 더 많이!</p>`}</div>`;
+  }
+  function openTojeong(p) {
+    p = p || getMe(); if (!p) return;
+    const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) { toast('생년월일을 확인해 주세요'); return; }
+    if (Tojeong.opened(p, Y)) { openOverlay(`📜 ${p.name}님의 ${Y}년 토정비결`, Tojeong.fullHTML(t), [{ t: '닫기' }]); return; }
+    const need = Math.max(0, Tojeong.COST - karma);
+    if (need) {
+      openOverlay(`📜 ${Y} 토정비결`, `<div class="sjtxt">${Tojeong.previewHTML(t)}
+        <h4>🔒 월별 신수·재물·처세 풀이</h4><p>인생 게임에서 모은 <b>카르마 ${Tojeong.COST}</b>로 열 수 있어요. 지금 ${karma} · <b>${need}</b> 더 필요해요.</p>
+        <p>🌍 인생 한 판을 끝내면 점수에 따라 카르마를 받아요 (보통 5~15). 버킷리스트를 이루고 오래 행복하게 살수록 많이 받아요.</p></div>`,
+        [{ t: '🌍 인생 게임 하러 가기', pri: 1, f: () => go('game') }, { t: '닫기' }]);
+      return;
+    }
+    openOverlay(`📜 ${Y} 토정비결 열기`, `<div class="sjtxt">${Tojeong.previewHTML(t)}<p>카르마 <b>${Tojeong.COST}</b>를 쓰면 ${p.name}님의 ${Y}년 토정비결 전체(재물·처세·좋은 달·월별 신수)가 열려요. 한 번 열면 계속 다시 볼 수 있어요.</p><p class="sjnote">보유 카르마 ${karma} → ${karma - Tojeong.COST}</p></div>`,
+      [{ t: `✨ 카르마 ${Tojeong.COST} 쓰고 열기`, pri: 1, f: () => { karma -= Tojeong.COST; saveMeta(); Tojeong.open(p, Y); Snd.sfx('fanfare'); render(); setTimeout(() => openTojeong(p), 80); } }, { t: '나중에' }]);
   }
   function passCard(pass) {
     if (!Ads.native && !(window.WebAds && WebAds.on)) return '';   // 광고가 없는 웹에서는 광고 없애기 카드가 의미 없음
@@ -164,6 +192,7 @@ const Hub = (() => {
       } catch (e) {}
     };
     $('#hExch').onclick = openExchange;
+    const tj = $('#hTJ'); if (tj) tj.onclick = () => (Tojeong.opened(p) || karma >= Tojeong.COST) ? openTojeong(p) : go('game');
     const pa = $('#hPassAd'); if (pa) pa.onclick = () => Ads.showReward(got => { if (got) { Store.addPass(2 * 36e5); Ads.banner(false); toast('🍀 2시간 동안 광고 없이!'); Snd.sfx('fanfare'); render(); } });
     const pb = $('#hPassBuy'); if (pb) pb.onclick = () => openShop('pass7');
   }
@@ -192,6 +221,7 @@ const Hub = (() => {
       <div class="hcard"><div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p></div></div>
       <div class="hmenu">
         <button id="hRep"><span>📜</span><b>프리미엄 사주 리포트</b><small>${Store.has('report') ? Store.why('report') || '열림' : Store.price('report')}</small></button>
+        <button id="hTJb" class="hot"><span>📜</span><b>${Tojeong.year()} 토정비결</b><small>${Tojeong.opened(p) ? '열림' : `인생 게임 카르마 ${Tojeong.COST}로 열기`}</small></button>
         <button id="hNY"><span>🧧</span><b>2027 정미년 신년운세</b><small>${Store.has('newyear') ? Store.why('newyear') || '열림' : '총운 무료 · 전체 ' + Store.price('newyear')}</small></button>
         <button id="hFlirt" class="hot"><span>💘</span><b>사주 바람기 테스트</b><small>도화살·홍염살로 보는 연애 기질</small></button>
         <button id="hMbti" class="hot"><span>🧩</span><b>사주 MBTI</b><small>오행·십성으로 본 성격 유형</small></button>
@@ -202,6 +232,7 @@ const Hub = (() => {
   function bindSaju(p, a) {
     $('#hRep').onclick = () => showReport(p.name, a, new Date().getFullYear() - +p.date.slice(0, 4), false);
     $('#hNY').onclick = () => openNewYear(p, a);
+    $('#hTJb').onclick = () => openTojeong(p);
     $('#hLearn').onclick = openLearn;
     $('#hEdit').onclick = editProfile;
     $('#hFlirt').onclick = () => Fun.openFlirt(0);
@@ -400,6 +431,6 @@ const Hub = (() => {
     tab = 'today'; show('hub'); render();
     scheduleNoti();
   }
-  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP };
+  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong };
 })();
 Hub.init();

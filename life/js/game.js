@@ -483,12 +483,14 @@ function die(reason){
       </div>
       <div class="badges">${[...P.badges].map(b=>`<span class="badge">🏅 ${b}</span>`).join('')||'<span class="badge">업적 없음</span>'}</div>
       <div id="karmaGain">✨ 카르마 +${gain} (보유 ${karma})</div>
+      ${(()=>{const me=typeof Hub!=='undefined'&&Hub.me();if(!me||!window.Tojeong||Tojeong.opened(me))return'';const need=Tojeong.COST-karma,Y=Tojeong.year();return `<button class="tjnudge" id="tjNudge">📜 ${Y} 토정비결 ${need>0?`열기까지 카르마 <b>${need}</b> 남음 · 한 판 더!`:'<b>지금 열 수 있어요!</b> 보러 가기 ›'}</button>`})()}
       <button class="adbtn" id="adKarmaBtn2" style="display:none"></button>
       <button class="bigbtn" id="againBtn" style="margin:8px 0">🎲 다른 인생 체험하기</button>
       <div style="display:flex;gap:8px"><button class="ghost" id="copyBtn">📤 인생 요약 공유하기</button><button class="ghost" id="homeBtn">처음으로</button></div>
       <div id="webAdEnd" class="webad"></div>
       <div style="height:24px"></div>`;
-    $('#againBtn').onclick=startRoll;
+    {const tn=$('#tjNudge');if(tn)tn.onclick=()=>{const need=Tojeong.COST-karma;if(need>0){$('#againBtn').click();return}Hub.go('today');setTimeout(()=>Hub.openTojeong(),150)}}
+  $('#againBtn').onclick=startRoll;
     $('#homeBtn').onclick=()=>{renderTitle();show('title')};
     $('#copyBtn').onclick=async()=>{try{const r=await Native.share(summary);if(r==='copied')$('#copyBtn').textContent='✅ 복사됨'}catch(e){}};
     show('end');$('#end').scrollTop=0;drawGraph();

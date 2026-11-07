@@ -9,6 +9,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>[상업용 테스트] 운명 연구소 · 프로젝트 80억</title>
 <link href="fonts/fonts.css" rel="stylesheet">
+<!-- 이 페이지는 화이트·블랙 테마를 직접 제공함을 브라우저에 알림 → 삼성 인터넷·크롬의 '강제 다크 모드'(흰 바탕을 회색으로 칠함) 방지 -->
+<meta name="color-scheme" content="light dark">
 <script>/* 화면 테마를 그리기 전에 적용 (깜빡임 방지) — 기본: 화이트 */
 (function(){try{var m=JSON.parse(localStorage.getItem('p8b_mode')||'"light"');var t=m==='system'?(matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'):m;document.documentElement.dataset.theme=t==='dark'?'dark':'light';}catch(e){document.documentElement.dataset.theme='light';}})();</script>
 <style>
@@ -21,6 +23,7 @@
     --accent:#ff7a45; --onacc:#17110c; --shadow:#0008; --glow:#26242d; --chipv:#e9e2ff; --chipy:#ffe7a8;
     color-scheme:dark;
   }
+  @media (prefers-color-scheme: dark){ :root:not([data-theme]){ color-scheme:dark } }
   /* 화이트(한지) 테마 — 운세비결식 흰 바탕 · 먹색 글씨 · 주홍 포인트 */
   :root[data-theme=light]{
     --bg:#f6f3ee; --bg2:#efebe4; --card:#ffffff; --card2:#f1ede6; --field:#ffffff;
@@ -28,7 +31,7 @@
     --line:#1c19161a; --line2:#1c19162e; --raise1:#ffffff; --raise2:#faf7f2; --hot1:#fdecea; --hot2:#fff6f2;
     --hap:#9a6400; --hp:#c42d43; --smart:#1867a8; --look:#7638bd; --bond:#b8336f; --money:#137a45;
     --accent:#c8322b; --onacc:#fff; --shadow:#0002; --glow:#ffffff; --chipv:#5a2ea6; --chipy:#7a4d00;
-    color-scheme:light;
+    color-scheme:only light;   /* 'only' = 브라우저 강제 다크(흰 바탕→회색) 금지 */
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;user-select:none}
   html,body{touch-action:manipulation;-webkit-text-size-adjust:100%}
@@ -563,6 +566,17 @@
   .dsbars i.ac,.dslegend i.ac{background:linear-gradient(90deg,#ffb84d,#ff6f91)}
   .dsrow b{text-align:right;font-size:12px}.dsrow b.up{color:var(--money)}.dsrow b.dn{color:var(--hp)}
 
+  /* 토정비결 */
+  .tjcard{border:1px solid color-mix(in srgb,var(--accent) 35%,transparent)}
+  .tjgwae{display:flex;align-items:baseline;gap:8px;margin:2px 0 4px}.tjgwae b{font-family:'Jua';font-size:28px;color:var(--accent);letter-spacing:2px}.tjgwae small{color:var(--dim)}
+  .tjtone{font-family:'Jua';font-size:17px;margin:0 0 4px;color:var(--ink)}
+  .tjkarma{margin:10px 0 8px}.tjbar{height:10px;border-radius:6px;background:var(--line2);overflow:hidden}.tjbar i{display:block;height:100%;background:var(--hap);border-radius:6px}
+  .tjkarma small{display:block;margin-top:4px;color:var(--dim)}.tjkarma b{color:var(--accent)}
+  .tjmonths{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin:6px 0}.tjmonths div{background:var(--card2);border-radius:10px;padding:7px 8px;font-size:13px;line-height:1.45}
+  .tjmonths div.hi{box-shadow:inset 0 0 0 1.5px var(--money)}.tjmonths div.lo{box-shadow:inset 0 0 0 1.5px var(--hp)}
+  .tjmonths b{display:block;font-family:'Jua'}.tjmonths small{display:block;color:var(--dim);margin-top:2px}
+  .tjnudge{display:block;width:100%;margin:8px 0 2px;padding:10px;border-radius:12px;background:color-mix(in srgb,var(--hap) 16%,var(--card));color:var(--ink);font-size:14px;box-shadow:inset 0 0 0 1px color-mix(in srgb,var(--hap) 50%,transparent)}
+  .tjnudge b{color:var(--accent)}
   /* ===== 테마 공통 보정 ===== */
   /* 색 버튼 위 글씨는 테마와 상관없이 흰색 */
   .bigbtn,.obtn.pri,.shopitem button:not(.own),.hweek i.on,.spd button.on,.mtap,.mcards button{color:var(--onacc)}
@@ -711,6 +725,7 @@
 <script src="js/saju-core.js"></script>
 <script src="js/saju.js"></script>
 <script src="js/fortune.js"></script>
+<script src="js/tojeong.js"></script>
 <script src="js/audio.js"></script>
 <script src="js/life2.js"></script>
 <script src="js/game.js"></script>
