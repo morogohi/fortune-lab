@@ -114,7 +114,9 @@ const Net = (() => {
     if (qaOn()) list.push({ e: '🧪', n: 'QA', f: qaPanel, free: 1, mini: 1 });
   }
   function init() {
-    STORE_CONFIG.products.netpass = { id: 'p8b_netpass_' + season().id.toLowerCase(), e: '🌐', n: '넷시티 시즌 패스', d: `${season().n} 프리미엄 보상 (카르마·복주머니·테마·운명 조작 팩·한정 칭호)`, price: '₩4,900', consumable: false };
+    STORE_CONFIG.products.netpass = { id: 'p8b_netpass_' + season().id.toLowerCase(), e: '🌐', n: '넷시티 시즌 패스', d: `${season().n} 프리미엄 보상 (카르마·복주머니·테마·운명 조작 팩·한정 칭호)`, price: '₩4,900', consumable: false,
+      info: [`판매·달성 기간: ${season().n} 종료(${season().end.getMonth() + 1}월 1일 0시)까지 · ${season().days}일 남음`, '보상: 넷시티 활동 포인트로 10단계 달성 시 프리미엄 칸 수령 (카르마·복주머니·테마·운명 조작 팩·한정 칭호)',
+        '시즌 종료 후: 이미 받은 보상은 계속 유지 · 받지 않은 보상과 단계는 사라짐 · 다음 시즌 패스는 별도 상품'] };
     const _list = actionList; actionList = function () { const l = _list(); extra(l); return l; };
     if (window.Grow) [['family', { '넷시티': 3 }], ['art', { '넷시티': 3 }], ['balance', { '넷시티': 1 }]].forEach(([k, o]) => { const p = Grow.POL.find(x => x.k === k); if (p) Object.assign(p.act, o); });
     if (/[?&]qa=1/.test(location.search)) store.set('p8b_qa', true);

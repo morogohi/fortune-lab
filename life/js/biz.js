@@ -21,14 +21,14 @@ document.getElementById('overlay').addEventListener('click', e => { if (e.target
 function openShop(focus) {
   const rows = Store.list().map(k => {
     const it = Store.item(k), own = Store.has(k) && !it.consumable, why = Store.why(k);
-    return `<div class="shopitem${focus === k ? ' focus' : ''}"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}${!Store.native && !window.P8B_COMMERCIAL && !own ? `<small style="opacity:.7">앱 가격 ${Store.price(k)}</small>` : ''}</div>
+    return `<div class="shopitem${focus === k ? ' focus' : ''}"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}${!Store.native && !window.P8B_COMMERCIAL && !own ? `<small style="opacity:.7">앱 가격 ${Store.price(k)}</small>` : ''}${Store.info(k).length ? `<details class="shopinfo"><summary>무엇을 받나요?</summary>${Store.info(k).map(x => `<small>· ${x}</small>`).join('')}</details>` : ''}</div>
       <button data-k="${k}" class="${own ? 'own' : ''}">${own ? '보유 중' : (Store.native || window.P8B_COMMERCIAL) ? Store.price(k) : '앱 전용'}</button></div>`;
   }).join('');
   const note = Store.native ? '구매 내역은 스토어 계정에 저장돼요. 기기를 바꾸면 「구매 복원」을 눌러 주세요.' : '웹 체험판에서는 결제가 없어요. 앱에서 구매할 수 있어요.';
   const top = (Store.native ? '' : window.P8B_COMMERCIAL ? '<div class="webtrial">🧪 상업용 테스트 · 실제 결제 없음<br>정식 출시 가격으로 표시돼요. 눌러 보시면 구매 의향만 여쭤봐요.</div>'
     : '<div class="webtrial">🌐 웹 체험판 · 결제 불가<br>표시된 가격은 앱 기준 안내예요. 「웹 체험판 무료 개방」 상품은 지금 바로 써 볼 수 있어요.</div>')
     + (Store.item('pass7') ? '<p class="sjnote">🚫 <b>광고 제거</b>는 한 번 사면 영구 적용 · 🍀 <b>행운패스</b>는 정해진 기간만 광고가 없고 출석 복주머니가 2배예요. 광고 제거를 이미 가지고 있다면 패스는 복주머니 2배 효과만 남아요.</p>'
-      : '<p class="sjnote">유료 상품은 모두 한 번 사면 기간 제한 없이 쓰는 일회성 상품이에요 (카르마만 쓰면 없어지는 소모성).</p>');
+      : '<p class="sjnote">유료 상품은 한 번 사면 기간 제한 없이 쓰는 일회성 상품이에요. 예외: 카르마는 쓰면 없어지는 소모성, 넷시티 시즌 패스는 해당 시즌 동안만 보상을 받을 수 있어요. 각 상품의 「무엇을 받나요?」에서 범위를 확인하세요.</p>');
   openOverlay('🛍️ 상점', top + rows + `<p class="sjnote" style="text-align:center">${note}</p>`,
     [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { const n = await Store.restore(); log && P && log(`구매 ${n}건 복원`); openShop(); } }] : []), { t: '닫기' }]);
   document.querySelectorAll('#osheet .shopitem button').forEach(b => b.onclick = () => {
@@ -41,7 +41,7 @@ function openShop(focus) {
         Snd.sfx('fanfare'); if (k === 'noads') Ads.banner(false); refreshFateLock(); openShop();
       } else if (err === 'web' && window.P8B_COMMERCIAL) {
         const form = () => window.open(STORE_CONFIG.feedbackUrl, '_blank', 'noopener');
-        openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">상업용 테스트 중이라 실제 결제는 없어요.<br>정식 출시 때 <b>${Store.price(k)}</b>이라면 사시겠어요?</p><p class="sjnote" style="text-align:center">${it.d}</p>`, [
+        openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">상업용 테스트 중이라 실제 결제는 없어요.<br>정식 출시 때 <b>${Store.price(k)}</b>이라면 사시겠어요?</p><div class="sjnote">${(Store.info(k).length ? Store.info(k) : [it.d]).map(x => `· ${x}`).join('<br>')}</div><p class="sjnote" style="text-align:center">설문에서 사고 싶은 이유·아쉬운 점·적정 가격을 알려 주세요.</p>`, [
           { t: '👍 이 가격이면 살 것 같아요 (설문에 남기기)', pri: 1, f: form },
           { t: '🤔 가격·구성이 아쉬워요 (의견 남기기)', f: form },
           { t: '상점으로', f: () => openShop() }]);
@@ -58,7 +58,8 @@ function openShop(focus) {
 function reportHTML(name, a, age) {
   if (Store.has('report')) return Saju.premiumHTML(a, age, new Date().getFullYear());
   return `${Saju.summaryHTML(a)}
-    <div class="lock"><b>🔒 프리미엄 사주 리포트</b><small>${new Date().getFullYear()}년 운세 · 10년 대운 상세 · 성격·연애·재물·건강·개운법</small></div>
+    ${(() => { try { const S = window.SAJU, y = new Date().getFullYear(), sx = S.SEUN[S.tg10(a.me, S.yearGz(y).s).g]; return `<div class="sjtxt"><h4>👀 미리보기 · ${y}년 총운</h4><p>${sx.총운}</p></div>`; } catch (e) { return ''; } })()}
+    <div class="lock"><b>🔒 프리미엄 사주 리포트</b><small>${new Date().getFullYear()}년 분야별 운세(일·재물·연애·건강, 상·하반기) · 이번 달 한마디 · 10년 대운 8구간 · 성격·강점·약점 · 개운법</small></div>
     <p class="sjnote" style="text-align:center">※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
 }
 function showReport(name, a, age, fromGame) {

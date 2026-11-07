@@ -630,9 +630,13 @@ function initSetup(){
     const [y,m,d]=v.split('-').map(Number),t=$('#fTime').value,sx=document.querySelector('#fSex .on').dataset.v;
     const birth={cal:$('#fCal').value,y,m,d,hh:t?+t.split(':')[0]:12,mm:t?+t.split(':')[1]:0,unk:!t};
     if(Saju.ok()&&!Saju.analyze(birth,true)){$('#fErr').textContent='존재하지 않는 날짜예요 (음력이면 날짜를 확인해 주세요)';Snd.sfx('bad');return}
+    const today=Fortune.ymd(new Date());
+    if($('#fRemember').checked&&v>today){$('#fErr').textContent='오늘 이후 날짜는 내 정보로 기억할 수 없어요. ‘정보 기억하기’를 끄면 가상 인물로 플레이할 수 있어요';Snd.sfx('bad');return}
     let mate=null;const mv=$('#mDate').value,mn=$('#mName').value.trim();
     if(mv||mn){if(!mv){$('#fErr').textContent='궁합 모드: 상대 생년월일을 입력해 주세요';Snd.sfx('bad');return}
+      if(mv>today){$('#fErr').textContent='궁합 상대 생년월일은 오늘 이후로 입력할 수 없어요';Snd.sfx('bad');return}
       const [my,mm2,md]=mv.split('-').map(Number),msx=document.querySelector('#mSex .on').dataset.v;
+      if(Saju.ok()&&!Saju.analyze({cal:$('#mCal').value,y:my,m:mm2,d:md,hh:12,mm:0,unk:true},msx==='m')){$('#fErr').textContent='궁합 상대: 존재하지 않는 날짜예요 (음력·윤달을 확인해 주세요)';Snd.sfx('bad');return}
       mate={name:mn||'운명의 상대',male:msx==='m',birth:{cal:$('#mCal').value,y:my,m:mm2,d:md,hh:12,mm:0,unk:true},date:mv,cal:$('#mCal').value,sex:msx}}
     if($('#fRemember').checked)store.set('p8b_me',{date:v,cal:birth.cal,time:t,country:$('#fCountry').value,sex:sx,name:$('#fName').value.trim(),mate:mate?{name:mate.name,date:mate.date,cal:mate.cal,sex:mate.sex}:null});
     const fate=Store.has('fate');

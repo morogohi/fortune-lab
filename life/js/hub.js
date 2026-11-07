@@ -139,10 +139,14 @@ const Hub = (() => {
         ${ms}
         <div class="hms${d.shared ? ' done' : ''}"><span>📤 오늘의 운세 공유하기</span>${d.shared ? '<b>✓ +2</b>' : '<button id="hShare">공유 +2</button>'}</div>
         <button class="ghost wide" id="hExch">🎁 복주머니로 보상 교환하기</button></div>
-      <div class="hcard hpass"><div><b>🍀 행운패스</b><small>${pass}</small></div>
-        <button class="adbtn" id="hPassAd" ${Ads.canReward() ? '' : 'disabled'}>📺 광고 보고 2시간 무료${Ads.canReward() ? '' : '<small>(지금은 불가)</small>'}</button>
-        ${Store.item('pass7') ? `<button class="ghost" id="hPassBuy">7일 ${Store.price('pass7')} · 30일 ${Store.price('pass30')}</button>` : ''}</div>
+      ${passCard(pass)}
       <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
+  }
+  function passCard(pass) {
+    if (!Ads.native && !(window.WebAds && WebAds.on)) return '';   // 광고가 없는 웹에서는 광고 없애기 카드가 의미 없음
+    return `<div class="hcard hpass"><div><b>🍀 행운패스</b><small>${pass}</small></div>
+        ${Ads.native ? `<button class="adbtn" id="hPassAd" ${Ads.canReward() ? '' : 'disabled'}>📺 광고 보고 2시간 무료${Ads.canReward() ? '' : '<small>(지금은 불가)</small>'}</button>` : '<small>📺 광고 보고 2시간 무료는 앱에서 이용할 수 있어요 · 복주머니 3개로도 교환 가능</small>'}
+        ${Store.item('pass7') ? `<button class="ghost" id="hPassBuy">7일 ${Store.price('pass7')} · 30일 ${Store.price('pass30')}</button>` : ''}</div>`;
   }
   function passLeft() {
     const ms = Store.passUntil() - Date.now(); if (ms <= 0) return '';
@@ -160,7 +164,7 @@ const Hub = (() => {
       } catch (e) {}
     };
     $('#hExch').onclick = openExchange;
-    $('#hPassAd').onclick = () => Ads.showReward(got => { if (got) { Store.addPass(2 * 36e5); Ads.banner(false); toast('🍀 2시간 동안 광고 없이!'); Snd.sfx('fanfare'); render(); } });
+    const pa = $('#hPassAd'); if (pa) pa.onclick = () => Ads.showReward(got => { if (got) { Store.addPass(2 * 36e5); Ads.banner(false); toast('🍀 2시간 동안 광고 없이!'); Snd.sfx('fanfare'); render(); } });
     const pb = $('#hPassBuy'); if (pb) pb.onclick = () => openShop('pass7');
   }
   function whyFortune(p, a) {
@@ -182,7 +186,7 @@ const Hub = (() => {
   function sajuHTML(p, a) {
     const age = new Date().getFullYear() - +p.date.slice(0, 4);
     const L = Saju.luckAt(a, age);
-    return `<div class="hhead"><small>${p.date} (${p.cal === 's' ? '양력' : '음력'}) · ${p.time ? SIJIN.find(x => x[0] === p.time)[1].split(' ')[0] : '시간 모름'} · ${p.sex === 'f' ? '여' : '남'}</small><h2>${esc(p.name)}님의 사주</h2></div>
+    return `<div class="hhead"><small>${p.date} (${p.cal === 'll' ? '음력 윤달' : p.cal === 'l' ? '음력' : '양력'}) · ${p.time ? SIJIN.find(x => x[0] === p.time)[1].split(' ')[0] : '태어난 시간 모름(시주 제외)'} · ${p.sex === 'f' ? '여' : '남'}</small><h2>${esc(p.name)}님의 사주</h2></div>
       ${Saju.summaryHTML(a)}
       ${L ? `<div class="sjnow">${L.e} 지금 대운 (${L.start}세~) <b>${L.name}</b><br><span>${L.desc}</span></div>` : ''}
       <div class="hcard"><div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p></div></div>
@@ -305,7 +309,7 @@ const Hub = (() => {
     return `<div class="hhead"><small>운명 연구소</small><h2>더보기</h2></div>
       <div class="hmenu">
         <button id="mExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개</small></button>
-        <button id="mShop"><span>🛍️</span><b>상점</b><small>행운패스 · 리포트 · 신년운세</small></button>
+        <button id="mShop"><span>🛍️</span><b>상점</b><small>${Store.item('pass7') ? '행운패스 · ' : ''}리포트 · 궁합 상세 · 신년운세</small></button>
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
         ${native ? '' : '<button id="mBaram"><span>🌸</span><b>사주 바람기 테스트</b><small>도화살·홍염살로 보는 연애 체질</small></button>'}
       </div>
@@ -327,7 +331,10 @@ const Hub = (() => {
         const ln = LN(); if (ln) ln.getPending().then(r => r.notifications.length && ln.cancel({ notifications: r.notifications.map(n => ({ id: n.id })) })).catch(() => {});
         location.reload();
       };
-      openOverlay('🗑️ 내 정보·기록 지우기', '<p class="sjnote">이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요. 구매 내역·행운패스는 남아요.</p>', [
+      openOverlay('🗑️ 내 정보·기록 지우기', `<div class="sjtxt"><p>이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요.</p>
+        <h4>① 내 사주·궁합 정보만</h4><p>내 이름(별명)·생년월일·시간·성별, 궁합 관계도(${people().length}명), 사주 MBTI 결과</p>
+        <h4>② 게임 기록까지 모두</h4><p>①에 더해 저장 슬롯·지난 생애·카르마·출석/복주머니·테마·알림 설정·소리 설정</p>
+        <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
         { t: '내 사주·궁합 정보만 지우기', f: () => wipe(false) },
         { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
     };

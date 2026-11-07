@@ -10,6 +10,31 @@ window.Saju = (() => {
     '책임과 명예의 시기. 승진·합격 운이 강해요.',
     '배움과 귀인의 시기. 공부·자격증·도움받을 일이 생겨요.',
   ];
+  // 연령대별 대운 풀이: 어린이(0~12) · 청소년(13~19) · 성인(20~64) · 노년(65~)
+  const GRPDESC_AGE = {
+    kid: [
+      '고집과 자립심이 자라는 시기. 혼자 해 보려는 마음을 칭찬해 주면 좋아요.',
+      '끼가 드러나는 시기. 그림·노래·놀이에서 재능이 보여요.',
+      '물건과 용돈을 아끼는 법을 배우기 좋은 시기예요.',
+      '규칙과 약속을 잘 지키는 시기. 반장·상장 같은 칭찬이 따라요.',
+      '배움이 쑥쑥 느는 시기. 책과 좋은 선생님을 만나요.',
+    ],
+    teen: [
+      '내 길을 고집하는 시기. 친구와의 경쟁이 자극이 되지만 다툼은 조심해요.',
+      '재능이 꽃피는 시기. 동아리·예술·창작 활동이 빛나요.',
+      '현실 감각이 생기는 시기. 아르바이트·용돈 관리로 경제를 배워요.',
+      '책임감이 커지는 시기. 반장·대회 수상·합격 운이 있어요.',
+      '공부가 잘되는 시기. 시험·진학과 도와주는 선배가 함께해요.',
+    ],
+    senior: [
+      '내 뜻대로 사는 시기. 건강을 지키며 하고 싶던 일을 시작해 보세요.',
+      '취미와 표현이 즐거운 시기. 배움·봉사·창작으로 삶이 풍요로워요.',
+      '모은 것을 지키고 나누는 시기. 무리한 투자보다 안정이 우선이에요.',
+      '존경과 명예의 시기. 경험을 전하는 자리가 생겨요.',
+      '배움과 인연의 시기. 새 공부와 좋은 사람이 찾아와요.',
+    ],
+  };
+  const descAt = (g, age) => age < 13 ? GRPDESC_AGE.kid[g] : age < 20 ? GRPDESC_AGE.teen[g] : age >= 65 ? GRPDESC_AGE.senior[g] : GRPDESC[g];
   const ELC = ['#4fbf85', '#ef6a5a', '#e2b947', '#c3cad6', '#7ea8f2'];
   const ELE = ['🌳', '🔥', '⛰️', '⚔️', '💧'];
   // 오행 → 과목 적성
@@ -63,7 +88,7 @@ window.Saju = (() => {
     if (!a) return null;
     let g = a.pre, txt = '초년', start = 0;
     a.dy.forEach(d => { if (age >= d.age) { g = d.g; txt = d.txt; start = d.age; } });
-    return { g, txt, start, name: GRPN[g], e: GRPE[g], desc: GRPDESC[g] };
+    return { g, txt, start, name: GRPN[g], e: GRPE[g], desc: descAt(g, age) };
   }
 
   // 궁합: 일간 오행 관계 (상생↑ 상극↓)
@@ -114,7 +139,7 @@ window.Saju = (() => {
   function premiumHTML(a, age, year) {
     const yg = S.yearGz(year), ts = S.tg10(a.me, yg.s), tb = S.tg10(a.me, S.HID[yg.b]), sx = S.SEUN[ts.g], sb = S.SEUN[tb.g];
     const L = luckAt(a, age);
-    const dyRows = a.dy.slice(0, 8).map(d => `<tr class="${L && L.start === d.age ? 'on' : ''}"><td>${d.age}세~</td><td><b>${d.txt}</b></td><td>${GRPE[d.g]} ${GRPN[d.g]}</td><td>${GRPDESC[d.g]}</td></tr>`).join('');
+    const dyRows = a.dy.slice(0, 8).map(d => `<tr class="${L && L.start === d.age ? 'on' : ''}"><td>${d.age}세~</td><td><b>${d.txt}</b></td><td>${GRPE[d.g]} ${GRPN[d.g]}</td><td>${descAt(d.g, d.age)}</td></tr>`).join('');
     return `${summaryHTML(a)}
       <div class="sjnote" style="text-align:center;margin:6px 0">🔓 프리미엄 사주 리포트</div>
       <div class="sjtxt">

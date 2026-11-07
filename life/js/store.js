@@ -16,6 +16,21 @@ window.STORE_CONFIG = {
     newyear:{ id: 'p8b_newyear_2027', e: '🧧', n: '2027 신년운세', d: '정미년 분야별 운세 + 12개월 흐름 + 좋은 달·조심할 달', price: '₩3,900', consumable: false },
     compat: { id: 'p8b_compat_detail', e: '💞', n: '궁합 상세 풀이', d: '두 사람의 성격·연애 성향·올해 연애운까지 (관계도에 등록한 모든 상대, 기간 제한 없음)', price: '₩1,900', consumable: false },
   },
+  // 구매 전에 보여 줄 '무엇을 받는지 · 이용 범위' (상점 자세히 · 구매 확인 창)
+  info: {
+    report: ['구성: 올해 운세(총운·일·재물·연애·건강, 상·하반기) · 이번 달 한마디 · 10년 대운 8구간 표 · 성격·강점·약점 · 타고난 흐름·보완점·개운법',
+      '무료와 차이: 무료는 사주 원국·오행·성격 요약까지',
+      '이용 범위: 내 사주와 게임 속 인물 모두 · 기간 제한 없이 다시 열람 · 내 정보를 바꾸면 바뀐 정보로 다시 계산',
+      '기기 변경: 같은 스토어 계정으로 「구매 복원」'],
+    noads: ['없어지는 광고: 배너 광고 · 엔딩 전면 광고', '그대로인 것: 보상형 광고(카르마·무료 기적) — 원할 때만 직접 시청',
+      '이용 범위: 기간 제한 없음 · 기기 변경 시 「구매 복원」'],
+    fate: ['구성: 탄생할 때 가정형편과 타고난 재능을 직접 선택', '이용 범위: 이후 모든 판에 기간 제한 없이 적용 · 기기 변경 시 「구매 복원」'],
+    karma: ['구성: 카르마 100 즉시 지급 (다시 태어나기 15 · 기적 40)', '소모성: 쓰면 없어지고, 앱을 지우면 남은 카르마도 사라져요 (복원 대상 아님)'],
+    newyear: ['대상: 2027년(정미년)', '구성: 분야별 운세 · 12개월 흐름 · 좋은 달·조심할 달', '무료와 차이: 무료는 한 해 총운·띠 관계·좋은 달·조심할 달까지',
+      '이용 범위: 2027년이 지나도 다시 열람 가능 · 기기 변경 시 「구매 복원」'],
+    compat: ['무료: 궁합 지수·산정 요소·한 줄 평', '추가: 두 사람의 성격·연애 스타일·올해 두 사람의 연애운',
+      '이용 범위: 관계도에 등록한 모든 상대 · 기간 제한 없음 · 기기 변경 시 「구매 복원」'],
+  },
   webDemoFree: ['report', 'newyear', 'compat'],          // 웹 체험판에서 무료로 여는 상품
   newYearFree: ['report'],          // 신년 이벤트 기간 무료 상품
 };
@@ -100,5 +115,5 @@ window.Store = (() => {
       fire(); onDone && onDone(true);
     } catch (e) { onDone && onDone(false, String(e && e.message || e)); }
   }
-  return { native, init, has, why, buy, restore, price, newYear, grant, addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[k] };
+  return { native, init, has, why, buy, restore, price, newYear, grant, addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[k], info: k => (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || [] };
 })();
