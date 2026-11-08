@@ -281,7 +281,8 @@ const Hub = (() => {
   const PAGES = {};
   function register(o) {
     if (o.item && !ITEMS.some(x => x.k === o.item.k)) { const i = ITEMS.findIndex(x => x.k === o.after); ITEMS.splice(i >= 0 ? i + 1 : ITEMS.length, 0, o.item); }
-    if (o.html) { PAGES[o.item.k] = { html: o.html, bind: o.bind || (() => { }) }; TITLES[o.item.k] = o.title || o.item.n; }
+    const key = o.item ? o.item.k : o.page;
+    if (o.html) { PAGES[key] = { html: o.html, bind: o.bind || (() => { }) }; TITLES[key] = o.title || (o.item && o.item.n); }
     if ($('#hub').classList.contains('on') && tab === 'home') render();
   }
   function openItem(k) {
@@ -596,9 +597,11 @@ const Hub = (() => {
            <div class="tjkarma"><div class="tjbar"><i style="width:${Math.min(100, k / Tojeong.COST * 100)}%"></i></div>
            <small>✨ 카르마 ${k} / ${Tojeong.COST}${need ? ` · <b>${need}</b> 더 모으면 열려요` : ' · 지금 열 수 있어요!'}</small></div>
            <button class="bigbtn" id="hTJ">${need ? '🌍 인생 게임하러 가기' : `✨ 카르마 ${Tojeong.COST}으로 열기`}</button>
-           <p class="sjnote" style="text-align:center;margin:6px 0 0">인생 한 판을 끝까지 살면 점수에 따라 카르마를 받아요 (보통 5~15).</p></div>`}`;
+           <p class="sjnote" style="text-align:center;margin:6px 0 0">인생 한 판을 끝까지 살면 점수에 따라 카르마를 받아요 (보통 5~15).</p></div>`}
+      ${Y === 2027 && typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
   }
   function bindTojeong(p) {
+    if (typeof YearFull !== 'undefined') YearFull.bind(p, analyzeP(p));
     const b = $('#hTJ'); if (!b) return;
     b.onclick = () => {
       const Y = Tojeong.year();
@@ -660,7 +663,7 @@ const Hub = (() => {
     $('#hRep').onclick = () => showReport(p.name, a, new Date().getFullYear() - +p.date.slice(0, 4), false);
   }
   function newYearHTML(p, a) {
-    const n = Fortune.newYear(a, 2027), open = Store.has('newyear');
+    const n = Fortune.newYear(a, 2027);
     const mm = m => `${m.yr !== 2027 ? '이듬해 ' : ''}${m.solarM}월`;
     const months = n.months.map(m => `<tr><td>${mm(m)}<small>${S.BRK[m.b]}월</small></td><td>${S.STK[m.s]}${S.BRK[m.b]}<small>${m.ten}</small></td><td><b style="color:${gColor(m.v)}">${m.v}</b></td><td>${m.txt}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</td></tr>`).join('');
     return `<div class="hhead"><small>${esc(p.name)}님 · ${n.gzHan}년</small><h2>2027 ${n.gzTxt}년 신년운세</h2></div>
@@ -668,13 +671,8 @@ const Hub = (() => {
       <h4>🌟 한 해 총운 · ${n.ts.n}의 해</h4><p>${n.sx.총운}</p>
       ${n.yrel ? `<p>🐑 내 띠와 올해 양띠는 <b>${n.yrel.n}</b> — ${n.yrel.d.replace('날', '해')}</p>` : ''}
       <p>📈 좋은 달: <b>${n.best.map(mm).join(', ')}</b> · 조심할 달: <b>${mm(n.worst)}</b></p>
-      ${open ? `<h4>💼 일·직업</h4><p>${n.sx.직업}</p><h4>💰 재물</h4><p>${n.sx.재물}</p><h4>💕 연애</h4><p>${n.sx.연애}</p><h4>🩺 건강</h4><p>${n.sx.건강}</p>
-        <h4>🍂 하반기 (${S.BRK[n.yg.b]} · ${n.tb.n})</h4><p>${n.sb.총운}</p>
-        <h4>📅 12개월 흐름</h4><table class="dytbl hmonth"><tr><th>달</th><th>월건</th><th>점수</th><th>한마디</th></tr>${months}</table>
-        <p class="sjnote">명리의 달은 절기로 바뀌어요. 2월은 입춘부터 寅월이에요.</p>`
-        : `<div class="lock"><b>🔒 분야별 운세 + 12개월 흐름</b><small>일·재물·연애·건강, 하반기 흐름, 달마다 점수와 한마디</small></div>`}
-      <p class="sjnote">※ 참고·재미용 풀이예요.</p></div></div>
-      ${open ? '' : `<button class="bigbtn wide" id="nyOpen">🔓 분야별 운세 · 12개월 흐름 열기 (${Store.price('newyear')})</button>`}`;
+      <p class="sjnote">※ 무료 요약이에요. 분야별·12개월·좋은 날까지 담은 상세 풀이는 아래 종합 사주풀이에서 볼 수 있어요.</p></div></div>
+      ${typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
   }
   function openNewYear() { go('newyear'); }
   function openLearn() {
@@ -847,7 +845,7 @@ const Hub = (() => {
     else if (tab === 'mbtitest') { body.innerHTML = mbtiTestHTML(p, a); bindMbtiTest(p, a); }
     else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
     else if (PAGES[tab]) { body.innerHTML = PAGES[tab].html(p, a); PAGES[tab].bind(p, a); }
-    else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); body.innerHTML = newYearHTML(p, a); const b = $('#nyOpen'); if (b) b.onclick = () => openShop('newyear'); }
+    else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); body.innerHTML = newYearHTML(p, a); if (typeof YearFull !== 'undefined') YearFull.bind(p, a); }
     body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav();
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
