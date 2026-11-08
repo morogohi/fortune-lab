@@ -341,11 +341,11 @@ const World = (() => {
     { id: 'g_google', n: '구글 (미국)', e: '🔎', pay: 190000, lad: 'dev', l: 'en', need: 70, ok: p => (p.major === 'cs' || p.sub.code >= 70) && p.smart >= 70, why: '컴퓨터공학 또는 코딩 70 · 지능 70' },
     { id: 'g_gs', n: '골드만삭스 (미국)', e: '🏦', pay: 210000, lad: 'corp', l: 'en', need: 75, ok: p => p.sub.math >= 70 && p.smart >= 72 && (p.fin || 0) >= 40, why: '수학 70 · 지능 72 · 금융 지식 40' },
     { id: 'g_un', n: '유엔 국제기구', e: '🇺🇳', pay: 120000, lad: 'corp', l: 'en', need: 80, ok: p => p.edu >= 3 && Object.values(p.lang || {}).filter(v => v >= 50).length >= 3, why: '대졸 · 3개 언어 중급 이상' },
-    { id: 'g_samsung', n: '삼성전자 (한국)', e: '📱', pay: 95000, lad: 'corp', l: 'ko', need: 60, ok: p => p.edu >= 3 && p.smart >= 65 && ['ee', 'cs', 'sci'].includes(p.major), why: '이공계 대졸 · 지능 65' },
+    { id: 'g_samsung', n: '삼성전자 (한국)', e: '📱', pay: 95000, lad: 'corp', l: 'ko', need: 60, ok: p => p.edu >= 3 && p.smart >= 65 && STEM.includes(p.major), why: '이공계 대졸 · 지능 65' },
     { id: 'g_toyota', n: '토요타 (일본)', e: '🚗', pay: 80000, lad: 'corp', l: 'ja', need: 55, ok: p => p.edu >= 3 && p.smart >= 60, why: '대졸 · 지능 60' },
     { id: 'g_tencent', n: '텐센트 (중국)', e: '🐧', pay: 90000, lad: 'dev', l: 'zh', need: 60, ok: p => p.sub.code >= 60 && p.smart >= 62, why: '코딩 60 · 지능 62' },
     { id: 'g_lvmh', n: '루이비통 (프랑스)', e: '👜', pay: 75000, lad: 'corp', l: 'fr', need: 55, ok: p => p.look >= 65 && p.edu >= 3, why: '매력 65 · 대졸' },
-    { id: 'g_sap', n: 'SAP (독일)', e: '💾', pay: 100000, lad: 'dev', l: 'de', need: 50, ok: p => ['cs', 'ee'].includes(p.major) || p.sub.code >= 65, why: '컴공·전자 전공 또는 코딩 65' },
+    { id: 'g_sap', n: 'SAP (독일)', e: '💾', pay: 100000, lad: 'dev', l: 'de', need: 50, ok: p => ['cs', 'ee', 'elc', 'semi'].includes(p.major) || p.sub.code >= 65, why: '컴공·전기·전자·반도체 전공 또는 코딩 65' },
     { id: 'g_orch', n: '빈 필하모닉 (오스트리아)', e: '🎻', pay: 90000, lad: 'artist', l: 'de', need: 40, ok: p => (p.hlv && p.hlv['피아노'] >= 9) || p.badges.has('피아노 콩쿠르 입상'), why: '피아노 Lv9 또는 콩쿠르 입상' },
   ];
   function registerJobs() {

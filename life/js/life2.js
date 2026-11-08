@@ -32,13 +32,18 @@ const HOBBIES = [
   { k: '그림', e: '🎨', st: { hap: 2 }, sub: 'art' }, { k: '캠핑', e: '🏕️', st: { hap: 2, bond: 1 } },
 ];
 const MAJORS = [
-  { id: 'cs', n: '컴퓨터공학', e: '💻', sub: ['math', 'code'], cut: 62 }, { id: 'ee', n: '전기전자공학', e: '⚡', sub: ['math', 'sci'], cut: 58 },
-  { id: 'med', n: '의학', e: '🩺', sub: ['sci', 'math'], cut: 84 }, { id: 'nurse', n: '간호학', e: '💉', sub: ['sci', 'kor'], cut: 55 },
+  { id: 'cs', n: '컴퓨터공학', e: '💻', sub: ['math', 'code'], cut: 62, stem: 1 }, { id: 'ee', n: '전기공학', e: '⚡', sub: ['math', 'sci'], cut: 58, stem: 1 },
+  { id: 'elc', n: '전자공학', e: '📡', sub: ['math', 'sci', 'code'], cut: 60, stem: 1 }, { id: 'semi', n: '반도체공학', e: '🔲', sub: ['sci', 'math', 'code'], cut: 64, stem: 1 },
+  { id: 'mech', n: '기계공학', e: '⚙️', sub: ['math', 'sci'], cut: 57, stem: 1 }, { id: 'chem', n: '화학공학', e: '🧪', sub: ['sci', 'math'], cut: 60, stem: 1 },
+  { id: 'arch', n: '건축공학', e: '🏗️', sub: ['math', 'art'], cut: 55, stem: 1 }, { id: 'ie', n: '산업공학', e: '🏭', sub: ['math', 'soc'], cut: 54, stem: 1 },
+  { id: 'med', n: '의학', e: '🩺', sub: ['sci', 'math'], cut: 84, stem: 1 }, { id: 'nurse', n: '간호학', e: '💉', sub: ['sci', 'kor'], cut: 55 },
   { id: 'biz', n: '경영학', e: '📊', sub: ['soc', 'math'], cut: 58 }, { id: 'law', n: '법학', e: '⚖️', sub: ['kor', 'soc'], cut: 72 },
   { id: 'edu', n: '교육학', e: '🍎', sub: ['kor', 'eng'], cut: 56 }, { id: 'art', n: '예술', e: '🎨', sub: ['art', 'music'], cut: 45 },
-  { id: 'hum', n: '인문학', e: '📜', sub: ['kor', 'eng'], cut: 48 }, { id: 'sci', n: '자연과학', e: '🔬', sub: ['sci', 'math'], cut: 55 },
+  { id: 'hum', n: '인문학', e: '📜', sub: ['kor', 'eng'], cut: 48 }, { id: 'sci', n: '자연과학', e: '🔬', sub: ['sci', 'math'], cut: 55, stem: 1 },
   { id: 'pe', n: '체육학', e: '🏃', sub: ['pe'], cut: 40 },
 ];
+// 이공계 전공 (엔지니어·대기업 기술직 지원 조건)
+const STEM = ['cs', 'ee', 'elc', 'semi', 'mech', 'chem', 'arch', 'ie', 'sci'];
 const LADDERS = {
   corp: ['사원', '대리', '과장', '차장', '부장', '상무', '전무', '사장'],
   doctor: ['인턴', '레지던트', '전문의', '과장', '부원장', '병원장'],
@@ -266,9 +271,10 @@ function chooseMajor(after) {
   const ranked = MAJORS.map(m => ({ m, sc: score(m) })).sort((a, b) => b.sc - a.sc);
   const strong = P.saju ? Saju.ELSUB[P.saju.strong] : [];
   showModal({
-    e: '🎓', t: '전공을 고르자', d: `적성 점수가 합격선을 넘어야 해요 · 상위 과목: ${topSubjects().map(s => s.e + s.n).join(' ')}`, ch: [
-      ...ranked.slice(0, 6).map(({ m, sc }) => ({
-        t: `${m.e} ${m.n}${m.sub.some(k => strong.includes(k)) ? ' 🔮' : ''}`, s: `적성 ${sc} / 합격선 ${m.cut}${sc >= m.cut ? ' · 합격 유력' : ' · 도전'}`, f: () => {
+    e: '🎓', t: '전공을 고르자', grid: 0, d: `이공계와 인문·사회·예체능 전공을 모두 고를 수 있어요 (⭐ 적성 상위) · 상위 과목: ${topSubjects().map(s => s.e + s.n).join(' ')}`, ch: [
+      // 전공 전체를 계열별로: 🔬 이공계 → 📚 인문·사회·예체능 (계열 안에서는 적성 순), 적성 상위 3개는 ★
+      ...[...ranked.filter(x => x.m.stem), ...ranked.filter(x => !x.m.stem)].map(({ m, sc }) => ({
+        t: `<em class="mjg">${m.stem ? '🔬 이공계' : '📚 인문·사회·예체능'}</em>${ranked.slice(0, 3).some(x => x.m === m) ? '⭐ ' : ''}${m.e} ${m.n}${m.sub.some(k => strong.includes(k)) ? ' 🔮' : ''}`, s: `적성 ${sc} / 합격선 ${m.cut}${sc >= m.cut ? ' · 합격 유력' : ' · 도전'}`, f: () => {
           if (sc + R(-6, 6) >= m.cut) { P.major = m.id; P.majorName = m.n; log(`${m.e} ${m.n} 전공으로 입학!`, 'good'); cutin('🎓', '대학 입학!', m.n + ' 전공'); Snd.sfx('fanfare'); playAnim('grad', 2.5); }
           else { const fb = ranked.find(x => x.sc >= x.m.cut - 4 && x.m !== m) || ranked[ranked.length - 1]; P.major = fb.m.id; P.majorName = fb.m.n; log(`${m.n} 불합격… ${fb.m.n} 전공으로 진학했다`, 'bad'); playAnim('sad'); }
           after && after();
