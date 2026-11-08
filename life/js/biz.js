@@ -56,6 +56,7 @@ function openShop(focus, full) {
       <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`; };
   const main = Store.contents().filter(k => !Store.item(k).game), game = Store.contents().filter(k => Store.item(k).game);
   const cont = main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>인생의 갈림길 고민 — 선택지별 적합도·대운·MBTI·가상 인생 비교 · 첫 회 무료</small></div><button data-go="counsel">✨ 20/회</button></div>`
+    + `<h4 class="kh">☕ 가볍게</h4><div class="shopitem"><span class="se">🔮</span><div><b>타로 사주 심층 풀이</b><small>뽑은 카드를 내 사주·대운·올해·이번 달과 엮은 주제별 상담 · 매일 1회 무료 (리포트 보유 시 3회)</small></div><button data-go="tarot">✨ 10/회</button></div>`
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
   openOverlay('✨ 카르마 상점',

@@ -426,6 +426,17 @@ const Hub = (() => {
     tTimer = setInterval(() => { if (tab !== 'tarot') { stopShuffleLoop(); return; } Snd.sfx('riffle'); }, 900);   // 먼저 켜야 render 중 '섞기 중단'으로 오인하지 않음
     render(); Snd.sfx('riffle');
   }
+  // 타로 심층 풀이 과금: 매일 무료 1회(상세 리포트 보유 시 3회), 이후 1회 카르마 10. 한 번 열면 그 카드 묶음의 모든 주제가 열림
+  const TD_COST = 10, TD_KEY = 'p8b_tdeep';
+  const tdDay = () => new Date().toLocaleDateString('sv');
+  function tdFree() { const o = store.get(TD_KEY, {}), lim = Store.has('report') ? 3 : 1; return Math.max(0, lim - (o.d === tdDay() ? o.n : 0)); }
+  function tdUseFree() { const o = store.get(TD_KEY, {}); store.set(TD_KEY, { d: tdDay(), n: (o.d === tdDay() ? o.n : 0) + 1 }); }
+  function openDeep() {
+    const D = tarotD; if (!D || D.deep) return;
+    const done = () => { D.deep = true; Snd.sfx('fanfare'); keepRender(); setTimeout(() => { const el = document.querySelector('.tsaju'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60); };
+    if (tdFree() > 0) { tdUseFree(); try { Karma.metric('tarot_free'); } catch (e) { } done(); return; }
+    Karma.spend(TD_COST, '🔮 타로 사주 심층 풀이', () => { try { Karma.metric('unlock_tarot'); } catch (e) { } done(); }, () => keepRender());
+  }
   // 사주 × 타로 상담: 일간·대운·올해·이번 달·MBTI·연인 궁합을 엮어 주제별로 풀이 (기기 안에서만 계산)
   function tarotSajuHTML(D, p, a) {
     if (!a || typeof TarotSaju === 'undefined') return a ? '' : '<div class="hcard"><p class="sjtxt" style="margin:0">☯️ 내 정보(생년월일)를 넣으면 카드를 사주와 엮은 <b>주제별 상담 풀이</b>를 볼 수 있어요.</p></div>';
@@ -433,11 +444,13 @@ const Hub = (() => {
       const mt = store.get('p8b_mbti_test', null), mbti = (mt && MbtiTest.settled(mt)) || (store.get('p8b_mbti', {})[p.date + p.name]) || (Fun.mbti(a) || {}).type || '';
       const partners = people().filter(x => !x.rel || x.rel === 'love').map(x => ({ name: x.name, a: analyzeP(x) })).filter(x => x.a);
       const age = new Date().getFullYear() - +String(p.date).slice(0, 4);
-      return TarotSaju.html(D, { a, p, age, mbti: typeof mbti === 'string' ? mbti : '', partners });
+      const ctx = { a, p, age, mbti: typeof mbti === 'string' ? mbti : '', partners };
+      return D.deep ? TarotSaju.html(D, ctx) : TarotSaju.teaser(D, ctx, { free: tdFree(), cost: TD_COST });
     } catch (e) { return ''; }
   }
   function bindTarot(p, a) {
     const tc = $('#tsCounsel'); if (tc) tc.onclick = () => { Snd.sfx('tap'); go('counsel'); };
+    const to = $('#tsOpen'); if (to) to.onclick = openDeep;
     if (tPhase === 'shuffle' && !tTimer) tPhase = tarotD ? 'reveal' : 'idle';   // 다른 화면에 다녀오면 섞기 중단
     document.querySelectorAll('#tTopic button').forEach(b => b.onclick = () => { tarotTopic = b.dataset.v; if (tarotD) tarotD.topic = tarotTopic; Snd.sfx('tap'); keepRender(); });
     document.querySelectorAll('#tN button').forEach(b => b.onclick = () => { tarotN = +b.dataset.v; Snd.sfx('tap'); keepRender(); });

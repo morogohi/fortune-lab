@@ -1,6 +1,7 @@
 /* =====================================================================
  *  karma.js — 카르마 하나로 단순화한 유료 모델
- *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · AI 사주상담(1회 20, 첫 회 무료) / 게임 아이템은 별도
+ *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · AI 사주상담(1회 20, 첫 회 무료)
+ *   · 가벼운 상품: 타로 사주 심층 풀이(1회 10, 매일 1회 무료 · 리포트 보유 시 3회) / 게임 아이템은 별도
  *   · 카르마 모으기: 📺 광고 1번 +5 (3분 간격 · 하루 10번) · 🎲 인생 게임 엔딩 5~15 · 게임 중간 광고 휴식 +3
  *   · 💳 카르마는 돈으로도 살 수 있다 (100 · 330 · 1,200)
  *   · 🧪 테스트 모드(테스트 페이지·테스트 계정): 광고·결제를 실제 없이 가상으로 처리
@@ -64,7 +65,7 @@ const Karma = (() => {
   }
   // 테스트 모드: 전환 기록 보기
   function openMetrics() {
-    const m = store.get(MKEY, {}), N = { ad_start: '광고 시작', ad_done: '광고 완료', ad_fail: '광고 중단·실패', lack_shown: '카르마 부족 안내', pay_start: '결제 시작', pay_cancel: '결제 취소', pay_done: '결제 완료', pay_fail: '결제 실패', spend: '카르마 사용', unlock_report: '상세 리포트 해제', unlock_fate: '운명 조작 해제', report_view: '상세 리포트 열람', counsel_run: '상담 실행' };
+    const m = store.get(MKEY, {}), N = { ad_start: '광고 시작', ad_done: '광고 완료', ad_fail: '광고 중단·실패', lack_shown: '카르마 부족 안내', pay_start: '결제 시작', pay_cancel: '결제 취소', pay_done: '결제 완료', pay_fail: '결제 실패', spend: '카르마 사용', unlock_report: '상세 리포트 해제', unlock_fate: '운명 조작 해제', unlock_tarot: '타로 심층 (카르마)', tarot_free: '타로 심층 (무료)', report_view: '상세 리포트 열람', counsel_run: '상담 실행' };
     const rate = (a, b) => m[b] ? Math.round((m[a] || 0) / m[b] * 100) + '%' : '—';
     openOverlay('📈 전환 기록 (이 기기)', `<p class="sjnote">${m._since ? new Date(m._since).toLocaleDateString('ko-KR') + '부터' : '아직 기록 없음'} · 서버로 보내지 않아요</p>
       ${Object.keys(N).map(k => `<div class="kledr"><b>${N[k]}</b><em>${m[k] || 0}</em></div>`).join('')}
@@ -81,7 +82,7 @@ const Karma = (() => {
       <h4 class="kh">카르마 구매</h4>
       ${Store.packs().map(k => { const it = Store.item(k); return `<button class="kopt" data-pack="${k}"><i>${it.e}</i><span><b>${it.n}</b><small>${it.d}</small></span><em>${Store.native || testMode() ? Store.price(k) : '앱'}</em></button>`; }).join('')}
       ${ledgerHTML()}
-      <p class="sjnote">카르마로 여는 것: 📜 상세 사주 리포트 50 · 🤖 AI 사주상담 1회 20 (첫 회 무료) · 🎮 게임 아이템</p>`;
+      <p class="sjnote">카르마로 여는 것: 📜 상세 사주 리포트 50 · 🤖 AI 사주상담 1회 20 (첫 회 무료) · 🔮 타로 사주 심층 풀이 1회 10 (매일 1회 무료) · 🎮 게임 아이템</p>`;
   }
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function openCharge(need, label, back) {

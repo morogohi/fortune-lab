@@ -62,7 +62,24 @@ const TarotSaju = (() => {
   }
 
   // 메인: D(리딩 묶음), ctx { a, p, age, mbti, partners:[{name,a,rel}] }
-  function html(D, ctx) {
+  // 무료 맛보기: 바탕 한 줄 + 종합 판단 제목 + 안에 든 것 목록 (판단 근거·자리별 해석·실천 계획은 잠금)
+  function teaser(D, ctx, opt) {
+    const full = html(D, ctx, true); if (!full) return '';
+    const { a } = ctx, topic = D.topic in TK ? D.topic : 'all', tn = TN[topic], dm = a.dm || {};
+    return `<div class="hcard tsaju"><h3 class="ht">🔮☯️ 사주 × 타로 심층 풀이 · ${tn}</h3>
+      <p>일간 <b>${dm.nm || EK[a.meEl]}</b>, 가장 강한 기운은 <b>${GNAME[a.dom]}</b>. 이번 카드와 사주를 함께 보면 — <b>${full.verdict}</b></p>
+      <div class="ts-lock"><b>🔒 열면 이런 내용이 나와요</b><ul>
+        <li>🧭 ${tn} 바탕: 타고난 ${topic === 'love' ? '연애' : topic === 'money' ? '재물' : topic === 'work' ? '일' : ''} 스타일과 부족한 오행이 고민에 주는 영향</li>
+        <li>⏳ 대운·${new Date().getFullYear()}년·이번 달이 ${tn}에 유리한지 (시기 점수 ${'●'.repeat(full.period)}${'○'.repeat(3 - full.period)})</li>
+        <li>🃏 ${D.n}장 자리별 카드 × 사주 오행 해석</li>
+        <li>⚖️ 판단 근거와 앞으로 6개월 중 ${tn}에 좋은 달 ${full.ahead}개</li>
+        ${ctx.partners && ctx.partners.length && (topic === 'love' || topic === 'all') ? `<li>💞 ${esc(ctx.partners[0].name)}님과의 궁합 · 지금 관계 조언</li>` : ''}
+        <li>✅ 이번 주·이번 달 실천 계획, 피할 것, MBTI 조언, 개운법</li></ul>
+        <p class="sjnote">한 번 열면 이 카드 묶음은 연애·일·재물·종합 네 주제 모두 볼 수 있어요.</p>
+        <button id="tsOpen">${opt.free ? `🎁 오늘 무료로 열기 (${opt.free}회 남음)` : `✨ 카르마 ${opt.cost}로 열기`}</button></div></div>`;
+  }
+  const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  function html(D, ctx, meta) {
     const { a, p } = ctx; if (!a) return '';
     const topic = D.topic in TK ? D.topic : 'all', key = TK[topic], tn = TN[topic], meE = a.meEl;
     const pos = Tarot.SPREADS[D.n], now = new Date(), Y = now.getFullYear(), M = now.getMonth() + 1;
@@ -130,10 +147,11 @@ const TarotSaju = (() => {
       ${mtip ? `<li><b>${mb} 성향</b> — ${mtip[1]}</li>` : ''}
       <li><b>개운</b> — 부족한 ${EK[weakE]} 기운 보충: ${L.c} 계열 소품, ${L.d} 방향, ${L.a}</li></ul></div>`;
 
-    return `<div class="hcard tsaju"><h3 class="ht">🔮☯️ 사주 × 타로 상담 풀이 · ${tn}</h3>
+    if (meta) return { verdict: verdict[0], period, ahead: ahead.length };
+    return `<div class="hcard tsaju"><h3 class="ht">🔮☯️ 사주 × 타로 심층 풀이 · ${tn}</h3>
       <p class="sjnote">뽑은 카드를 ${nm}님의 사주(일간·오행·대운·올해·이번 달)와 엮어 풀었어요. 계산은 이 기기에서만 해요.</p>
       ${secA}${secB}${secC}${secD}${secE}${secF}
       <button class="hbtn" id="tsCounsel">🤖 이 고민, AI 사주상담으로 두 선택지 비교하기</button></div>`;
   }
-  return { html };
+  return { html, teaser };
 })();

@@ -228,7 +228,7 @@ const Counsel = (() => {
         ${c.nextD ? `<p class="cs-p">⏭️ ${c.nextD.age}살부터는 ${c.nextD.g === L.g ? `<b>${Saju.GRPN[c.nextD.g]}</b> 흐름이 한 번 더 이어져요.` : `<b>${Saju.GRPN[c.nextD.g]}</b>으로 바뀌어요.`}</p>` : ''}
         <p class="cs-p">📆 ${NY.year}년(${NY.gzTxt}년) 움직이기 좋은 달 <b>${bm}</b> · 조심할 달 <b>${wm}</b></p>
         <p class="cs-p">🌿 타고난 기질: ${a.dm.nm} — ${a.dm.key}</p></div>
-      <div class="hcard"><h3 class="ht">🧠 ${c.mbti.sure ? 'MBTI' : '사주로 본 MBTI'}로 본 결정 스타일 · ${c.mbti.type}</h3><p class="cs-p">${mtip}</p><p class="sjnote">기준: ${c.mbti.src}</p></div>
+      <div class="hcard"><h3 class="ht">🧠 ${c.mbti.sure ? 'MBTI' : '사주 MBTI'} 기반 결정 스타일 · ${c.mbti.type}</h3><p class="cs-p">${mtip}</p><p class="sjnote">기준: ${c.mbti.src}</p></div>
       ${simHTML}
       <div class="hcard"><h3 class="ht">✅ 바로 해 볼 일</h3>${acts.map(x => `<p class="cs-p">${x}</p>`).join('')}
       ${c.game ? `<p class="sjnote">🎮 지금까지 인생 게임 ${c.game.n}판 · 최고 「${esc(c.game.best.title)}」(${c.game.best.grade}) — 게임 속에서도 선택의 결과를 비교해 보세요.</p>` : ''}</div>
