@@ -231,6 +231,13 @@ const Hub = (() => {
     { k: 'game', g: 'game', c: 'sky', ic: 'globe', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
   ];
   const itemName = it => typeof it.n === 'function' ? it.n() : it.n;
+  /* 다른 모듈이 항목·페이지를 붙이는 통로 (예: AI 사주상담) */
+  const PAGES = {};
+  function register(o) {
+    if (o.item && !ITEMS.some(x => x.k === o.item.k)) { const i = ITEMS.findIndex(x => x.k === o.after); ITEMS.splice(i >= 0 ? i + 1 : ITEMS.length, 0, o.item); }
+    if (o.html) { PAGES[o.item.k] = { html: o.html, bind: o.bind || (() => { }) }; TITLES[o.item.k] = o.title || o.item.n; }
+    if ($('#hub').classList.contains('on') && tab === 'home') render();
+  }
   function openItem(k) {
     const it = ITEMS.find(x => x.k === k); if (!it) return;
     Snd.sfx('tap');
@@ -746,6 +753,7 @@ const Hub = (() => {
     else if (tab === 'tarot') { body.innerHTML = tarotHTML(p, a); bindTarot(p, a); }
     else if (tab === 'mbtitest') { body.innerHTML = mbtiTestHTML(p, a); bindMbtiTest(p, a); }
     else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
+    else if (PAGES[tab]) { body.innerHTML = PAGES[tab].html(p, a); PAGES[tab].bind(p, a); }
     else if (tab === 'newyear') { body.innerHTML = newYearHTML(p, a); const b = $('#nyOpen'); if (b) b.onclick = () => openShop('newyear'); }
     body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav();
     if (!body.dataset.keep) body.scrollTop = 0;
@@ -773,6 +781,6 @@ const Hub = (() => {
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile };
+  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openLogin };
 })();
 Hub.init();

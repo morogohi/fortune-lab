@@ -46,3 +46,13 @@ $$;
 
 revoke all on function public.delete_my_account() from public, anon;
 grant execute on function public.delete_my_account() to authenticated;
+
+-- ===== AI 사주상담: 하루 이용 횟수 (질문·답변 내용은 저장하지 않음) =====
+create table if not exists public.counsel_usage (
+  user_id uuid references auth.users(id) on delete cascade,
+  day date not null,
+  n int not null default 0,
+  primary key (user_id, day)
+);
+alter table public.counsel_usage enable row level security;
+-- 앱(anon 키)은 직접 읽고 쓰지 않음 — Edge Function이 service role로만 기록

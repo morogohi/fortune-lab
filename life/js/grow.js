@@ -346,7 +346,7 @@ const Grow = (() => {
     const _rs = renderStats; renderStats = function () { _rs(); afterStats(); };
     const _die = die; die = function (r) { stop(); return _die(r); };
   }
-  return { get auto() { return speed > 0; }, refresh: () => paintAuto(), init, extraActions, recommend, decorateModal, stageReport, agePop, userTouched, confetti, setSpeed, POL };
+  return { bestChoice, isBig, scoreAct, get auto() { return speed > 0; }, refresh: () => paintAuto(), init, extraActions, recommend, decorateModal, stageReport, agePop, userTouched, confetti, setSpeed, POL };
 })();
 window.Grow = Grow;
 Grow.init();

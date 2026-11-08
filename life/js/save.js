@@ -49,19 +49,19 @@ const Save = (() => {
     flashIcon(); paintTitle();
     return ok;
   }
-  function load(slot) {
-    const s = all()[slot]; if (!s) return;
-    let o; try { o = unpack(s); } catch (e) { Hub.toast('저장 파일을 읽지 못했어요'); return; }
+  function load(slot) { const s = all()[slot]; if (s) loadPack(s); }
+  function loadPack(s, msg) {
+    let o; try { o = unpack(s); } catch (e) { Hub.toast('저장 파일을 읽지 못했어요'); return false; }
     if (window.Grow) Grow.setSpeed(0);
     P = o;
     show('game'); modalQ = []; $('#modal').classList.remove('on'); $('#mini') && $('#mini').classList.remove('on');
     $('#nameTag').textContent = `${P.country.f} ${P.name}`;
     const L = $('#log'); L.innerHTML = '';
     (s.log || []).forEach(([c, t]) => { const d = document.createElement('div'); d.className = c; d.textContent = t; L.appendChild(d); });
-    log(`💾 ${when(s.t)}에 저장한 인생을 이어서 살아요`, 'good');
+    log(msg || `💾 ${when(s.t)}에 저장한 인생을 이어서 살아요`, 'good');
     renderStats(); renderActions(); resize(); Snd.mood(stageOf(P.age).k); Snd.sfx('reveal');
     if (window.Grow) Grow.refresh();
-    L.scrollTop = 1e9;
+    L.scrollTop = 1e9; return true;
   }
   function remove(slot) { const o = all(); delete o[slot]; put(o); paintTitle(); }
 
@@ -160,7 +160,7 @@ const Save = (() => {
     if (!free) { Hub.toast('빈 슬롯이 없어요. 슬롯을 하나 지워 주세요'); openSlots('load'); return; }
     o[free] = a; put(o); Hub.toast(`📁 슬롯 ${free.slice(1)}에 보관했어요`); show('setup');
   }
-  return { init, save, load, openSlots, paintTitle, exitHome, askExit };
+  return { init, save, load, loadPack, pack, unpack, openSlots, paintTitle, exitHome, askExit };
 })();
 window.Save = Save;
 Save.init();

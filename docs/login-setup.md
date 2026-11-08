@@ -62,3 +62,16 @@ window.AUTH_CONFIG = {
 ## 회원 탈퇴 · 정책
 - 앱 설정 → 계정 → 회원 탈퇴 = `delete_my_account()` (계정·게임 기록 즉시 삭제). Google Play는 계정을 만드는 앱에 앱 안 탈퇴 기능을 요구합니다 — 충족.
 - Play Console 데이터 보안: 「개인 식별자(사용자 ID)·이름(닉네임) 수집, 계정 관리 목적, 전송 중 암호화, 삭제 요청 가능」 추가 필요.
+
+## AI 사주상담 서버 연결 (선택)
+
+로그인 설정을 마친 뒤, AI 상담사 자연어 답변을 켜려면:
+
+1. `docs/supabase.sql`의 `counsel_usage` 테이블을 SQL Editor에서 실행합니다.
+2. Anthropic API 키를 비밀값으로 등록합니다: `supabase secrets set ANTHROPIC_API_KEY=sk-ant-...`
+   - 선택: `ANTHROPIC_MODEL`(기본 `claude-sonnet-5-5`), `COUNSEL_DAILY_LIMIT`(기본 5)
+3. 배포합니다: `supabase functions deploy saju-counsel` (코드: `supabase/functions/saju-counsel/index.ts`)
+
+앱은 이름·생년월일 없이 사주 요약(일간·오행·대운·좋은 달)·MBTI·나이대·고민·선택지·기기 안 계산 점수만 보냅니다.
+서버는 질문과 답변을 저장하지 않고, 사용자별 하루 이용 횟수만 기록합니다.
+연결 전에도 상담 자체(기기 안 계산)는 그대로 동작합니다.

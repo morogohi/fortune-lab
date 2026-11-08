@@ -39,6 +39,7 @@ function openShop(focus) {
     Store.buy(k, (ok, err) => {
       if (ok) {
         if (it.karma) { karma += it.karma; saveMeta(); renderTitle(); }
+        if (it.counsel && typeof Counsel !== 'undefined') { Counsel.addCredits(it.counsel); Hub.toast(`🎟️ 상담권 ${it.counsel}회를 받았어요`); }
         Snd.sfx('fanfare'); if (k === 'noads') Ads.banner(false); refreshFateLock(); openShop();
       } else if (err === 'web' && window.P8B_COMMERCIAL) {
         const form = () => window.open(STORE_CONFIG.feedbackUrl, '_blank', 'noopener');
