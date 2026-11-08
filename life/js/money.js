@@ -174,7 +174,8 @@ const Money = (() => {
     showModal({
       e: '🏘️', t: '부동산', d: `현금 ${usd(P.money)} · 보유 ${props.length}채 · 경기 ${mktWord()} · 대출 LTV 최대 60%`,
       ch: [{ t: '🏠 내가 살 집 구하기', f: () => openHome() },
-        ...PROP.map(pr => ({ t: `${pr.e} ${pr.n} 사기`, s: `${usd(M(pr.price))} · ${pr.d}`, f: () => buyProp(pr) })),
+        ...PROP.map(pr => { const price = M(pr.price), down = Math.round(price * .4), loanOk = bank().credit >= 560, need = loanOk ? down : price, lack = P.money < need;
+          return { t: `${lack ? '🔒 ' : ''}${pr.e} ${pr.n} 사기`, s: `${usd(price)} · ${pr.d} · ${loanOk ? '계약금 40%' : '대출 불가 · 전액 현금'} ${usd(need)}${lack ? ` · <b class="lackx">${usd(need - P.money)} 부족</b>` : ' ✓'}`, f: () => buyProp(pr) }; }),
         ...props.map((p, i) => ({ t: `💰 ${p.e} ${p.n} 팔기`, s: `시세 ${usd(p.value)} · 대출 ${usd(p.loan)} · 손익 ${usd(p.value - p.paid)}`, f: () => sellProp(i) })),
         { t: '닫기', f: () => { } }],
     });

@@ -108,6 +108,11 @@ const World = (() => {
   const NATIVE = { '미국': 'en', '영국': 'en', '캐나다': 'en', '호주': 'en', '중국': 'zh', '일본': 'ja', '멕시코': 'es', '프랑스': 'fr', '독일': 'de', '한국': 'ko', '나이지리아': 'en', '케냐': 'en', '인도': 'en', '필리핀': 'en' };
   const lv = v => v >= 90 ? '원어민급' : v >= 70 ? '고급' : v >= 45 ? '중급' : v >= 20 ? '초급' : v > 0 ? '입문' : '—';
   const L = k => (P.lang && P.lang[k]) || 0;
+  // 수업만으로 오르는 상한: 맞힌 문제 수(숙련도 검증)와 나이가 받쳐 줘야 다음 단계로 (오답 반복으로 '원어민급' 되는 문제 방지)
+  const OKN = [[6, 44], [14, 69], [24, 89]];
+  function langCap(k) { const ok = (P.langOk || {})[k] || 0; for (const [n, c] of OKN) if (ok < n) return c; return P.age < 13 ? 89 : 100; }
+  const capNext = c => c + 1;
+  function langNeed(k) { const ok = (P.langOk || {})[k] || 0, t = OKN.find(([n]) => ok < n); return t ? `퀴즈 정답 ${t[0] - ok}개 더` : '13살 이후 원어민급 도전 가능'; }
   function initLang() {
     P.lang = P.lang || {};
     const nat = NATIVE[P.country.n], second = ['인도', '필리핀', '나이지리아', '케냐'].includes(P.country.n);
@@ -147,11 +152,14 @@ const World = (() => {
     showModal({
       e: l.e, t: `${l.n} ${tierN}${nx.review ? ' 복습' : ''}`, auto: 1, noAuto: 1,
       html: () => `<div class="lcards">${cards.map((c, j) => `<div class="lcard"><button class="lspk" data-s="${j}">🔊</button><b>${c[0]}</b><span>${c[1]}</span><em>${c[2]}</em><small>${c[3]}</small></div>`).join('')}</div>
-        <p class="lq">퀴즈: <b>${q[0]}</b> 의 뜻은?</p>`,
+        <p class="lq">퀴즈: <b>${q[0]}</b> 의 뜻은?</p><p class="sjnote" style="text-align:center">정답 ${(P.langOk || {})[k] || 0}개 · 다음 단계 조건: ${langNeed(k)}</p>`,
       ch: opts.map(o => ({ t: o[2], f: () => {
         const ok = o === q, young = P.age < 13 ? 1.3 : P.age < 20 ? 1.1 : P.age > 50 ? .7 : 1;
-        const g = Math.max(1, Math.round(R(3, 6) * (academy === true ? 1.8 : academy || 1) * young * (.6 + P.smart / 120) * (1 - L(k) / 140) * (ok ? 1.3 : .9)));
-        const before = L(k); P.lang[k] = Math.min(100, before + g); fx({ smart: 1 });
+        P.langOk = P.langOk || {}; if (ok) P.langOk[k] = (P.langOk[k] || 0) + 1;
+        const g0 = Math.max(1, Math.round(R(3, 6) * (academy === true ? 1.8 : academy || 1) * young * (.6 + P.smart / 120) * (1 - L(k) / 140) * (ok ? 1.3 : .5)));
+        const before = L(k), cap = langCap(k), g = Math.max(0, Math.min(before + g0, Math.max(before, cap)) - before);
+        P.lang[k] = before + g; fx({ smart: 1 });
+        if (g < g0) setTimeout(() => log(`🔒 ${l.n} 다음 단계(${lv(capNext(cap))})는 실력 검증이 필요해요 · ${langNeed(k)}`), 0);
         nx.idx.forEach(i => { if (!P.learned[k].includes(i)) P.learned[k].push(i); });
         playAnim('read'); Snd.sfx(ok ? 'good' : 'bad'); say(q[0].length < 22 ? q[0] : q[0].slice(0, 20) + '…');
         log(`${l.e} ${l.n} ${tierN}: "${q[0]}" (${q[2]}) ${ok ? '✅ 정답' : '❌ 오답'} · +${g} → ${P.lang[k]} ${lv(P.lang[k])}`, ok ? 'good' : '');
@@ -231,10 +239,10 @@ const World = (() => {
 
   /* ========================= ⑤ 세계여행 · 교통 ========================= */
   const CITY = [
-    { n: '도쿄', e: '🗼', r: 'asia', l: 'ja' }, { n: '베이징', e: '🏯', r: 'asia', l: 'zh' }, { n: '방콕', e: '🛕', r: 'asia' }, { n: '서울', e: '🏙️', r: 'asia', l: 'ko' },
-    { n: '런던', e: '💂', r: 'eu', l: 'en' }, { n: '파리', e: '🗼', r: 'eu', l: 'fr' }, { n: '베를린', e: '🧱', r: 'eu', l: 'de' }, { n: '로마', e: '🏛️', r: 'eu' }, { n: '바르셀로나', e: '⛪', r: 'eu', l: 'es' },
-    { n: '뉴욕', e: '🗽', r: 'am', l: 'en' }, { n: '멕시코시티', e: '🌮', r: 'am', l: 'es' }, { n: '리우', e: '🏖️', r: 'am' },
-    { n: '시드니', e: '🦘', r: 'oc', l: 'en' }, { n: '카이로', e: '🐫', r: 'af' }, { n: '케이프타운', e: '🦁', r: 'af' },
+    { n: '도쿄', e: '🗼', r: 'asia', l: 'ja', land: 'jp' }, { n: '베이징', e: '🏯', r: 'asia', l: 'zh', land: 'eas' }, { n: '방콕', e: '🛕', r: 'asia', land: 'eas' }, { n: '서울', e: '🏙️', r: 'asia', l: 'ko', land: 'kr' },
+    { n: '런던', e: '💂', r: 'eu', l: 'en', land: 'eu' }, { n: '파리', e: '🗼', r: 'eu', l: 'fr', land: 'eu' }, { n: '베를린', e: '🧱', r: 'eu', l: 'de', land: 'eu' }, { n: '로마', e: '🏛️', r: 'eu', land: 'eu' }, { n: '바르셀로나', e: '⛪', r: 'eu', l: 'es', land: 'eu' },
+    { n: '뉴욕', e: '🗽', r: 'am', l: 'en', land: 'na' }, { n: '멕시코시티', e: '🌮', r: 'am', l: 'es', land: 'na' }, { n: '리우', e: '🏖️', r: 'am', land: 'sa' },
+    { n: '시드니', e: '🦘', r: 'oc', l: 'en', land: 'oc' }, { n: '카이로', e: '🐫', r: 'af', land: 'af' }, { n: '케이프타운', e: '🦁', r: 'af', land: 'af' },
   ];
   const ROUTES = [
     { e: '🌏', n: '아시아 한 바퀴', c: ['도쿄', '베이징', '방콕'] }, { e: '🇪🇺', n: '유럽 배낭여행', c: ['런던', '파리', '바르셀로나', '로마'] },
@@ -247,17 +255,24 @@ const World = (() => {
   };
   const LEG = { far: 1400, near: 400 };
   function legCost(far, t) { return M(LEG[far ? 'far' : 'near'] * (TR[t][far ? 'far' : 'near'] || 1)); }
+  // 바다로 막힌 구간(서울↔도쿄, 서울↔베이징 등)은 기차·버스 불가 → 비행기·배만
+  const byLand = (a, b) => !(a && b && a.land && b.land) || a.land === b.land;
   function legOpts(a, b) {
-    const far = !b || !a || a.r !== b.r;
-    return Object.entries(TR).filter(([k, t]) => far ? t.far : t.near).map(([k, t]) => ({ k, far, cost: legCost(far, k), ...t }));
+    const far = !b || !a || a.r !== b.r, land = !far && byLand(a, b);
+    return Object.entries(TR).filter(([k, t]) => (far ? t.far : t.near) && (land || k === 'plane' || k === 'ship')).map(([k, t]) => ({ k, far, sea: !far && !land, cost: legCost(far, k), ...t }));
+  }
+  function tripRange(cities) {
+    const home = startCity(), path = [home, ...cities, home]; let lo = 0, hi = 0;
+    for (let i = 0; i < path.length - 1; i++) { const c = legOpts(path[i], path[i + 1]).map(o => o.cost); lo += Math.min(...c); hi += Math.max(...c); }
+    const stay = M(320) * cities.length; return [lo + stay, hi + stay];
   }
   function startCity() { const nat = P.native; return CITY.find(c => c.l === nat && c.n === '서울') || { n: P.country.n, e: P.country.f, r: P.country.r === 'eu' ? 'eu' : ['m', 'la'].includes(P.country.r) ? 'am' : ['af', 'me'].includes(P.country.r) ? 'af' : 'asia' }; }
   function openTrip(evMode) {
     if (window.Hist && Hist.era('travelBan')) { log('😷 코로나19로 국경이 닫혀 해외여행을 갈 수 없다', 'bad'); return; }
     if (window.Hist && !Hist.era('travel')) { log(`🛂 ${P.birth.y + P.age}년엔 아직 해외여행이 자유롭지 않다 (한국은 1989년 전면 자유화)`, 'bad'); return; }
     showModal({
-      e: '🎒', t: evMode ? '스무 살, 세계로!' : '세계여행 계획', d: `모은 돈 ${usd(P.money)} · 구간마다 비행기·기차·배를 골라요`, big: 1,
-      ch: [...ROUTES.map(r => ({ t: `${r.e} ${r.n}`, s: r.c.join(' → '), f: () => planLegs(r.c.map(n => CITY.find(c => c.n === n))) })),
+      e: '🎒', t: evMode ? '스무 살, 세계로!' : '세계여행 계획', d: `모은 돈 ${usd(P.money)} · 예상 총액(교통+숙박)을 보고 고른 뒤, 구간마다 교통수단을 정해요`, big: 1,
+      ch: [...ROUTES.map(r => { const cs = r.c.map(n => CITY.find(c => c.n === n)), [lo, hi] = tripRange(cs); return { t: `${r.e} ${r.n}${P.money < lo ? ' <em class="tlack">돈 부족</em>' : ''}`, s: `${r.c.join(' → ')} · 예상 ${usd(lo)}~${usd(hi)}`, f: () => planLegs(cs) }; }),
         { t: evMode ? '나중에 갈래' : '닫기', f: () => evMode && log('여행은 다음 기회에') }],
     });
   }
@@ -267,8 +282,13 @@ const World = (() => {
       if (i >= path.length - 1) return confirmTrip(cities, legs);
       const a = path[i], b = path[i + 1], opts = legOpts(a, b);
       showModal({
-        e: opts[0].far ? '🌐' : '🧭', t: `${a.e} ${a.n} → ${b.e} ${b.n}`, d: `${i + 1}/${path.length - 1} 구간 · 무엇을 타고 갈까?`, auto: 1,
-        ch: opts.map(o => ({ t: `${o.e} ${o.n}`, s: `${usd(o.cost)} · ${o.d}`, f: () => { legs.push({ a, b, ...o }); step(i + 1); } })),
+        e: opts[0].far ? '🌐' : '🧭', t: `${a.e} ${a.n} → ${b.e} ${b.n}`, auto: 1,
+        d: `${i + 1}/${path.length - 1} 구간 · 무엇을 타고 갈까?${opts[0].sea ? ' (바다를 건너는 구간이라 비행기·배만 가능)' : ''}${legs.length ? ` · 지금까지 교통비 ${usd(legs.reduce((s, l) => s + l.cost, 0))}` : ''}`,
+        ch: [...opts.map(o => ({ t: `${o.e} ${o.n}`, s: `${usd(o.cost)} · ${o.d}`, f: () => { legs.push({ a, b, ...o }); step(i + 1); } })),
+          ...(path.length - 1 - i > 1 ? [{ t: '⚡ 남은 구간 모두 가장 싼 교통으로', f: () => { for (let j = i; j < path.length - 1; j++) { const os = legOpts(path[j], path[j + 1]); const o = os.reduce((m, x) => x.cost < m.cost ? x : m); legs.push({ a: path[j], b: path[j + 1], ...o }); } confirmTrip(cities, legs); } },
+            { t: '✈️ 남은 구간 모두 비행기로', f: () => { for (let j = i; j < path.length - 1; j++) { const o = legOpts(path[j], path[j + 1]).find(x => x.k === 'plane'); legs.push({ a: path[j], b: path[j + 1], ...o }); } confirmTrip(cities, legs); } }] : []),
+          ...(i > 0 ? [{ t: '↩ 이전 구간 다시 고르기', f: () => { legs.pop(); step(i - 1); } }] : []),
+          { t: '취소', f: () => log('여행 계획을 접었다') }],
       });
     };
     step(0);
@@ -361,7 +381,7 @@ const World = (() => {
         const total = fee * 4 + o.cost;
         if (P.money < total && !scholar) { const need = total - Math.max(0, P.money); if (!(window.Money && Money.borrow(need, '학자금 대출'))) { if (P.cls >= 3) log('부모님이 학비를 대 주셨다'); else { log('학비를 마련하지 못해 입학을 포기했다', 'bad'); return; } } }
         fx({ money: -Math.min(total, Math.max(P.money, 0) + (P.cls >= 3 ? total : 0)), smart: 8, look: 3, bond: -5, hap: 6 });
-        P.edu = 3; P.uniAbroad = u.n; P.lang[u.l] = Math.min(100, L(u.l) + 18); P.abroad = true; goTo('univ');
+        P.edu = 3; P.uniAbroad = u.n; P.lang[u.l] = Math.min(100, L(u.l) + 18); moveAbroad('uni', `${u.f} ${({ '🇺🇸': '미국', '🇬🇧': '영국', '🇯🇵': '일본', '🇨🇳': '중국', '🇩🇪': '독일', '🇫🇷': '프랑스', '🇨🇦': '캐나다', '🇦🇺': '호주', '🇸🇬': '싱가포르', '🇨🇭': '스위스' })[u.f] || ''}`.trim()); goTo('univ');
         log(`🎓 ${u.f} ${u.n} 유학 (${o.e} ${o.n} 출국)${scholar ? ' · 장학생' : ''}`, 'good'); badge('해외 유학'); if (['harvard', 'mit', 'stanford', 'oxford'].includes(u.id)) badge('세계 명문대');
         P.moments.push({ a: P.age, e: '🎓', t: '해외 유학', c: u.n, r: scholar ? '장학생' : '' });
         if (!P.major && typeof chooseMajor === 'function') chooseMajor();
@@ -379,7 +399,7 @@ const World = (() => {
         const p = (P.uniAbroad ? .75 : .55) + (P.smart - 70) / 100;
         if (Math.random() > p) { log(`${g.e} ${g.n} 최종 면접 탈락…`, 'bad'); fx({ hap: -4 }); playAnim('sad'); return; }
         const j = JOBS.find(x => x.id === g.id);
-        P.job = j; P.jobYears = 0; P.rank = 0; P.rankYears = 0; P.perf = 50; P.abroad = true; P.mult = Math.max(P.mult, 1); P.jobPay = M(j.pay);
+        P.job = j; P.jobYears = 0; P.rank = 0; P.rankYears = 0; P.perf = 50; moveAbroad('job', (g.n.match(/\((.+)\)/) || [])[1] || g.e); P.mult = Math.max(P.mult, 1); P.jobPay = M(j.pay);
         const fly = legCost(true, 'plane'); fx({ money: -fly, hap: 10, bond: -6 });
         cutin(g.e, `${g.n} 입사!`, '세계 무대로'); Snd.sfx('fanfare'); playAnim('newjob'); goTo('office');
         log(`${g.e} ${g.n} 입사! ✈️ 이주 비용 ${usd(fly)}`, 'good'); badge('글로벌 인재');

@@ -755,6 +755,8 @@ const Hub = (() => {
   function bindNav() { const b = $('#hnBack'); if (b) b.onclick = () => { editing = false; pending = null; back(); }; }
   function paintIcons(root = document) { root.querySelectorAll('i[data-ic]').forEach(i => { if (!i.firstChild) i.innerHTML = ICONS.ic(i.dataset.ic); }); }
   function init() {
+    // 예전 버전: 인생 게임 '랜덤 성별' 인물이 내 운세 프로필로 저장된 경우 → 게임 인물로 옮김 (운세 성별이 '남'으로 잘못 보이던 문제)
+    { const me = getMe(); if (me && (me.sex === 'r' || !me.sex)) { if (!store.get('p8b_game_me', null)) store.set('p8b_game_me', me); store.set('p8b_me', null); } }
     paintIcons();
     // 기존 화면 전환에 하단 탭 표시와 미션 체크를 연결
     const base = show;
@@ -771,6 +773,6 @@ const Hub = (() => {
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong };
+  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile };
 })();
 Hub.init();

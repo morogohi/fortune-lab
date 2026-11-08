@@ -108,6 +108,13 @@
   .act{flex:0 0 auto;background:var(--card2);border-radius:14px;padding:8px 10px;font-size:14px;min-width:70px;text-align:center}
   .act .e{font-size:22px;display:block}
   .act:disabled{opacity:.35}
+  .lackx{color:var(--hp,#d9534f);font-weight:700}.tlack{font-style:normal;font-size:12px;color:var(--hp,#d9534f);margin-left:4px}
+  .enddetail{margin:10px 0}.enddetail>summary{cursor:pointer;list-style:none;background:var(--card2);border-radius:14px;padding:13px 14px;font-weight:700;text-align:center}.enddetail>summary small{color:var(--dim);font-weight:400;margin-left:4px}.enddetail[open]>summary{margin-bottom:8px}
+  #actCats{display:flex;gap:5px;overflow-x:auto;scrollbar-width:none;padding:6px 10px 0;background:var(--card)}#actCats::-webkit-scrollbar{display:none}
+  #actCats button{flex:0 0 auto;font-size:12.5px;padding:5px 10px;border-radius:14px;background:var(--card2);color:var(--ink2,var(--ink))}#actCats button.on{background:var(--accent);color:var(--onacc,#fff)}#actCats small{color:inherit;opacity:.7}
+  .act small.why{display:block;font-size:10px;color:var(--dim);margin-top:1px;white-space:nowrap}
+  .evalbox .evr{display:grid;grid-template-columns:64px 1fr 30px;gap:8px;align-items:center;margin:6px 0;font-size:14px}.evalbox .evr .bar{height:9px;border-radius:5px;background:var(--line);overflow:hidden}.evalbox .evr .bar i{display:block;height:100%;background:var(--accent,#7a7fd6);border-radius:5px}.evalbox .evr b{text-align:right}
+  .evwhy{font-size:13px;color:var(--ink2,var(--ink));margin:10px 0 0;line-height:1.55}.evwhy small{display:block;color:var(--dim);font-size:11.5px;margin-top:4px}
   .act:active:not(:disabled){transform:scale(.94)}
   #bottom{display:flex;gap:8px;padding:8px 10px 14px;background:var(--card);align-items:center}
   #energy{font-size:13px;color:var(--dim);min-width:70px;text-align:center}
@@ -344,6 +351,9 @@
   .spd{display:flex;background:var(--card2);border-radius:12px;padding:2px}
   .spd button{background:none;padding:6px 9px;font-size:13px;border-radius:10px;color:var(--dim)}
   .spd button.on{background:var(--accent);color:#fff}
+  .spd button{white-space:nowrap}
+  @media (max-width:390px){#autoBar{gap:4px;padding:6px 6px 0}#autoBar .savebtn{padding:6px 7px;font-size:14px}.polbtn{min-width:34px;padding:7px 6px}.spd button{padding:6px 5px;font-size:12px}}
+  @media (max-width:340px){.spd button{font-size:11px;padding:6px 4px;letter-spacing:-.3px}}
   #game.autoing #stageWrap::after{content:'🤖 자동 진행 중';position:absolute;left:50%;bottom:8px;transform:translateX(-50%);background:#000a;padding:4px 12px;border-radius:999px;font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:12px;animation:blink 1.4s infinite}
   @keyframes blink{50%{opacity:.5}}
   .polgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
@@ -819,7 +829,9 @@
         <label>가정형편<select id="fCls"><option value="">🎲 랜덤</option></select></label>
         <label>타고난 재능<select id="fTal"><option value="">🎲 랜덤</option></select></label>
       </details>
-      <label class="chk"><input type="checkbox" id="fRemember" checked> 다음에도 이 정보 기억하기</label>
+      <label class="chk"><input type="checkbox" id="fRemember" checked> 다음 게임에도 이 인물 정보 기억하기</label>
+      <label class="chk"><input type="checkbox" id="fUseMe"> 이 생년월일·성별을 <b>내 운세</b>(오늘의 운세·사주)에도 사용하기</label>
+      <p class="sjnote" style="margin:-2px 0 8px">게임 인물은 운세 프로필과 따로 저장돼요. 체크할 때만 내 운세 기준이 바뀌어요.</p>
       <div class="row2"><button class="ghost" id="fillRandom" type="button">🎲 칸 자동 채우기</button><button class="bigbtn sm" id="customBtn" type="button">🔮 이 사주로 태어나기</button></div>
       <div id="fErr"></div>
     </form>

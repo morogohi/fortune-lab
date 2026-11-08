@@ -89,7 +89,17 @@ const HOMES = {
   house: { n: '단독주택', e: '🏘️', price: 500000, own: 1, vol: [-3, 8], st: { bond: 2, hap: 1 } },
   hut: { n: '흙집', e: '🛖', price: 50000, own: 1, vol: [-2, 4], st: { hap: 1 } },
   brick: { n: '벽돌집', e: '🧱', price: 150000, own: 1, vol: [-2, 6], st: { hap: 2, hp: 1 } },
+  dorm: { n: '해외 기숙사', e: '🏫', rent: 6000 },
+  abroad: { n: '해외 월세방', e: '🏢', rent: 9000 },
 };
+/* 해외로 나가면 사는 곳도 바꿈: 부모님 집에 그대로 남아 있지 않게 (집을 가진 경우는 고국 집을 보유한 채 이주) */
+function moveAbroad(kind, where) {
+  P.abroad = true; if (where) P.liveIn = where;
+  if (!P.home || HOMES[P.home.type].own) return;
+  if (P.deposit) { P.money += P.deposit; P.deposit = 0; }
+  const k = kind === 'uni' ? 'dorm' : 'abroad'; P.home = { type: k, value: 0 };
+  log(`${HOMES[k].e} ${where ? where + '의 ' : ''}${HOMES[k].n}에서 새 생활을 시작했다`);
+}
 const BUCKET = [
   { id: 'exec', e: '👔', t: '임원(상무 이상) 되기', ok: p => p.badges.has('임원 승진') },
   { id: 'doctor', e: '🩺', t: '의사 되기', ok: p => p.badges.has('의사 선생님') },
@@ -467,12 +477,15 @@ function openHome() {
   const list = P.tier === 3 ? ['monthly', 'hut', 'brick', 'apt_s'] : ['monthly', 'jeonse', 'apt_s', 'apt_l', 'country', 'house'];
   const price = k => M(HOMES[k].price || HOMES[k].deposit || 0);
   showModal({
-    e: '🏠', t: '집 구하기', d: `지금: ${cur.e} ${cur.n}${cur.own ? ` (시세 ${usd(P.home.value)})` : ''} · 현금 ${usd(P.money)}${P.loan ? ` · 대출 ${usd(P.loan)}` : ''}`, ch: [
+    e: '🏠', t: '집 구하기', d: `${P.abroad ? `🌍 ${P.liveIn || '해외'} 거주 중 · ` : ''}지금: ${cur.e} ${cur.n}${cur.own ? ` (시세 ${usd(P.home.value)})` : ''} · 현금 ${usd(P.money)}${P.loan ? ` · 대출 ${usd(P.loan)}` : ''}`, ch: [
       ...list.filter(k => k !== P.home.type).map(k => {
         const h = HOMES[k], pr = price(k);
-        const sub = h.rent ? `연 월세 ${usd(M(h.rent))}` : h.deposit ? `보증금 ${usd(pr)} (나중에 돌려받음)` : `매매가 ${usd(pr)} · 최대 70% 대출`;
+        const cash0 = P.money + (cur.own ? P.home.value : 0) + (P.deposit || 0) - P.loan, need0 = h.own ? pr * .3 : (h.deposit ? pr : 0);
+        const lack = need0 > cash0;
+        const sub = (h.rent ? `연 월세 ${usd(M(h.rent))}` : h.deposit ? `보증금 ${usd(pr)} (나중에 돌려받음)` : `매매가 ${usd(pr)} · 최대 70% 대출`)
+          + (need0 ? ` · 필요 자기자금 ${usd(need0)} / 가용 ${usd(Math.max(0, cash0))}${lack ? ` · <b class="lackx">${usd(need0 - cash0)} 부족</b>` : ' ✓'}` : '');
         return {
-          t: `${h.e} ${h.n}`, s: sub, f: () => {
+          t: `${lack ? '🔒 ' : ''}${h.e} ${h.n}`, s: sub, f: () => {
             const equity = (cur.own ? P.home.value : 0) + (P.deposit || 0) - P.loan;
             const cash = P.money + equity;
             const need = h.own ? pr * .3 : (h.deposit ? pr : 0);
