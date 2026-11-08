@@ -115,7 +115,7 @@
   #sheet{width:100%;background:var(--card);border-radius:22px 22px 0 0;padding:20px 18px 22px;animation:sheet .3s ease-out;max-height:90%;overflow:auto}
   @keyframes sheet{from{transform:translateY(100%)}}
   #sheet .em{font-size:44px;text-align:center}
-  #sheet h3{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:22px;text-align:center;margin:4px 0 6px}
+  #sheet h3{font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:23px;text-align:center;margin:4px 0 6px}
   #sheet p{color:var(--dim);text-align:center;margin:0 0 14px;font-size:15px;line-height:1.55}
   #sheet .letter{background:#fff8e6;color:#4a3520;border-radius:6px;padding:16px;font-size:16px;line-height:1.7;transform:rotate(-1.2deg);
     box-shadow:0 6px 18px #0007;margin:0 6px 16px;white-space:pre-line;text-align:left}
@@ -207,7 +207,7 @@
   .dyrow{display:flex;gap:5px;overflow-x:auto;margin-top:8px;padding-bottom:2px}
   .dy{flex:0 0 auto;background:var(--line);border-radius:10px;padding:5px 7px;text-align:center;font-size:11px;min-width:46px}
   .dy b{display:block;font-size:13px}.dy.on{background:var(--accent)}
-  .sjtxt{text-align:left;margin-top:8px}.sjtxt h4{margin:10px 0 2px;font-size:14px;color:var(--hap)}.sjtxt p{margin:0;font-size:13px;color:var(--ink2);line-height:1.6;text-align:left}
+  .sjtxt{text-align:left;margin-top:8px}.sjtxt h4{margin:12px 0 3px;font-size:16px;color:var(--hap)}.sjtxt p{margin:0;font-size:13px;color:var(--ink2);line-height:1.6;text-align:left}
   .sjnote{font-size:11px!important;color:var(--dim2)!important}
   .bucket{background:var(--card);border-radius:16px;padding:12px;margin-top:10px;text-align:left}
   .bucket b{font-family:'Noto Sans KR',sans-serif;font-weight:600}.bucket div{padding:5px 0;font-size:14px;border-bottom:1px dashed var(--line)}
@@ -245,7 +245,7 @@
   #overlay{position:absolute;inset:0;background:#000c;display:none;align-items:flex-end;z-index:50}
   #overlay.on{display:flex}
   #osheet{width:100%;max-height:92%;overflow-y:auto;background:var(--card);border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);animation:sheet .3s ease-out}
-  #osheet h3{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:22px;text-align:center;margin:2px 0 10px}
+  #osheet h3{font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:23px;text-align:center;margin:2px 0 10px}
   .shopitem{display:flex;gap:10px;align-items:center;background:var(--card2);border-radius:14px;padding:12px;margin:8px 0}
   .shopitem .se{font-size:30px}.shopitem div{flex:1}.shopitem b{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:16px}.shopitem small{display:block;color:var(--dim);font-size:12px;line-height:1.4}
   .shopinfo{margin-top:4px}.shopinfo summary{font-size:12px;color:var(--accent);cursor:pointer}.shopinfo small{margin-top:2px}
@@ -275,9 +275,9 @@
   #toast{position:absolute;left:50%;top:calc(env(safe-area-inset-top,0px) + 14px);transform:translate(-50%,-80px);background:#000d;padding:10px 16px;border-radius:999px;font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:15px;z-index:80;transition:transform .3s;white-space:nowrap;max-width:94%;overflow:hidden;text-overflow:ellipsis}
   #toast.on{transform:translate(-50%,0)}
   .hhead{margin:4px 2px 10px;padding-right:80px}.hhead small{color:var(--dim);font-size:12px}.hhead small b{color:var(--hap)}
-  .hhead h2{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:25px;margin:2px 0 0}
+  .hhead h2{font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:28px;margin:2px 0 0;letter-spacing:-.5px}
   .hcard{background:var(--card);border-radius:18px;padding:14px;margin:10px 0}
-  .ht{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:18px;margin:0 0 8px}.ht small{font-size:12px;color:var(--dim)}
+  .ht{font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:20px;margin:0 0 10px}.ht small{font-size:12px;color:var(--dim)}
   .hsub{color:var(--dim);font-size:13px;margin:-2px 0 10px;line-height:1.5}
   .hform label{display:block;margin:8px 0;font-size:13px;color:var(--dim)}
   .hform input,.hform select{width:100%;margin-top:4px}
@@ -571,21 +571,21 @@
   /* 홈 (첫 화면) */
   .hhome{padding-bottom:8px}
   .hbrand{margin:6px 2px 12px;padding-right:80px}.hbrand small{color:var(--dim);font-size:12px}.hbrand small b{color:var(--hap)}
-  .hbrand h1{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:30px;margin:2px 0 0;color:var(--ink);letter-spacing:-.5px}
+  .hbrand h1{font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:33px;margin:2px 0 0;color:var(--ink);letter-spacing:-.6px}
   .hme{display:flex;align-items:center;gap:10px;width:100%;text-align:left;background:var(--card);border-radius:16px;padding:12px 14px;margin:0 0 10px;box-shadow:inset 0 0 0 1px var(--line);font-family:'Noto Sans KR',system-ui,sans-serif}
   .hme>span{font-size:26px}.hme div{flex:1;display:flex;flex-direction:column;gap:2px}.hme b{font-size:16px}.hme small{color:var(--dim);font-size:12.5px}
   .hme em{font-style:normal;font-size:12.5px;color:var(--ink2);background:var(--card2);border-radius:20px;padding:5px 11px}
   .hme.empty{background:transparent;border:1px dashed var(--line2);box-shadow:none}
   .hhero{display:flex;align-items:center;gap:12px;width:100%;text-align:left;border-radius:20px;padding:18px 16px;margin:0 0 6px;
     background:linear-gradient(135deg,var(--hero1),var(--hero2));color:var(--ink);box-shadow:inset 0 0 0 1px var(--line)}
-  .hhero div{flex:1;display:flex;flex-direction:column;gap:3px}.hhero small{color:var(--dim);font-size:12.5px}.hhero b{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:22px;color:var(--ink)}
+  .hhero div{flex:1;display:flex;flex-direction:column;gap:3px}.hhero small{color:var(--dim);font-size:12.5px}.hhero b{font-family:'Noto Sans KR',sans-serif;font-weight:700;font-size:24px;color:var(--ink)}
   .hhero span{font-size:13.5px;color:var(--ink2);line-height:1.45}
   .hhero>i{font-style:normal;font-size:30px;width:58px;height:58px;border-radius:50%;display:grid;place-items:center;background:var(--card);box-shadow:0 2px 8px var(--shadow)}
-  .hsec{font-family:'Noto Sans KR',system-ui,sans-serif;font-weight:700;font-size:13px;letter-spacing:.3px;color:var(--dim);margin:20px 4px 8px}
+  .hsec{font-family:'Noto Sans KR',system-ui,sans-serif;font-weight:700;font-size:15px;letter-spacing:.2px;color:var(--dim);margin:22px 4px 9px}
   .htiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}
   .htile{display:flex;flex-direction:column;align-items:flex-start;gap:4px;text-align:left;background:var(--card);border-radius:16px;padding:14px 12px;min-height:100px;box-shadow:inset 0 0 0 1px var(--line)}
   .htile i{font-style:normal;font-size:20px;line-height:1;width:40px;height:40px;border-radius:12px;display:grid;place-items:center;background:var(--card2);margin-bottom:4px}
-  .htile b{font-size:15px;color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;font-weight:700}.htile small{font-size:12px;color:var(--dim);line-height:1.4;font-family:'Noto Sans KR',system-ui,sans-serif}
+  .htile b{font-size:16.5px;color:var(--ink);font-family:'Noto Sans KR',system-ui,sans-serif;font-weight:700}.htile small{font-size:12px;color:var(--dim);line-height:1.4;font-family:'Noto Sans KR',system-ui,sans-serif}
   .htile[data-c=lav]{--pa:var(--pa-lav)}.htile[data-c=mint]{--pa:var(--pa-mint)}.htile[data-c=peach]{--pa:var(--pa-peach)}
   .htile[data-c=sky]{--pa:var(--pa-sky)}.htile[data-c=pink]{--pa:var(--pa-pink)}.htile[data-c=butter]{--pa:var(--pa-butter)}
   .htiles .htile:last-child:nth-child(odd){grid-column:1/-1}
@@ -599,7 +599,7 @@
   /* 상단 뒤로가기 바 */
   .hnav{display:flex;align-items:center;gap:6px;margin:0 0 6px;padding:2px 90px 2px 0;min-height:40px}
   .hnback{width:38px;height:38px;border-radius:12px;background:var(--card);box-shadow:inset 0 0 0 1px var(--line);font-size:24px;line-height:1;padding:0 0 3px;color:var(--ink)}
-  .hnav b{font-family:'Noto Sans KR',system-ui,sans-serif;font-weight:700;font-size:16px;color:var(--ink)}
+  .hnav b{font-family:'Noto Sans KR',system-ui,sans-serif;font-weight:700;font-size:17.5px;color:var(--ink)}
   .hnav+.hhead{margin-top:2px}
   /* 홈: 시작하기 · 입력 유도 카드 */
   .hgo{display:inline-block;align-self:flex-start;margin-top:8px;font-style:normal;font-size:13px;font-weight:700;color:var(--onacc);background:var(--accent);border-radius:20px;padding:6px 14px}
