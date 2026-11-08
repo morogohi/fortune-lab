@@ -489,7 +489,7 @@ function die(reason){
       <div style="display:flex;gap:8px"><button class="ghost" id="copyBtn">📤 인생 요약 공유하기</button><button class="ghost" id="homeBtn">처음으로</button></div>
       <div id="webAdEnd" class="webad"></div>
       <div style="height:24px"></div>`;
-    {const tn=$('#tjNudge');if(tn)tn.onclick=()=>{const need=Tojeong.COST-karma;if(need>0){$('#againBtn').click();return}Hub.go('today');setTimeout(()=>Hub.openTojeong(),150)}}
+    {const tn=$('#tjNudge');if(tn)tn.onclick=()=>{const need=Tojeong.COST-karma;if(need>0){$('#againBtn').click();return}Hub.openTojeong()}}
   $('#againBtn').onclick=startRoll;
     $('#homeBtn').onclick=()=>{renderTitle();show('title')};
     $('#copyBtn').onclick=async()=>{try{const r=await Native.share(summary);if(r==='copied')$('#copyBtn').textContent='✅ 복사됨'}catch(e){}};

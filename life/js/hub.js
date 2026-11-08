@@ -90,7 +90,7 @@ const Hub = (() => {
 
 
   /* ---------- 화면 이동: 상단 뒤로가기 바 + 브라우저·안드로이드 뒤로가기 ---------- */
-  const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', input: '내 정보 입력' };
+  const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', input: '내 정보 입력', tojeong: '토정비결', newyear: '신년운세', daily: '출석 · 미션' };
   let ignorePop = false;
   const navHTML = t => `<div class="hnav"><button class="hnback" id="hnBack" aria-label="뒤로">‹</button><b>${TITLES[t] || ''}</b></div>`;
   function back() { if (history.state && history.state.t) history.back(); else go('home'); }
@@ -206,12 +206,13 @@ const Hub = (() => {
   const ITEMS = [
     { k: 'today', g: 'main', e: '☀️', n: '오늘의 운세', d: '총운 · 애정 · 금전 · 직장 · 건강', need: 1, f: () => go('today') },
     { k: 'saju', g: 'saju', c: 'lav', e: '📜', n: '내 사주 풀이', d: '사주팔자 · 오행 · 대운 · 성격', need: 1, f: () => go('saju') },
-    { k: 'tojeong', g: 'saju', c: 'peach', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => openTojeong() },
-    { k: 'newyear', g: 'saju', c: 'pink', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => { const p = getMe(); openNewYear(p, analyzeP(p)); } },
+    { k: 'tojeong', g: 'saju', c: 'peach', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => go('tojeong') },
+    { k: 'newyear', g: 'saju', c: 'pink', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => go('newyear') },
     { k: 'learn', g: 'saju', c: 'sky', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
     { k: 'compat', g: 'rel', c: 'pink', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
     { k: 'flirt', g: 'rel', c: 'butter', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
     { k: 'mbti', g: 'rel', c: 'mint', e: '🧩', n: '사주 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
+    { k: 'daily', g: 'daily', c: 'butter', e: '🧧', n: '출석 · 데일리 미션', d: '매일 들러 복주머니 받고 보상으로 교환', need: 0, f: () => go('daily') },
     { k: 'game', g: 'game', c: 'sky', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
   ];
   const itemName = it => typeof it.n === 'function' ? it.n() : it.n;
@@ -227,16 +228,16 @@ const Hub = (() => {
     const f = a ? Fortune.today(a, keyOf(p)) : null;
     const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${it.e}</i><b>${itemName(it)}</b><small>${it.d}</small></button>`;
     const sec = (t, gk) => `<h3 class="hsec">${t}</h3><div class="htiles">${ITEMS.filter(x => x.g === gk).map(tile).join('')}</div>`;
-    const tj = p && a && !Tojeong.opened(p) ? `<small class="hnote">🏮 토정비결은 인생 게임에서 모은 카르마로 열려요</small>` : '';
     return `<div class="hhome">
       <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1></div>
       ${p && a
         ? `<button class="hme" id="hmMe"><span>🙂</span><div><b>${esc(p.name)}님</b><small>${pLine(p)}</small></div><em>›</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>›</em></button>`}
       <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>☀️</i></button>
-      ${sec('사주 · 운세', 'saju')}${tj}
+      ${sec('사주 · 운세', 'saju')}
       ${sec('궁합 · 관계', 'rel')}
       ${sec('인생 게임', 'game')}
+      ${sec('매일 혜택', 'daily')}
       ${TRIAL()}
       <p class="sjnote" style="text-align:center">※ 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>
     </div>`;
@@ -289,14 +290,12 @@ const Hub = (() => {
 
   /* ---------- 오늘 ---------- */
   function todayHTML(p, a) {
-    const f = Fortune.today(a, keyOf(p)), d = daily(), st = store.get('p8b_streak', { n: 0 });
+    const f = Fortune.today(a, keyOf(p));
     const now = new Date(), wd = '일월화수목금토'[now.getDay()];
     const areas = Fortune.AREAS.map((n, i) => i === 0 ? '' : `<div class="harea"><div><b>${Fortune.AREA_E[i]} ${n}</b><span style="color:${gColor(f.sc[i])}">${f.sc[i]}</span></div>${bar(f.sc[i], gColor(f.sc[i]))}<p>${f.lines[i]}</p></div>`).join('');
     const bands = f.bands.map(b => `<div class="hband"><small>${b.lab} · ${b.time}</small><b>${S.STK[b.gz.s]}${S.BRK[b.gz.b]}시</b><em style="color:${gColor(b.sc)}">${b.sc}</em><span>${b.txt}</span></div>`).join('');
-    const ms = MISSIONS.map(m => `<div class="hms${d.ms[m.k] ? ' done' : ''}"><span>${m.e} ${m.n}</span>${d.ms[m.k] ? '<b>✓ +1</b>' : `<button data-m="${m.k}">하러 가기</button>`}</div>`).join('');
-    const pass = Store.passOn() ? `<b style="color:var(--money)">🍀 행운패스 사용 중 · ${passLeft()}</b>` : '광고 없이 쾌적하게 보고 싶다면';
     return `<div class="hhead"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd}) · 오늘은 <b>${f.gzTxt}일</b> ${f.gzHan}</small>
-        <h2>${esc(p.name)}님의 오늘</h2></div>${TRIAL()}
+        <h2>${esc(p.name)}님의 오늘</h2></div>
       <div class="hcard hmain">
         <div class="hring" style="--v:${f.sc[0]};--c:${gColor(f.sc[0])}"><b>${f.sc[0]}</b><small>${f.grade}</small></div>
         <div class="hone"><span class="hkey">오늘의 키워드 · ${f.key}</span><p>${f.lines[0]}</p>
@@ -307,43 +306,54 @@ const Hub = (() => {
       <div class="hcard"><h3 class="ht">⏰ 시간대별 흐름</h3><div class="hbands">${bands}</div></div>
       <div class="hcard"><h3 class="ht">🍀 오늘의 행운 아이템</h3><p class="hsub">부족한 ${S.EK[f.lucky.el]} 기운을 채워 주는 것들이에요</p>
         <div class="hluck"><div><small>색</small><b>${f.lucky.color}</b></div><div><small>숫자</small><b>${f.lucky.num}</b></div><div><small>방향</small><b>${f.lucky.dir}</b></div><div><small>소품</small><b>${f.lucky.item}</b></div></div></div>
+      <button class="ghost wide" id="hShare">📤 오늘의 운세 공유하기</button>
+      <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
+  }
+  /* ---------- 출석 · 데일리 미션 (독립 화면) ---------- */
+  function dailyHTML() {
+    const d = daily(), st = store.get('p8b_streak', { n: 0 });
+    const ms = MISSIONS.map(m => `<div class="hms${d.ms[m.k] ? ' done' : ''}"><span>${m.e} ${m.n}</span>${d.ms[m.k] ? '<b>✓ +1</b>' : `<button data-m="${m.k}">하러 가기</button>`}</div>`).join('');
+    const pass = Store.passOn() ? `<b style="color:var(--money)">🍀 행운패스 사용 중 · ${passLeft()}</b>` : '광고 없이 쾌적하게 보고 싶다면';
+    return `<div class="hhead"><small>매일 들르면 복주머니가 쌓여요</small><h2>출석 · 미션</h2></div>
       <div class="hcard"><h3 class="ht">🧧 출석 · 데일리 미션</h3>
         <div class="hstat"><span>🔥 연속 출석 <b>${st.n || 1}일</b></span><span>🧧 복주머니 <b>${pouch()}개</b></span><span>오늘 <b>${d.earned}/${DAILY_CAP}</b></span></div>
         <div class="hweek">${Array.from({ length: 7 }, (_, i) => `<i class="${i < ((st.n - 1) % 7) + 1 ? 'on' : ''}">${i === 6 ? '🎁' : i + 1}</i>`).join('')}</div>
         ${ms}
-        <div class="hms${d.shared ? ' done' : ''}"><span>📤 오늘의 운세 공유하기</span>${d.shared ? '<b>✓ +2</b>' : '<button id="hShare">공유 +2</button>'}</div>
+        <div class="hms${d.shared ? ' done' : ''}"><span>📤 오늘의 운세 공유하기</span>${d.shared ? '<b>✓ +2</b>' : '<button id="dShare">하러 가기</button>'}</div>
         <button class="ghost wide" id="hExch">🎁 복주머니로 보상 교환하기</button></div>
-      ${tojeongCard(p)}
-      ${passCard(pass)}
-      <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
+      ${passCard(pass)}`;
+  }
+  function bindDaily() {
+    document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => MISSIONS.find(m => m.k === b.dataset.m).go());
+    const ds = $('#dShare'); if (ds) ds.onclick = () => go('today');
+    $('#hExch').onclick = openExchange;
+    const pa = $('#hPassAd'); if (pa) pa.onclick = () => Ads.showReward(got => { if (got) { Store.addPass(2 * 36e5); Ads.banner(false); toast('🍀 2시간 동안 광고 없이!'); Snd.sfx('fanfare'); render(); } });
+    const pb = $('#hPassBuy'); if (pb) pb.onclick = () => openShop('pass7');
   }
   /* ---------- 토정비결: 인생 게임에서 모은 카르마로 열기 ---------- */
-  function tojeongCard(p) {
-    const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) return '';
+  function tojeongHTML(p) {
+    const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) return '<div class="hcard"><p class="hsub">생년월일을 확인해 주세요.</p></div>';
     const open = Tojeong.opened(p, Y), k = karma, need = Math.max(0, Tojeong.COST - k);
-    return `<div class="hcard tjcard"><h3 class="ht">📜 ${Y} 토정비결 <small>${open ? '열림' : '인생 게임 카르마로 열기'}</small></h3>
-      ${Tojeong.previewHTML(t)}
-      ${open ? '<button class="bigbtn" id="hTJ">📜 월별 신수까지 전체 보기</button>'
-        : `<div class="tjkarma"><div class="tjbar"><i style="width:${Math.min(100, k / Tojeong.COST * 100)}%"></i></div>
+    return `<div class="hhead"><small>${esc(p.name)}님 · 음력 ${t.lm}월 ${t.ld}일생</small><h2>${Y} 토정비결</h2></div>
+      ${open ? `<div class="hcard">${Tojeong.fullHTML(t)}</div>`
+      : `<div class="hcard">${Tojeong.previewHTML(t)}</div>
+         <div class="hcard tjcard"><h3 class="ht">🔒 월별 신수 · 재물 · 처세</h3>
+           <p class="hsub">인생 게임에서 모은 카르마 ${Tojeong.COST}으로 전체 풀이를 열 수 있어요. 한 번 열면 계속 다시 볼 수 있어요.</p>
+           <div class="tjkarma"><div class="tjbar"><i style="width:${Math.min(100, k / Tojeong.COST * 100)}%"></i></div>
            <small>✨ 카르마 ${k} / ${Tojeong.COST}${need ? ` · <b>${need}</b> 더 모으면 열려요` : ' · 지금 열 수 있어요!'}</small></div>
            <button class="bigbtn" id="hTJ">${need ? '🌍 인생 게임하러 가기' : `✨ 카르마 ${Tojeong.COST}으로 열기`}</button>
-           <p class="sjnote" style="text-align:center;margin:6px 0 0">인생 한 판을 끝까지 살면 점수에 따라 카르마를 받아요. 잘 살수록 더 많이!</p>`}</div>`;
+           <p class="sjnote" style="text-align:center;margin:6px 0 0">인생 한 판을 끝까지 살면 점수에 따라 카르마를 받아요 (보통 5~15).</p></div>`}`;
   }
-  function openTojeong(p) {
-    p = p || getMe(); if (!p) return;
-    const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) { toast('생년월일을 확인해 주세요'); return; }
-    if (Tojeong.opened(p, Y)) { openOverlay(`📜 ${p.name}님의 ${Y}년 토정비결`, Tojeong.fullHTML(t), [{ t: '닫기' }]); return; }
-    const need = Math.max(0, Tojeong.COST - karma);
-    if (need) {
-      openOverlay(`📜 ${Y} 토정비결`, `<div class="sjtxt">${Tojeong.previewHTML(t)}
-        <h4>🔒 월별 신수·재물·처세 풀이</h4><p>인생 게임에서 모은 <b>카르마 ${Tojeong.COST}</b>로 열 수 있어요. 지금 ${karma} · <b>${need}</b> 더 필요해요.</p>
-        <p>🌍 인생 한 판을 끝내면 점수에 따라 카르마를 받아요 (보통 5~15). 버킷리스트를 이루고 오래 행복하게 살수록 많이 받아요.</p></div>`,
-        [{ t: '🌍 인생 게임 하러 가기', pri: 1, f: () => go('game') }, { t: '닫기' }]);
-      return;
-    }
-    openOverlay(`📜 ${Y} 토정비결 열기`, `<div class="sjtxt">${Tojeong.previewHTML(t)}<p>카르마 <b>${Tojeong.COST}</b>를 쓰면 ${p.name}님의 ${Y}년 토정비결 전체(재물·처세·좋은 달·월별 신수)가 열려요. 한 번 열면 계속 다시 볼 수 있어요.</p><p class="sjnote">보유 카르마 ${karma} → ${karma - Tojeong.COST}</p></div>`,
-      [{ t: `✨ 카르마 ${Tojeong.COST} 쓰고 열기`, pri: 1, f: () => { karma -= Tojeong.COST; saveMeta(); Tojeong.open(p, Y); Snd.sfx('fanfare'); render(); setTimeout(() => openTojeong(p), 80); } }, { t: '나중에' }]);
+  function bindTojeong(p) {
+    const b = $('#hTJ'); if (!b) return;
+    b.onclick = () => {
+      const Y = Tojeong.year();
+      if (karma < Tojeong.COST) { go('game'); return; }
+      openOverlay(`📜 ${Y} 토정비결 열기`, `<p class="sjtxt">카르마 <b>${Tojeong.COST}</b>를 쓰면 ${esc(p.name)}님의 ${Y}년 토정비결 전체가 열려요.</p><p class="sjnote">보유 카르마 ${karma} → ${karma - Tojeong.COST}</p>`,
+        [{ t: `✨ 카르마 ${Tojeong.COST} 쓰고 열기`, pri: 1, f: () => { karma -= Tojeong.COST; saveMeta(); Tojeong.open(p, Y); Snd.sfx('fanfare'); Auth.sync(); render(); } }, { t: '나중에' }]);
+    };
   }
+  function openTojeong() { if (!analyzeP(getMe())) { openItem('tojeong'); return; } go('tojeong'); }
   function passCard(pass) {
     if (!Ads.native && !(window.WebAds && WebAds.on)) return '';   // 광고가 없는 웹에서는 광고 없애기 카드가 의미 없음
     return `<div class="hcard hpass"><div><b>🍀 행운패스</b><small>${pass}</small></div>
@@ -357,7 +367,6 @@ const Hub = (() => {
   }
   function bindToday(p, a) {
     $('#hWhy').onclick = () => whyFortune(p, a);
-    document.querySelectorAll('[data-m]').forEach(b => b.onclick = () => MISSIONS.find(m => m.k === b.dataset.m).go());
     const sh = $('#hShare'); if (sh) sh.onclick = async () => {
       const f = Fortune.today(a, keyOf(p));
       try {
@@ -365,10 +374,6 @@ const Hub = (() => {
         const d = daily(); if (!d.shared) { d.shared = true; store.set('p8b_daily', d); addPouch(2, '운세 공유'); render(); }
       } catch (e) {}
     };
-    $('#hExch').onclick = openExchange;
-    const tj = $('#hTJ'); if (tj) tj.onclick = () => (Tojeong.opened(p) || karma >= Tojeong.COST) ? openTojeong(p) : go('game');
-    const pa = $('#hPassAd'); if (pa) pa.onclick = () => Ads.showReward(got => { if (got) { Store.addPass(2 * 36e5); Ads.banner(false); toast('🍀 2시간 동안 광고 없이!'); Snd.sfx('fanfare'); render(); } });
-    const pb = $('#hPassBuy'); if (pb) pb.onclick = () => openShop('pass7');
   }
   function whyFortune(p, a) {
     const f = Fortune.today(a, keyOf(p)), me = a.me;
@@ -394,29 +399,18 @@ const Hub = (() => {
       ${L ? `<div class="sjnow">${L.e} 지금 대운 (${L.start}세~) <b>${L.name}</b><br><span>${L.desc}</span></div>` : ''}
       <div class="hcard"><div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p></div></div>
       <div class="hmenu">
-        <button id="hRep"><span>📜</span><b>프리미엄 사주 리포트</b><small>${Store.has('report') ? Store.why('report') || '열림' : Store.price('report')}</small></button>
-        <button id="hTJb" class="hot"><span>📜</span><b>${Tojeong.year()} 토정비결</b><small>${Tojeong.opened(p) ? '열림' : `인생 게임 카르마 ${Tojeong.COST}로 열기`}</small></button>
-        <button id="hNY"><span>🧧</span><b>2027 정미년 신년운세</b><small>${Store.has('newyear') ? Store.why('newyear') || '열림' : '총운 무료 · 전체 ' + Store.price('newyear')}</small></button>
-        <button id="hFlirt" class="hot"><span>💘</span><b>사주 바람기 테스트</b><small>도화살·홍염살로 보는 연애 기질</small></button>
-        <button id="hMbti" class="hot"><span>🧩</span><b>사주 MBTI</b><small>오행·십성으로 본 성격 유형</small></button>
-        <button id="hLearn"><span>🧮</span><b>내 사주 계산 원리</b><small>년·월·일·시주가 나오는 과정</small></button>
-        <button id="hEdit"><span>✏️</span><b>사주 정보 수정</b><small>생년월일·시간·성별</small></button>
+        <button id="hRep"><span>📜</span><b>상세 사주 리포트</b><small>${Store.has('report') ? Store.why('report') || '열림' : '올해 운세 · 10년 대운 · 개운법 · ' + Store.price('report')}</small></button>
       </div>`;
   }
   function bindSaju(p, a) {
     $('#hRep').onclick = () => showReport(p.name, a, new Date().getFullYear() - +p.date.slice(0, 4), false);
-    $('#hNY').onclick = () => openNewYear(p, a);
-    $('#hTJb').onclick = () => openTojeong(p);
-    $('#hLearn').onclick = openLearn;
-    $('#hEdit').onclick = editProfile;
-    $('#hFlirt').onclick = () => Fun.openFlirt(0);
-    $('#hMbti').onclick = () => Fun.openMbti(0);
   }
-  function openNewYear(p, a) {
+  function newYearHTML(p, a) {
     const n = Fortune.newYear(a, 2027), open = Store.has('newyear');
     const mm = m => `${m.yr !== 2027 ? '이듬해 ' : ''}${m.solarM}월`;
     const months = n.months.map(m => `<tr><td>${mm(m)}<small>${S.BRK[m.b]}월</small></td><td>${S.STK[m.s]}${S.BRK[m.b]}<small>${m.ten}</small></td><td><b style="color:${gColor(m.v)}">${m.v}</b></td><td>${m.txt}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</td></tr>`).join('');
-    openOverlay(`🧧 2027 ${n.gzTxt}년(${n.gzHan}) 신년운세`, `<div class="sjtxt">
+    return `<div class="hhead"><small>${esc(p.name)}님 · ${n.gzHan}년</small><h2>2027 ${n.gzTxt}년 신년운세</h2></div>
+      <div class="hcard"><div class="sjtxt">
       <h4>🌟 한 해 총운 · ${n.ts.n}의 해</h4><p>${n.sx.총운}</p>
       ${n.yrel ? `<p>🐑 내 띠와 올해 양띠는 <b>${n.yrel.n}</b> — ${n.yrel.d.replace('날', '해')}</p>` : ''}
       <p>📈 좋은 달: <b>${n.best.map(mm).join(', ')}</b> · 조심할 달: <b>${mm(n.worst)}</b></p>
@@ -425,9 +419,10 @@ const Hub = (() => {
         <h4>📅 12개월 흐름</h4><table class="dytbl hmonth"><tr><th>달</th><th>월건</th><th>점수</th><th>한마디</th></tr>${months}</table>
         <p class="sjnote">명리의 달은 절기로 바뀌어요. 2월은 입춘부터 寅월이에요.</p>`
         : `<div class="lock"><b>🔒 분야별 운세 + 12개월 흐름</b><small>일·재물·연애·건강, 하반기 흐름, 달마다 점수와 한마디</small></div>`}
-      <p class="sjnote">※ 참고·재미용 풀이예요.</p></div>`,
-      [...(open ? [] : [{ t: `🔓 전체 열기 (${Store.price('newyear')})`, pri: 1, f: () => openShop('newyear') }]), { t: '닫기' }]);
+      <p class="sjnote">※ 참고·재미용 풀이예요.</p></div></div>
+      ${open ? '' : `<button class="bigbtn wide" id="nyOpen">🔓 분야별 운세 · 12개월 흐름 열기 (${Store.price('newyear')})</button>`}`;
   }
+  function openNewYear() { go('newyear'); }
   function openLearn() {
     const p = getMe(); mission('learn');
     const q = p ? `&d=${p.date}&cal=${p.cal === 's' ? 's' : p.cal === 'll' ? 'll' : 'l'}&sx=${p.sex}${p.time ? '&t=' + p.time : ''}` : '';
@@ -440,7 +435,6 @@ const Hub = (() => {
     const list = people().map((q, i) => ({ q, i, b: analyzeP(q) })).filter(x => x.b).map(x => ({ ...x, c: Saju.compatPair(a, x.b) })).sort((x, y) => y.c.score - x.c.score);
     const sij = SIJIN.map(([v, l]) => `<option value="${v}">${l}</option>`).join('');
     return `<div class="hhead"><small>내 사주와 상대 사주를 겹쳐 봐요</small><h2>💞 궁합</h2></div>
-      <div class="hfun"><button id="cFlirt">💘 바람기 테스트</button><button id="cMbti">🧩 사주 MBTI</button></div>
       <div class="hcard"><div class="form hform">
         <label>상대 이름<input type="text" id="cName" maxlength="10" placeholder="예: 김서연"></label>
         <label>생년월일<div class="row2"><input type="date" id="cDate" min="1900-01-01" max="${todayStr()}"><select id="cCal"><option value="s">양력</option><option value="l">음력</option><option value="ll">음력(윤달)</option></select></div></label>
@@ -453,8 +447,6 @@ const Hub = (() => {
           : '<p class="hsub">궁합을 본 사람이 여기에 순위로 저장돼요. 가족·친구·연인을 등록해 보세요.</p>'}</div>`;
   }
   function bindCompat(p, a) {
-    $('#cFlirt').onclick = () => Fun.openFlirt(people().length ? 1 : 0);
-    $('#cMbti').onclick = () => Fun.openMbti(people().length ? 1 : 0);
     document.querySelectorAll('#cSex button').forEach(b => b.onclick = () => { document.querySelectorAll('#cSex button').forEach(x => x.classList.toggle('on', x === b)); Snd.sfx('tap'); });
     $('#cGo').onclick = () => {
       const q = { name: $('#cName').value.trim() || '상대', date: $('#cDate').value, cal: $('#cCal').value, time: $('#cTime').value, sex: document.querySelector('#cSex .on').dataset.v };
@@ -519,7 +511,6 @@ const Hub = (() => {
         <button id="mExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개</small></button>
         <button id="mShop"><span>🛍️</span><b>상점</b><small>${Store.item('pass7') ? '행운패스 · ' : ''}리포트 · 궁합 상세 · 신년운세</small></button>
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
-        ${native ? '' : '<button id="mBaram"><span>🌸</span><b>사주 바람기 테스트</b><small>도화살·홍염살로 보는 연애 체질</small></button>'}
       </div>
       <div class="hcard"><h3 class="ht">🎨 화면 테마</h3>
         <p class="hsub">글씨가 잘 보이는 바탕을 고르세요. 화이트가 기본이에요.</p>
@@ -532,7 +523,6 @@ const Hub = (() => {
   }
   function bindMore() {
     $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile;
-    const mb = $('#mBaram'); if (mb) mb.onclick = () => { location.href = '../baram/'; };
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
     document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.mode); Snd.sfx('tap'); render(); });
     $('#mWipe').onclick = openWipe;
@@ -572,11 +562,14 @@ const Hub = (() => {
   function render() {
     const body = $('#hubBody'), p = getMe(), a = analyzeP(p);
     if (tab === 'home' && !editing) { body.innerHTML = homeHTML(p, a); bindHome(); body.scrollTop = 0; syncTabs(); return; }
-    if ((!a || editing || tab === 'input') && tab !== 'more') { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = navHTML(editing ? 'input' : (tab === 'input' ? 'input' : tab)) + formHTML(editing ? p : null); bindForm(); bindNav(); syncTabs(); body.scrollTop = 0; return; }
+    if ((!a || editing || tab === 'input') && tab !== 'more' && tab !== 'daily') { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = navHTML(editing ? 'input' : (tab === 'input' ? 'input' : tab)) + formHTML(editing ? p : null); bindForm(); bindNav(); syncTabs(); body.scrollTop = 0; return; }
     if (tab === 'today') { attend(); body.innerHTML = todayHTML(p, a); bindToday(p, a); }
     else if (tab === 'saju') { body.innerHTML = sajuHTML(p, a); bindSaju(p, a); }
     else if (tab === 'compat') { body.innerHTML = compatTabHTML(p, a); bindCompat(p, a); }
     else if (tab === 'more') { body.innerHTML = moreHTML(); bindMore(); }
+    else if (tab === 'daily') { attend(); body.innerHTML = dailyHTML(); bindDaily(); }
+    else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
+    else if (tab === 'newyear') { body.innerHTML = newYearHTML(p, a); const b = $('#nyOpen'); if (b) b.onclick = () => openShop('newyear'); }
     body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav();
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
