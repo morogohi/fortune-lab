@@ -71,8 +71,10 @@ window.Store = (() => {
   function addPass(ms) { const t = Math.max(Date.now(), passUntil()) + ms; try { localStorage.setItem(PASS, String(t)); } catch (e) {} fire(); return t; }
   const subs = new Set(); const fire = () => subs.forEach(f => { try { f(); } catch (e) {} });
   function grant(k) { owned[k] = true; save(); fire(); }
+  const isTest = () => !!(window.Auth && Auth.isTest && Auth.isTest());
   function has(k) {
     if (owned[k]) return true;
+    if (isTest() && CFG.products[k] && !CFG.products[k].consumable) return true;   // 테스트 계정: 유료 상품 전체 열람
     if (k === 'noads' && passOn()) return true;
     if (newYear() && CFG.newYearFree.includes(k)) return true;
     if (!native && CFG.webDemoFree.includes(k)) return true;
@@ -80,6 +82,7 @@ window.Store = (() => {
   }
   function why(k) {
     if (owned[k]) return '구매함';
+    if (isTest() && CFG.products[k] && !CFG.products[k].consumable) return '🧪 테스트 계정 열람';
     if (k === 'noads' && passOn()) return '🍀 행운패스 사용 중';
     if (newYear() && CFG.newYearFree.includes(k)) return '🧧 신년 이벤트 무료';
     if (!native && CFG.webDemoFree.includes(k)) return '웹 체험판 무료 개방';

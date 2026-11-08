@@ -184,13 +184,34 @@ const Hub = (() => {
       <button class="sso kakao" id="lgKakao" ${ok && !nat ? '' : 'disabled'}>${KAKAO_SVG}<span>카카오 로그인</span></button>
       <button class="sso google" id="lgGoogle" ${ok && !nat ? '' : 'disabled'}>${GOOGLE_SVG}<span>Google 계정으로 로그인</span></button>
       ${!ok ? '<p class="sjnote" style="text-align:center">로그인 서버 연결을 준비하고 있어요. 곧 열려요!</p>' : nat ? '<p class="sjnote" style="text-align:center">앱 로그인은 다음 업데이트에서 지원해요. 지금은 웹에서 로그인할 수 있어요.</p>' : ''}
+      ${nat ? '' : `<details class="tlog"><summary>🧪 테스트 계정으로 로그인</summary>
+        <input id="tlId" autocomplete="username" placeholder="아이디" maxlength="30"><input id="tlPw" type="password" autocomplete="current-password" placeholder="비밀번호" maxlength="40">
+        <div id="tlErr" class="cs-err"></div><button class="bigbtn wide" id="tlGo">테스트 계정 로그인</button>
+        <p class="sjnote">검수·시범 테스트 전용 계정이에요. 로그인하면 테스트 프로필과 모든 유료 콘텐츠가 열려요.</p></details>`}
       <p class="sjnote" style="text-align:center">생년월일 등 개인정보는 서버로 보내지 않고 이 기기에만 저장돼요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
+    const tg = $('#tlGo'); if (tg) tg.onclick = async () => {
+      const r = await Auth.loginTest($('#tlId').value, $('#tlPw').value);
+      if (!r.ok) { $('#tlErr').textContent = r.error === 'id' ? '아이디를 확인해 주세요' : r.error === 'pw' ? '비밀번호가 맞지 않아요' : '이 환경에서는 테스트 로그인을 쓸 수 없어요'; Snd.sfx('bad'); return; }
+      setupTestAccount(r.first); if ($('#overlay').classList.contains('on')) closeOverlay(); Snd.sfx('fanfare');
+    };
     const run = async p => { toast('로그인 화면으로 이동해요…'); const r = await Auth.login(p); if (r.error) toast(r.error === 'not-configured' ? '로그인 서버 준비 중이에요' : '로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요'); };
     $('#lgKakao').onclick = () => run('kakao'); $('#lgGoogle').onclick = () => run('google');
   }
+  /* 테스트 계정: 개인정보 양인석 · 유료 콘텐츠 전체 열람(Store) · 카르마/상담권 · 궁합 상대 예시 */
+  const TEST_ME = { name: '양인석', date: '1974-03-19', cal: 's', time: '', sex: 'm' };
+  function setupTestAccount(first) {
+    store.set('p8b_me', { ...TEST_ME }); rememberProfile(TEST_ME);
+    if (first) {
+      if (typeof karma !== 'undefined') { karma += 500; saveMeta(); }
+      if (typeof Counsel !== 'undefined') Counsel.addCredits(30);
+      const list = people(); if (!list.some(x => x.name === '테스트 상대')) { list.unshift({ name: '테스트 상대', date: '1978-08-15', cal: 's', time: '', sex: 'f' }); store.set('p8b_people', list.slice(0, 20)); }
+    }
+    toast(first ? '🧪 테스트 계정 · 양인석 프로필, 유료 콘텐츠 전체, 카르마 500, 상담권 30회' : '🧪 테스트 계정으로 로그인했어요');
+    topbarUI(); if ($('#hub').classList.contains('on')) render();
+  }
   function openAccount() {
     const t = store.get('p8b_synced', 0);
-    openOverlay('👤 내 계정', `<div class="sets"><div class="setrow"><span>${Auth.provider() === 'kakao' ? '💬 카카오' : '🔵 구글'}</span><div><b>${esc(Auth.name())}</b></div></div>
+    openOverlay('👤 내 계정', `<div class="sets"><div class="setrow"><span>${Auth.provider() === 'kakao' ? '💬 카카오' : Auth.provider() === 'test' ? '🧪 테스트' : '🔵 구글'}</span><div><b>${esc(Auth.name())}</b></div></div>
       <div class="setrow"><span>☁️ 동기화</span><div><small>카르마 ${karma} · ${t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 저장' : '아직 저장 전'}</small></div><button id="acSync">지금 저장</button></div></div>
       <p class="sjnote">서버에는 계정 정보와 게임 기록 요약만 있어요. 생년월일 등은 이 기기에만 있어요.</p>`,
       [{ t: '로그아웃', f: async () => { await Auth.logout(); toast('로그아웃했어요'); } },
@@ -206,7 +227,7 @@ const Hub = (() => {
       const av = Auth.avatar();
       b.className = 'auth in' + (pv ? ' ' + pv : '');
       b.innerHTML = `<span class="aav">${av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1))}<i class="adot"></i></span><span class="alab">${esc(Auth.name().slice(0, 5))}</span>`;
-      b.title = `${Auth.name()} · ${pv === 'kakao' ? '카카오' : pv === 'google' ? '구글' : ''} 로그인됨`; b.setAttribute('aria-label', b.title);
+      b.title = `${Auth.name()} · ${pv === 'kakao' ? '카카오' : pv === 'google' ? '구글' : pv === 'test' ? '테스트 계정' : ''} 로그인됨`; b.setAttribute('aria-label', b.title);
     } else {
       b.className = 'auth out';
       b.innerHTML = '<span class="aav">👤</span><span class="alab">로그인</span>';
@@ -777,7 +798,7 @@ const Hub = (() => {
     $('#setBtn').onclick = () => { Snd.sfx('tap'); openSettings(); };
     $('#loginBtn').onclick = () => { Snd.sfx('tap'); Auth.user() ? openAccount() : openLogin(); };
     let wasIn = !!Auth.user();
-    Auth.on(u => { topbarUI(); if (u && !wasIn) { if ($('#lgKakao')) closeOverlay(); toast(`👋 ${Auth.name()}님, 로그인했어요`); } wasIn = !!u; }); topbarUI();
+    Auth.on(u => { topbarUI(); if ($('#hub').classList.contains('on') && !$('#overlay').classList.contains('on')) render(); if (u && !wasIn) { if ($('#lgKakao') && $('#overlay').classList.contains('on')) closeOverlay(); toast(`👋 ${Auth.name()}님, 로그인했어요`); } wasIn = !!u; }); topbarUI();
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }

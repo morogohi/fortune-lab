@@ -8,7 +8,7 @@ window.Auth = (() => {
   const native = () => !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
   let sb = null, user = null, loading = null, syncing = false;
   const subs = [];
-  const emit = () => subs.forEach(f => { try { f(user); } catch (e) {} });
+  const emit = () => subs.forEach(f => { try { f(user || (testOn() ? TUSER : null)); } catch (e) {} });
 
   function loadLib() {
     if (window.supabase && window.supabase.createClient) return Promise.resolve();
@@ -32,6 +32,23 @@ window.Auth = (() => {
     }).catch(() => { loading = null; return null; });
     return loading;
   }
+  /* ---------- 테스트 계정 (웹 전용 · 서버 없이 기기에서 확인) ----------
+   * 아이디 yangtest · 비밀번호는 코드에 해시로만 보관. 로그인하면 개인정보 양인석 프로필,
+   * 유료 상품 전체 열람, 카르마·상담권 테스트 지급. 앱(스토어 빌드)에서는 열리지 않음. */
+  const TEST = { id: 'yangtest', hash: 'f954cf0e0a8ba16f296702f44d3b51bc8c2c7fca8f1f366cfbe27dde02344e87', name: '양인석' };
+  const TKEY = 'p8b_test_acct';
+  const testOn = () => { if (native()) return false; try { return !!JSON.parse(localStorage.getItem(TKEY)); } catch (e) { return false; } };
+  const TUSER = { id: 'test-yangtest', email: 'yangtest@test.local', user_metadata: { name: TEST.name }, app_metadata: { provider: 'test' } };
+  async function sha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
+  async function loginTest(id, pw) {
+    if (native()) return { error: 'native' };
+    if (String(id).trim().toLowerCase() !== TEST.id) return { error: 'id' };
+    if (await sha('p8b-test|' + TEST.id + '|' + pw) !== TEST.hash) return { error: 'pw' };
+    const first = !localStorage.getItem(TKEY + '_granted');
+    localStorage.setItem(TKEY, JSON.stringify({ id: TEST.id, at: Date.now() }));
+    if (first) localStorage.setItem(TKEY + '_granted', '1');
+    emit(); return { ok: true, first };
+  }
   const name = u => { const m = (u && u.user_metadata) || {}; return m.nickname || m.name || m.full_name || m.preferred_username || (u && u.email ? u.email.split('@')[0] : '회원'); };
   const provider = u => (u && u.app_metadata && u.app_metadata.provider) || '';
   const avatar = u => { const m = (u && u.user_metadata) || {}; return m.avatar_url || m.picture || ''; };
@@ -43,7 +60,7 @@ window.Auth = (() => {
     const { error } = await c.auth.signInWithOAuth({ provider: p, options: { redirectTo: location.origin + location.pathname } });
     return { error: error && error.message };
   }
-  async function logout() { const c = await client(); if (c) await c.auth.signOut(); user = null; emit(); }
+  async function logout() { if (testOn()) { localStorage.removeItem(TKEY); emit(); return; } const c = await client(); if (c) await c.auth.signOut(); user = null; emit(); }
 
   // 회원 정보(닉네임·공급자·마지막 접속)
   async function touch() {
@@ -52,6 +69,7 @@ window.Auth = (() => {
   }
   // 게임 기록 동기화: 카르마는 큰 값, 인생 수는 큰 값으로 합침 (개인정보 없음)
   async function sync() {
+    if (testOn()) { store.set('p8b_synced', Date.now()); return; }
     if (!user || !sb || syncing || typeof karma === 'undefined') return;
     syncing = true;
     try {
@@ -74,5 +92,6 @@ window.Auth = (() => {
   if (ready() && (/[?&]code=/.test(location.search) || localStorage.getItem('p8b_auth'))) client();
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sync(); });
 
-  return { ready, native, login, logout, sync, deleteAccount, user: () => user, name: () => name(user), provider: () => provider(user), avatar: () => avatar(user), on: f => subs.push(f), client };
+  const cur = () => user || (testOn() ? TUSER : null);
+  return { ready, native, login, loginTest, isTest: testOn, logout, sync, deleteAccount, user: cur, name: () => name(cur()), provider: () => provider(cur()), avatar: () => avatar(cur()), on: f => subs.push(f), client };
 })();
