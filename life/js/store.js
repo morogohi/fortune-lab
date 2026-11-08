@@ -12,23 +12,20 @@ window.STORE_CONFIG = {
     karma300:  { id: 'p8b_karma_300', e: '💫', n: '카르마 330 (+10%)', d: '조금 넉넉하게 · 보너스 30', price: '₩3,300', consumable: true, karma: 330 },
     karma1000: { id: 'p8b_karma_1000', e: '🌟', n: '카르마 1,200 (+20%)', d: '모든 콘텐츠를 열고도 남는 양 · 보너스 200', price: '₩9,900', consumable: true, karma: 1200 },
     noads:     { id: 'p8b_remove_ads', e: '🚫', n: '광고 제거', d: '배너·전면 광고 영구 제거 (카르마를 주는 광고는 원할 때만)', price: '₩3,900', consumable: false },
-    // 🔓 카르마로 여는 콘텐츠 (k: 필요한 카르마)
-    newyear: { e: '📖', n: '2027 종합 사주풀이', d: '분야 6개 · 12개월+좋은 날 · 궁합 · MBTI 전략 · 토정비결 전체 · 개운', k: 50 },
-    report:  { e: '📜', n: '프리미엄 사주 리포트', d: '올해 운세 · 10년 대운 상세 · 성격·연애·재물·건강 · 개운법', k: 40 },
-    compat:  { e: '💞', n: '궁합 상세 풀이', d: '두 사람의 성격·연애(관계) 스타일·올해 흐름 (모든 상대)', k: 20 },
-    fate:    { e: '🎛️', n: '운명 조작 팩', d: '인생 게임에서 태어날 가정형편과 타고난 재능을 직접 선택', k: 30 },
+    // 🔓 카르마로 여는 콘텐츠 — 대표 상품은 '상세 사주 리포트' 하나 (+ AI 상담은 회당 카르마)
+    report:  { e: '📜', n: '상세 사주 리포트', d: '2027 분야별 상세 · 12개월+좋은 날 · 10년 대운 · 궁합 상세 · MBTI 전략 · 토정비결 전체 · 개운', k: 50 },
+    fate:    { e: '🎛️', n: '운명 조작 팩 (게임 아이템)', d: '인생 게임에서 태어날 가정형편과 타고난 재능을 직접 선택', k: 30, game: 1 },
   },
 
   // 구매 전에 보여 줄 '무엇을 받는지 · 이용 범위' (상점 자세히 · 구매 확인 창)
   info: {
-    report: ['구성: 올해 운세(총운·일·재물·연애·건강, 상·하반기) · 이번 달 한마디 · 10년 대운 8구간 표 · 성격·강점·약점 · 타고난 흐름·보완점·개운법',
-      '무료와 차이: 무료는 사주 원국·오행·성격 요약까지',
-      '이용 범위: 내 사주와 게임 속 인물 모두 · 기간 제한 없이 다시 열람 · 내 정보를 바꾸면 바뀐 정보로 다시 계산',
-      '기기 변경: 같은 스토어 계정으로 「구매 복원」'],
+    report: ['구성: 2027 한눈에 보기(총점·분야 6개 점수) · 분야별 상세 풀이 · 12개월 상세와 달마다 좋은 날 · 10년 대운 8구간 · 관계도 상대별 궁합 상세 · MBTI 2027 전략 · 토정비결 전체 · 분기 전략 · 개운 가이드',
+      '무료와 차이: 무료는 총운 한 줄·좋은 달·12개월 점수 요약, 토정비결 작괘와 총평 한 줄, 궁합 지수까지',
+      '이용 범위: 한 번 열면 이 기기에서 계속 · 내 정보를 바꾸면 바뀐 정보로 다시 계산'],
     noads: ['없어지는 광고: 배너 광고 · 엔딩 전면 광고', '그대로인 것: 보상형 광고(카르마·무료 기적) — 원할 때만 직접 시청',
       '이용 범위: 기간 제한 없음 · 기기 변경 시 「구매 복원」'],
     fate: ['구성: 탄생할 때 가정형편과 타고난 재능을 직접 선택', '이용 범위: 이후 모든 판에 기간 제한 없이 적용 · 기기 변경 시 「구매 복원」'],
-    karma: ['카르마로 하는 일: 2027 종합 사주풀이 50 · 프리미엄 리포트 40 · 토정비결 30 · 운명 조작 팩 30 · 궁합 상세 20 · AI 상담 1회 20', '무료로 모으기: 광고 1번 +5 (3분마다, 하루 10번) · 인생 게임 엔딩 5~15 · 게임 중간 광고 +3', '소모성: 쓰면 없어지고, 앱을 지우면 남은 카르마도 사라져요 (복원 대상 아님)'],
+    karma: ['카르마로 하는 일: 상세 사주 리포트 50 · AI 사주상담 1회 20 (첫 회 무료) · 게임 아이템(운명 조작 팩 30·기적 40)', '무료로 모으기: 광고 1번 +5 (3분마다, 하루 10번) · 인생 게임 엔딩 5~15 · 게임 중간 광고 +3', '소모성: 쓰면 없어지고, 앱을 지우면 남은 카르마도 사라져요 (복원 대상 아님)'],
     karma300: ['카르마 330 즉시 지급 (보너스 10%)', '소모성 · 복원 대상 아님'], karma1000: ['카르마 1,200 즉시 지급 (보너스 20%)', '소모성 · 복원 대상 아님'],
     newyear: ['대상: 2027년(정미년) · 내 정보로 계산',
       '구성: 한눈에 보는 한 해(총점·분야 6개 점수) · 나의 사주 바탕 · 대운·세운·띠·일지로 본 흐름 · 분야별 상세 풀이 · 토정비결 전체 · 12개월 상세와 달마다 좋은 날 · 분기 전략 · 개운 가이드 · 주의할 점',
@@ -80,10 +77,14 @@ window.Store = (() => {
   // 카르마로 연 콘텐츠 (이 기기에 저장)
   const UKEY = 'p8b_unlocks';
   const unlocks = () => { try { return JSON.parse(localStorage.getItem(UKEY)) || {}; } catch (e) { return {}; } };
-  function unlock(k) { const u = unlocks(); u[k] = Date.now(); try { localStorage.setItem(UKEY, JSON.stringify(u)); } catch (e) {} fire(); }
+  function unlock(k) { k = al(k); const u = unlocks(); u[k] = Date.now(); try { localStorage.setItem(UKEY, JSON.stringify(u)); } catch (e) {} fire(); }
   const isKarmaItem = k => !!(CFG.products[k] && CFG.products[k].k);
+  const ALIAS = { newyear: 'report', compat: 'report' };   // 신년 종합 풀이·궁합 상세는 상세 사주 리포트에 포함
+  const al = k => ALIAS[k] || k;
   const isTest = () => !!(window.Auth && Auth.isTest && Auth.isTest());
   function has(k) {
+    if (ALIAS[k] && (owned[k] || unlocks()[k])) return true;   // 예전에 따로 연 경우 유지
+    k = al(k);
     if (owned[k]) return true;
     if (unlocks()[k]) return true;
     if (isTest() && CFG.products[k] && !CFG.products[k].consumable) return true;   // 테스트 계정: 유료 상품 전체 열람
@@ -93,6 +94,7 @@ window.Store = (() => {
     return false;
   }
   function why(k) {
+    k = al(k);
     if (owned[k]) return '구매함';
     if (unlocks()[k]) return '✨ 카르마로 열림';
     if (isTest() && CFG.products[k] && !CFG.products[k].consumable) return '🧪 테스트 계정 열람';
@@ -101,7 +103,7 @@ window.Store = (() => {
     if (!native && CFG.webDemoFree.includes(k)) return '웹 체험판 무료 개방';
     return '';
   }
-  function price(k) { const p = CFG.products[k]; if (p && p.k) return `✨ 카르마 ${p.k}`; return prices[k] || (p ? p.price : ''); }
+  function price(k) { k = al(k); const p = CFG.products[k]; if (p && p.k) return `✨ 카르마 ${p.k}`; return prices[k] || (p ? p.price : ''); }
 
   async function init() {
     if (!native || !NP) return;
@@ -136,5 +138,5 @@ window.Store = (() => {
       fire(); onDone && onDone(true);
     } catch (e) { onDone && onDone(false, String(e && e.message || e)); }
   }
-  return { native, init, has, why, buy, restore, price, newYear, grant, unlock, isKarmaItem, notify: fire, packs: () => Object.keys(CFG.products).filter(k => CFG.products[k].karma), contents: () => Object.keys(CFG.products).filter(k => CFG.products[k].k), addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[k], info: k => (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || [] };
+  return { native, init, has, why, buy, restore, price, newYear, grant, unlock, isKarmaItem, notify: fire, packs: () => Object.keys(CFG.products).filter(k => CFG.products[k].karma), contents: () => Object.keys(CFG.products).filter(k => CFG.products[k].k), addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[al(k)], info: k => { k = al(k); return (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || []; } };
 })();

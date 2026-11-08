@@ -176,11 +176,20 @@ window.Saju = (() => {
     const word = sc >= 85 ? '천생연분' : sc >= 72 ? '잘 맞는 사이' : sc >= 58 ? '노력하면 좋은 사이' : '서로 다름을 배우는 사이';
     return { score: sc, word, notes };
   }
-  function compatHTML(nameA, a, nameB, b) {
+  // 관계 유형별 궁합 단계 이름 (동료에게 '천생연분'이 나오지 않게)
+  const RELW = {
+    love: ['천생연분', '잘 맞는 사이', '노력하면 좋은 사이', '서로 다름을 배우는 사이'],
+    family: ['든든한 버팀목', '편안한 가족', '이해하면 가까워지는 가족', '서로 다름을 배우는 가족'],
+    friend: ['둘도 없는 친구', '잘 맞는 친구', '알수록 좋은 친구', '자극을 주는 친구'],
+    work: ['협업 시너지 최고', '손발이 맞는 동료', '조율하면 좋은 동료', '역할을 나눠야 하는 동료'],
+  };
+  const relWord = (sc, rel) => (RELW[rel] || RELW.love)[sc >= 85 ? 0 : sc >= 72 ? 1 : sc >= 58 ? 2 : 3];
+  function compatHTML(nameA, a, nameB, b, rel) {
     const c = compatPair(a, b); if (!c) return '';
+    c.word = relWord(c.score, rel);
     return `<div class="sajucard compat"><div class="cmph"><span>${nameA}<small>${a.dm.nm} · ${a.ddi}띠</small></span><b>💞 ${c.score}점</b><span>${nameB}<small>${b.dm.nm} · ${b.ddi}띠</small></span></div>
       <div class="cmpw">재미로 보는 궁합 지수 · ${c.word}</div><div class="cmpn" style="opacity:.75">점수 산정 요소 (오행 관계 기본점 ± 띠 합·충 · 부족한 기운 보완)</div>${c.notes.map(n => `<div class="cmpn">· ${n}</div>`).join('')}<div class="cmpn" style="opacity:.6">※ 관계가 잘될 확률이 아니라 재미용 지수예요.</div></div>`;
   }
 
-  return { premiumHTML, compatPair, compatHTML, ok, randomBirth, analyze, applyStats, luckAt, compat, stemName, summaryHTML, fullHTML, GRPN, GRPE, ELSUB, ELE, ELC };
+  return { premiumHTML, compatPair, compatHTML, relWord, ok, randomBirth, analyze, applyStats, luckAt, compat, stemName, summaryHTML, fullHTML, GRPN, GRPE, ELSUB, ELE, ELC };
 })();

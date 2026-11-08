@@ -1,6 +1,6 @@
 /* =====================================================================
  *  karma.js — 카르마 하나로 단순화한 유료 모델
- *   · 콘텐츠는 모두 카르마로 연다 (종합 풀이 50 · 리포트 40 · 토정비결 30 · 운명 조작 30 · 궁합 상세 20 · AI 상담 1회 20)
+ *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · AI 사주상담(1회 20, 첫 회 무료) / 게임 아이템은 별도
  *   · 카르마 모으기: 📺 광고 1번 +5 (3분 간격 · 하루 10번) · 🎲 인생 게임 엔딩 5~15 · 게임 중간 광고 휴식 +3
  *   · 💳 카르마는 돈으로도 살 수 있다 (100 · 330 · 1,200)
  *   · 🧪 테스트 모드(테스트 페이지·테스트 계정): 광고·결제를 실제 없이 가상으로 처리
@@ -60,7 +60,7 @@ const Karma = (() => {
       <button class="kopt" id="kGame"><i>🎲</i><span><b>인생 게임 한 판</b><small>엔딩마다 5~15 · 10살마다 광고 휴식 +${BREAK_K}</small></span></button>
       <h4 class="kh">카르마 구매</h4>
       ${Store.packs().map(k => { const it = Store.item(k); return `<button class="kopt" data-pack="${k}"><i>${it.e}</i><span><b>${it.n}</b><small>${it.d}</small></span><em>${Store.native || testMode() ? Store.price(k) : '앱'}</em></button>`; }).join('')}
-      <p class="sjnote">카르마로 여는 것: 종합 사주풀이 50 · 리포트 40 · 토정비결 30 · 운명 조작 30 · 궁합 상세 20 · AI 상담 20</p>`;
+      <p class="sjnote">카르마로 여는 것: 📜 상세 사주 리포트 50 · 🤖 AI 사주상담 1회 20 (첫 회 무료) · 🎮 게임 아이템</p>`;
   }
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function openCharge(need, label, back) {

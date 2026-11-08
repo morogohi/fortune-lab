@@ -51,16 +51,16 @@ function doBuy(k, after) {
 }
 function openShop(focus, full) {
   if (focus && !full && Store.item(focus)) return openProduct(focus);
-  const cont = Store.contents().map(k => {
-    const it = Store.item(k), own = Store.has(k);
+  const row = k => { const it = Store.item(k), own = Store.has(k);
     return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${own ? `<small style="color:var(--money)">${Store.why(k)}</small>` : ''}</div>
-      <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`;
-  }).join('') + `<div class="shopitem"><span class="se">📜</span><div><b>토정비결 전체</b><small>월별 신수·재물·처세 (해마다 · 사람별)</small></div><button data-go="tojeong">✨ ${window.Tojeong ? Tojeong.COST : 30}</button></div>
-    <div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담 1회</b><small>첫 상담 무료 · 이후 1회마다</small></div><button data-go="counsel">✨ 20</button></div>`;
+      <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`; };
+  const main = Store.contents().filter(k => !Store.item(k).game), game = Store.contents().filter(k => Store.item(k).game);
+  const cont = main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>인생의 갈림길 고민 — 선택지별 적합도·대운·MBTI·가상 인생 비교 · 첫 회 무료</small></div><button data-go="counsel">✨ 20/회</button></div>`
+    + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
   openOverlay('✨ 카르마 상점',
     `<p class="sjnote" style="text-align:center;margin-top:0">유료 콘텐츠는 모두 <b>카르마</b>로 열어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요.</p>`
-    + Karma.chargeHTML(0) + `<h4 class="kh">🔓 카르마로 여는 콘텐츠</h4>` + cont
+    + `<h4 class="kh">⭐ 대표 상품</h4>` + cont + `<h4 class="kh">✨ 카르마</h4>` + Karma.chargeHTML(0)
     + (noads ? `<h4 class="kh">🚫 광고 제거</h4><div class="shopitem"><span class="se">${noads.e}</span><div><b>${noads.n}</b><small>${noads.d}</small></div><button data-buy="noads" class="${nown ? 'own' : ''}">${nown ? '보유 중' : Store.native || Karma.testMode() ? noads.price : '앱 전용'}</button></div>` : ''),
     [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { await Store.restore(); openShop(null, true); } }] : []), { t: '닫기' }]);
   Karma.bindCharge(() => openShop(null, true));

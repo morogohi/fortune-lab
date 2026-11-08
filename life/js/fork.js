@@ -29,13 +29,22 @@ const Fork = (() => {
     g.die = r => { P.alive = false; P.deathReason = r; modalQ = []; };
     so(Snd, 'sfx', noop); so(Snd, 'mood', noop); so(window.Native, 'vibrate', noop);
     so(Hub, 'toast', noop); so(window.Ads, 'canReward', () => false); so(window.Ads, 'showReward', (cb) => cb && cb(false));
-    so(window.World, 'rhythm', (t, done) => done && done(.7, 'B')); so(window.Grow, 'confetti', noop);
+    so(window.World, 'rhythm', (t, done) => done && done(.7, 'B')); so(window.World, 'goTo', noop);
+    ['confetti', 'agePop', 'stageReport', 'refresh'].forEach(k => so(window.Grow, k, noop));
+    // 안전망: 가상 실행 중 화면에 새로 붙는 요소(연출·미니게임 등)를 모아 두었다가 끝나면 제거
+    S.added = []; S.miniOn = !!($('#mini') && $('#mini').classList.contains('on'));
+    S.mo = new MutationObserver(ms => ms.forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) S.added.push(n); })));
+    S.mo.observe(document.body, { childList: true, subtree: true });
     Storage.prototype.setItem = noop; Storage.prototype.removeItem = noop;   // 가상 실행이 저장·시즌 포인트를 바꾸지 않게
     window.HATCH_OFF = 1;
     return S;
   }
   function exitSim(S) {
     const g = window;
+    try { S.mo.disconnect(); S.mo.takeRecords().forEach(m => m.addedNodes.forEach(n => { if (n.nodeType === 1) S.added.push(n); })); } catch (e) { }
+    const ov = $('#overlay');
+    S.added.forEach(n => { if (n.isConnected && !(ov && ov.contains(n))) n.remove(); });
+    const mini = $('#mini'); if (mini && !S.miniOn) { mini.classList.remove('on'); }
     Object.entries(S.fn).forEach(([k, f]) => { g[k] = f; });
     S.obj.reverse().forEach(([o, k, v]) => { o[k] = v; });
     [Storage.prototype.setItem, Storage.prototype.removeItem] = S.st;

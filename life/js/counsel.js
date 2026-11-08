@@ -15,6 +15,8 @@ const Counsel = (() => {
   const CR = 'p8b_counsel_cr', FREE = 'p8b_counsel_free', HIST = 'p8b_counsel_hist';
   const credits = () => store.get(CR, 0) + (store.get(FREE, 0) ? 0 : 1);
   const freeLeft = () => !store.get(FREE, 0);
+  // 상담 기준 연도: 11월부터는 다음 해 (토정비결·신년운세와 같은 기준) — 안내와 결과를 한 해로 통일
+  const baseYear = () => { const d = new Date(); return d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getFullYear(); };
   function useCredit() { if (freeLeft()) { store.set(FREE, 1); return true; } const c = store.get(CR, 0); if (c <= 0) return false; store.set(CR, c - 1); return true; }
   function addCredits(n) { store.set(CR, store.get(CR, 0) + n); }
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
@@ -62,9 +64,9 @@ const Counsel = (() => {
   /* ---------- 맥락: 사주 · MBTI · 게임 기록 ---------- */
   function ctxOf(p) {
     const a = Hub.analyze(p); if (!a) return null;
-    const now = new Date(), Y = now.getFullYear(), age = Y - +p.date.slice(0, 4);
+    const Y = baseYear(), age = Y - +p.date.slice(0, 4);
     const luck = Saju.luckAt(a, age), nextD = a.dy.find(d => d.age > age);
-    const ny = Fortune.newYear(a, Y), ny2 = Fortune.newYear(a, Y + 1);
+    const ny = Fortune.newYear(a, Y), ny2 = ny;
     const test = store.get('p8b_mbti_test', null), sm = Fun.mbti(a);
     const set = MbtiTest.settled(test);
     const mbti = set ? { type: set, src: 'MBTI 성향 검사 결과', sure: true }
@@ -115,8 +117,10 @@ const Counsel = (() => {
       <button class="bigbtn wide" id="csGo">🔮 상담 받기 <small>${freeLeft() ? '첫 상담 무료' : c > 0 ? `상담권 ${c}회 남음` : `카르마 ${KARMA}`}</small></button>
       <p class="sjnote">📍 이름·생년월일 같은 개인정보는 이 기기 안에서만 계산해요. 상담 기록도 이 기기에만 남아요.</p></div>
       <div class="hcard cs-what"><h3 class="ht">무엇을 받나요?</h3>
-      <ul><li>🧭 선택지별 <b>적합도</b>와 종합 의견</li><li>🔮 지금 대운 · ${new Date().getFullYear()}년 세운 · 움직이기 좋은 달</li><li>🧠 MBTI로 본 나의 결정 스타일과 함정</li>
+      <div class="cs-tier"><b>📊 기본 분석</b> <small>이 기기 안에서 계산 · 카르마 20이 적용되는 범위 (첫 1회 무료)</small></div>
+      <ul><li>🧭 선택지별 <b>적합도</b>와 종합 의견</li><li>🔮 지금 대운 · ${baseYear()}년 세운 · 움직이기 좋은 달</li><li>🧠 MBTI로 본 나의 결정 스타일과 함정</li>
       <li>🎲 내 생년월일로 태어난 가상 인물이 선택지마다 <b>끝까지 살아 본 결과</b> (인생 게임 엔진, 선택지마다 3번)</li><li>✅ 바로 해 볼 실행 조언 3가지</li></ul>
+      <div class="cs-tier"><b>🤖 AI 상담사 답변</b> <small>${window.Auth && Auth.ready() ? '선택 · 로그인 후 동의하면 기본 분석을 바탕으로 자연어 답변 (추가 카르마 없음)' : '준비 중 · 서버가 연결되면 로그인 후 받을 수 있어요 (추가 카르마 없음)'}</small></div>
       <div class="cs-price">${pricing()}</div></div>
       ${histHTML()}`;
   }
@@ -194,7 +198,7 @@ const Counsel = (() => {
       return clampN(s);
     });
     const best = total.indexOf(Math.max(...total)), sorted = [...total].sort((x, y) => y - x), tie = sorted[0] - sorted[1] <= TIE;
-    const NY = new Date().getMonth() >= 9 ? c.ny2 : c.ny, L = c.luck, bm = [...NY.best].sort((x, y) => x.yr - y.yr || x.solarM - y.solarM).map(x => `${x.yr !== c.Y ? x.yr + '년 ' : ''}${x.solarM}월`).join('·'), wm = `${NY.worst.yr !== c.Y ? NY.worst.yr + '년 ' : ''}${NY.worst.solarM}월`;
+    const NY = c.ny, L = c.luck, bm = [...NY.best].sort((x, y) => x.yr - y.yr || x.solarM - y.solarM).map(x => `${x.yr !== c.Y ? x.yr + '년 ' : ''}${x.solarM}월`).join('·'), wm = `${NY.worst.yr !== c.Y ? NY.worst.yr + '년 ' : ''}${NY.worst.solarM}월`;
     const gtxt = g => g >= 0 ? GN[g] : '일반';
     const line = tie
       ? `두 길의 적합도가 거의 같아요(${opts.map((o, i) => total[i]).join(' vs ')}). 사주·성향·미리 살아 본 결과로는 <b>우열을 가리기 어려워요</b>. 이럴 땐 어느 쪽이 맞는지보다 <b>내가 더 끌리는 쪽</b>과 아래 실행 조언으로 정하는 것이 좋아요.`
@@ -214,7 +218,7 @@ const Counsel = (() => {
       ${KS.map(k => { const mx = Math.max(...sims.map(r => r.A[k])); return `<div class="fk-row"><span>${EVAL_N[k][0]} ${EVAL_N[k][1]}</span>${sims.map(r => `<i class="${r.A[k] === mx && sims.length > 1 ? 'win' : ''}"><em style="width:${r.A[k]}%"></em><small>${r.A[k]}</small></i>`).join('')}</div>`; }).join('')}</div>
       ${sims.map((r, i) => `<div class="cs-sim"><b>${AB[i]} · ${esc(opts[i])}</b> → ${r.grade}등급 「${r.type}」 · 10년 뒤 ${r.alive10 ? `${usd(r.money10)} · 행복 ${r.hap10}` : '—'}</div>`).join('')}
       <p class="sjnote">게임 속 인생은 재미로 보는 가상 실행이에요. 실제 직업·자산은 반영되지 않아요.</p></div>` : '';
-    const html = `<div class="hcard cs-res"><div class="cs-q">“${esc(st.q || opts.join(' vs '))}”</div>
+    const html = `<div class="cs-badge">📊 기본 분석 · 이 기기 안에서 계산 · ${c.Y}년 기준</div><div class="hcard cs-res"><div class="cs-q">“${esc(st.q || opts.join(' vs '))}”</div>
       <h3 class="ht">🧭 종합 의견</h3><p class="cs-line">${line}</p>
       <div class="cs-opts">${opts.map((o, i) => `<div class="cs-opt${i === best && !tie ? ' best' : ''}"><div class="cs-oh"><b>${AB[i]}</b><span>${esc(o)}</span><em>${total[i]}</em></div>
         <div class="cs-ob"><i style="width:${total[i]}%"></i></div><small>${gtxt(groups[i])} 분야 · ${fits[i].why.slice(0, 2).join(' · ') || '사주에서 특별히 막거나 미는 기운은 없어요'}</small></div>`).join('')}</div></div>
@@ -240,7 +244,7 @@ const Counsel = (() => {
   function aiReady() { return !!(window.Auth && Auth.ready() && Auth.user()); }
   function askAI(c, opts, groups, fits, sims, res) {
     const box = $('#csAI'); if (!box) return;
-    if (!(window.Auth && Auth.ready())) { box.innerHTML = ''; return; }
+    if (!(window.Auth && Auth.ready())) { box.innerHTML = `<div class="hcard cs-ai off"><h3 class="ht">🤖 AI 상담사 답변 <small>준비 중</small></h3><p class="sjnote" style="margin:0">위 결과는 <b>기본 분석</b>(이 기기 안에서 계산)이에요. AI 상담사가 자연어로 풀어 주는 답변은 서버 연결 뒤 로그인하면 받을 수 있고, 추가 카르마는 들지 않아요.</p></div>`; return; }
     pendingAI = {
       topic: st.topic, question: st.q, options: opts,
       saju: { dayMaster: c.a.dm.nm, nature: c.a.dm.key, elements: c.a.el, weak: SAJU.EK[c.a.weak], luckNow: c.luck.name, luckNext: c.nextD ? Saju.GRPN[c.nextD.g] : null, goodMonths: c.ny.best.map(x => x.solarM), cautionMonth: c.ny.worst.solarM },
