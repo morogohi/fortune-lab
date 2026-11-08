@@ -275,7 +275,7 @@ const Counsel = (() => {
   function init() {
     Hub.register({
       item: { k: 'counsel', g: 'saju', c: 'mint', ic: 'spark', e: '🤖', n: 'AI 사주상담', d: '인생의 갈림길, 사주 · MBTI · 인생 게임으로 상담', need: 1, f: () => Hub.go('counsel') },
-      after: 'saju', title: 'AI 사주상담',
+      after: 'tojeong', title: 'AI 사주상담',
       html: pageHTML, bind: (p, a) => bind(p, a, () => Hub.render()),
     });
   }

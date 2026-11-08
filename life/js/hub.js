@@ -240,9 +240,8 @@ const Hub = (() => {
   const ITEMS = [
     { k: 'today', g: 'main', ic: 'sun', e: '☀️', n: '오늘의 운세', d: '총운 · 애정 · 금전 · 직장 · 건강', need: 1, f: () => go('today') },
     { k: 'saju', g: 'saju', c: 'lav', ic: 'book', e: '📜', n: '내 사주 풀이', d: '사주팔자 · 오행 · 대운 · 성격', need: 1, f: () => go('saju') },
-    { k: 'tojeong', g: 'saju', c: 'peach', ic: 'scroll', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => go('tojeong') },
     { k: 'newyear', g: 'saju', c: 'pink', ic: 'calendar', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => go('newyear') },
-    { k: 'learn', g: 'saju', c: 'sky', ic: 'calc', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
+    { k: 'tojeong', g: 'saju', c: 'peach', ic: 'scroll', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => go('tojeong') },
     { k: 'compat', g: 'rel', c: 'pink', ic: 'heart', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
     { k: 'flirt', g: 'rel', c: 'butter', ic: 'spark', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
     { k: 'mbti', g: 'rel', c: 'mint', ic: 'grid', e: '🧩', n: '사주로 보는 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
