@@ -828,6 +828,28 @@
   .modeseg{display:flex;gap:6px;margin-top:8px}.modeseg button{flex:1;border-radius:12px;padding:10px 4px;font-size:14px;background:var(--card2);box-shadow:inset 0 0 0 1px var(--line2)}
   .modeseg button.on{background:var(--accent);color:var(--onacc);box-shadow:none}
   .modeseg .sw{display:inline-block;width:14px;height:14px;border-radius:50%;vertical-align:-2px;margin-right:4px;box-shadow:inset 0 0 0 1px #8888}
+
+  /* ===== 인생 게임 화면: 가운데 이력(로그)이 항상 보이게 압축 배치 ===== */
+  #stageWrap{height:27%;min-height:150px}
+  #stats{padding:6px 12px 5px;gap:3px 10px}
+  .stat{font-size:11.5px}.stat .lab{margin-bottom:2px}.stat .bar{height:7px}
+  #moneyBox{font-size:14px}#moneyBox small{font-size:10.5px}
+  #subline{font-size:11.5px}
+  #dchips{padding:2px 12px 4px!important;gap:6px!important}.dchip{font-size:11px;padding:2px 8px}
+  #log{min-height:118px;font-size:13.5px;line-height:1.5;padding:6px 14px}
+  #autoBar{padding:5px 10px 0}#autoBar .savebtn,.polbtn{padding:5px 9px}.spd button{padding:5px 8px}
+  #actCats{padding:5px 10px 0}#actCats button{padding:4px 9px;font-size:12px}
+  #actions{padding:6px 10px 5px;gap:5px}
+  .act{padding:6px 8px;font-size:12.5px;min-width:62px;border-radius:12px}.act .e{font-size:19px}
+  #bottom{padding:6px 10px 10px}
+  #ageBtn{padding:10px;font-size:18px;box-shadow:0 4px 0 #1f4f3a}
+  #energy{font-size:12px;min-width:60px}
+  @media (max-height:720px){
+    #stageWrap{height:23%;min-height:132px}
+    #log{min-height:104px}
+    .act{padding:5px 7px}.act .e{font-size:17px}
+    #ageBtn{padding:9px;font-size:17px}
+  }
 </style>
 </head>
 <body>

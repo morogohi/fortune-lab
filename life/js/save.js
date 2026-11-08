@@ -36,6 +36,7 @@ const Save = (() => {
     o.saju = Saju.analyze(o.birth, o.male);
     if (o.saju && o.gaeun && o.gaeun.done && o.gaeun.el != null) o.saju = { ...o.saju, el: o.saju.el.map((v, i) => i === o.gaeun.el ? v + 2 : v) };   // v9 개운 반영
     if (o.mate && o.mate.birth) { o.mate.saju = Saju.analyze(o.mate.birth, o.mate.male); if (o.saju && o.mate.saju) o.mate.c = Saju.compatPair(o.saju, o.mate.saju); }
+    if (o.abroad && o.home && o.home.type === 'parents') o.home = { type: o.uniAbroad && o.age < 26 ? 'dorm' : 'abroad', value: 0 };   // 예전 저장: 해외 이주 후에도 부모님 집이던 문제 보정
     o.bubble = null; o.pendingAd = null;
     return o;
   }
