@@ -29,7 +29,7 @@ function openProduct(k, back) {
     <div class="prodinfo"><b>무엇을 받나요?</b>${(info.length ? info : [it.d]).map(x => `<small>· ${x}</small>`).join('')}<small>· 이용 기간: ${periodOf(it)}</small></div>
     ${it.k && !own ? `<div class="kbal sm"><span>보유 카르마</span><b>✨ ${Karma.bal()}</b>${Karma.bal() < it.k ? `<small><b>${it.k - Karma.bal()}</b> 더 필요해요 · 광고 1번 +${Karma.AD_K}</small>` : ''}</div>` : ''}`,
     [...(own ? [] : it.k
-      ? [{ t: Karma.bal() >= it.k ? `✨ 카르마 ${it.k}로 열기` : '✨ 카르마 모으기', pri: 1, keep: true, f: () => Karma.unlock(k, () => back ? back() : (closeOverlay(), Hub.render())) }]
+      ? [{ t: Karma.bal() >= it.k ? `✨ 카르마 ${it.k}로 열기` : '✨ 카르마 모으기', pri: 1, keep: true, f: () => Karma.unlock(k, () => { Store.notify(); if (back) back(); else { closeOverlay(); Hub.render(); } }) }]
       : [{ t: `${it.e} ${Store.native || Karma.testMode() ? Store.price(k) + '에 구매하기' : '앱에서 구매할 수 있어요'}`, pri: 1, keep: true, f: () => doBuy(k, back) }]),
      { t: '✨ 카르마 상점 보기', f: () => openShop(null, true) }, { t: '닫기', f: () => back && back() }]);
 }
@@ -80,7 +80,7 @@ function reportHTML(name, a, age) {
 function showReport(name, a, age, fromGame) {
   const locked = !Store.has('report');
   openOverlay(`📜 ${name}의 사주`, reportHTML(name, a, age), [
-    ...(locked ? [{ t: `🔓 프리미엄 리포트 열기 (${Store.price('report')})`, pri: 1, f: () => openShop('report') }] : []),
+    ...(locked ? [{ t: `🔓 상세 사주 리포트 열기 (${Store.price('report')})`, pri: 1, f: () => openProduct('report', () => showReport(name, a, age, fromGame)) }] : []),
     { t: '닫기' }]);
 }
 function myReport() {
@@ -222,7 +222,8 @@ async function shareCard(mode) {
   cls.innerHTML += CLASSES.map((c, i) => `<option value="${i}">${c.e} ${c.n}</option>`).join('');
   tal.innerHTML += TALENTS.map((t, i) => `<option value="${i}">${t.e} ${t.n}</option>`).join('');
   document.querySelectorAll('#mSex button').forEach(b => b.onclick = () => { document.querySelectorAll('#mSex button').forEach(x => x.classList.toggle('on', x === b)); Snd.sfx('tap'); });
-  document.getElementById('fateBox').addEventListener('toggle', e => { if (e.target.open && !Store.has('fate')) { e.target.open = false; openShop('fate'); } });
+  document.getElementById('fateBox').addEventListener('toggle', e => { if (e.target.open && !Store.has('fate')) { e.target.open = false; openProduct('fate', () => { refreshFateLock(); const fb = document.getElementById('fateBox'); if (fb && Store.has('fate')) fb.open = true; }); } });
+  Store.onChange(() => { try { refreshFateLock(); } catch (e) { } });   // 카르마로 연 직후 바로 선택 가능하게
   const me = store.get('p8b_me', null);
   if (me && me.mate) { document.getElementById('mName').value = me.mate.name || ''; document.getElementById('mDate').value = me.mate.date || ''; document.getElementById('mCal').value = me.mate.cal || 's'; document.querySelectorAll('#mSex button').forEach(x => x.classList.toggle('on', x.dataset.v === (me.mate.sex || 'f'))); }
   refreshFateLock();

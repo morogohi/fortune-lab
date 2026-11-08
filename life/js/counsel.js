@@ -179,6 +179,7 @@ const Counsel = (() => {
       }
       const res = compose(c, opts, groups, fits, sims);
       if (!useCredit()) { st.busy = false; closeOverlay(); return; }
+      try { Karma.metric('counsel_run'); } catch (e) { }
       st.res = res; st.busy = false;
       const h = store.get(HIST, []); h.unshift({ t: Date.now(), e: (TOPICS.find(t => t.k === st.topic) || {}).e || '🤖', q: st.q, opts, pick: res.best < 0 ? '우열 없음' : opts[res.best], html: res.html }); store.set(HIST, h.slice(0, 10));
       closeOverlay(); Snd.sfx('reveal'); r();

@@ -8,6 +8,8 @@
 const YearFull = (() => {
   const Y = 2027, PASS = 'p8b_yf_pass';
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+  // 받침에 맞는 조사 (을/를, 이/가, 은/는, 와/과)
+  const jo = (w, a, b) => { const t = String(w).replace(/[^가-힣]+$/, ''), c = t.charCodeAt(t.length - 1); return w + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? a : b); };
   const cl = (v, a = 35, b = 96) => Math.max(a, Math.min(b, Math.round(v)));
   const keyOf = p => `${p.date}|${p.cal}|${p.time || ''}|${p.sex}`;
 
@@ -33,6 +35,13 @@ const YearFull = (() => {
   }
 
   /* ---------- 데이터표 ---------- */
+  const WOL_ALT = [
+    ['동료·경쟁자와 엮이는 일이 다시 늘어요. 협력하되 몫은 분명히.', '내 방식대로 밀어붙이고 싶은 달이에요. 한 번 더 의견을 들으세요.'],
+    ['표현할 기회가 다시 와요. 미뤄 둔 아이디어를 꺼내세요.', '말과 글이 힘을 얻는 달. 다만 약속은 지킬 만큼만.'],
+    ['돈의 흐름이 다시 움직여요. 들어온 만큼 일부를 먼저 떼어 두세요.', '거래·정산이 많은 달. 숫자를 한 번 더 확인하세요.'],
+    ['책임이 한 번 더 무거워지는 달. 우선순위를 세 개로 줄이세요.', '평가와 시선이 모이는 달. 기본을 지키면 인정받아요.'],
+    ['배움과 도움이 다시 들어와요. 조언을 기록해 두세요.', '문서·자격 관련 일이 이어지는 달. 마감을 먼저 챙기세요.'],
+  ];
   const TEN_G = { 비견: 0, 겁재: 0, 식신: 1, 상관: 1, 편재: 2, 정재: 2, 편관: 3, 정관: 3, 편인: 4, 정인: 4 };
   const GN = ['독립·경쟁', '재능·표현', '재물', '직장·명예', '학업·귀인'];
   // 운 그룹별 분야 가감: 직업·재물·연애·건강·가정·학업
@@ -116,6 +125,12 @@ const YearFull = (() => {
     return `<div class="hcard"><h3 class="ht">🧩 MBTI로 본 2027 전략 · ${type}</h3><div class="sjtxt">
       <p><b>${info[0]}</b> ${info[1]}</p>
       <p>올해는 <b>${GN[B.gA]}</b>의 해 — ${type}에게는 이렇게 쓰면 좋아요.</p>
+      ${(() => { const T = type, act = ['내 이름을 건 작은 프로젝트', '글·영상·발표 같은 결과물', '수입 구조 정비와 저축 계획', '성과 정리와 승진·평가 준비', '자격증·학위 같은 긴 공부'][B.gA];
+        const how = T[0] === 'E' ? '사람들과 함께하는 방식(스터디·모임·협업)' : '혼자 집중하는 방식(정해진 시간의 루틴·온라인 강의)';
+        const pace = T[3] === 'J' ? '월별 계획표를 만들어' : '2주 단위로 짧게 시험해 보며';
+        const bm = B.n.best.map(m => `${m.solarM}월`).join('·');
+        return `<div class="yf-mb"><b>📌 ${T}의 2027 실천 시나리오</b><p>올해는 <b>${act}</b>에 운이 실려요. ${T}에게는 ${how}이 잘 맞으니, ${pace} 진행하세요. 시작하기 좋은 달은 <b>${bm}</b>이에요.</p>
+          <p>${T[2] === 'T' ? '⚠️ 숫자와 효율만 보다 동료의 마음을 놓치기 쉬워요. 중요한 결정 전에 한 사람에게 의견을 물어보세요.' : '⚠️ 사람을 챙기다 내 일이 밀리기 쉬워요. 거절할 일은 이번 주 안에 분명히 말하세요.'} ${T[1] === 'N' ? '아이디어가 많아도 올해는 한 가지를 끝까지 해 보는 것이 성과로 남아요.' : '익숙한 방식이 안전하지만, 올해 한 가지는 새 방법을 시도해 보세요.'}</p></div>`; })()}
       ${[...type].map(c => `<p>· <b>${c}</b> ${MB_Y[c] || ''}</p>`).join('')}
       <p class="sjnote">기준: ${set ? 'MBTI 성향 검사 결과' : test ? '성향 검사 결과가 뚜렷하지 않아 사주로 본 MBTI' : '사주로 본 MBTI (성향 검사를 하면 더 정확해요)'}${set && set !== sm.type ? ` · 사주로 본 MBTI는 ${sm.type}` : ''}</p></div></div>`;
   }
@@ -125,7 +140,7 @@ const YearFull = (() => {
     const GV = { S: 5, A: 4, B: 3, C: 2, D: 1 }, best = h.reduce((m, x) => (GV[x.grade] || 0) > (GV[m.grade] || 0) ? x : m, h[0]);
     return `<div class="hcard"><h3 class="ht">🎲 인생 게임 속 나</h3><div class="sjtxt">
       <p>지금까지 <b>${h.length}번</b>의 인생을 살아 봤어요. 가장 좋았던 인생은 ${best.f} ${esc(best.name)} — 「${esc(best.title)}」(${best.grade}등급).</p>
-      <p>올해의 중심 기운 <b>${GN[B.gA]}</b>을(를) 게임 속 육성 방침으로 시험해 보고, 갈림길 극장에서 선택의 결과를 비교해 보세요.</p></div></div>`;
+      <p>올해의 중심 기운 <b>${jo(GN[B.gA], '을', '를')}</b> 게임 속 육성 방침으로 시험해 보고, 갈림길 극장에서 선택의 결과를 비교해 보세요.</p></div></div>`;
   }
 
   /* ---------- 화면 ---------- */
@@ -133,6 +148,7 @@ const YearFull = (() => {
     if (!a) return '<div class="hcard"><p class="hsub">생년월일을 먼저 입력해 주세요.</p></div>';
     if (!unlocked(p)) return `<div class="hhead"><small>${esc(p.name)}님</small><h2>상세 사주 리포트</h2></div>${ctaHTML(p, true)}`;
     const B = build(p, a), n = B.n, dm = a.dm, L = LUCK[a.weak], ps = passOf(p);
+    try { Karma.metric('report_view'); } catch (e) { }
     const mm = m => `${m.yr !== Y ? '이듬해 ' : ''}${m.solarM}월`;
     const bar = (lab, v) => `<div class="yf-ar"><span>${lab}</span><div class="yf-b"><i style="width:${v}%"></i></div><b>${v}</b></div>`;
     const S6 = n.sx, S7 = n.sb;
@@ -144,22 +160,31 @@ const YearFull = (() => {
       `${FAM[B.gA]} ${n.yrel ? `내 띠와 2027 양띠는 「${n.yrel.n}」 관계 — ${n.yrel.d.replace('날', '해')}` : ''}`,
       `${STUDY[B.gA]} ${B.gB !== B.gA ? '하반기에는 ' + STUDY[B.gB].replace(/해예요/, '시기예요') : ''}`,
     ];
-    const qs = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]].map(ix => Math.round(ix.reduce((s, i) => s + n.months[i].v, 0) / 3));
-    const qtxt = v => v >= 74 ? '밀고 나갈 때 — 미뤄 둔 계획을 실행하세요.' : v >= 62 ? '다지는 때 — 하던 일을 꾸준히 이어 가세요.' : '쉬어 가는 때 — 무리한 결정은 피하고 점검에 집중하세요.';
-    const occ = {};
+    const QI = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]];
+    const QACT = [['내 이름을 건 일을 시작', '경쟁 속에서 내 몫 지키기', '독립 준비를 차근차근'], ['결과물을 만들어 알리기', '아이디어를 작게 시험', '말보다 결과로 보여 주기'],
+      ['수입 구조를 넓히기', '지출을 점검하고 새는 돈 막기', '계약·정산 마무리'], ['성과를 정리해 평가 준비', '맡은 책임을 정리', '윗사람과 방향 맞추기'], ['배움·자격 시작', '조언자 찾기', '문서·계약 꼼꼼히']];
+    const qOcc = {};
+    const qs = QI.map((ix, qi) => {
+      const v = Math.round(ix.reduce((s2, i) => s2 + n.months[i].v, 0) / 3), cnt = [0, 0, 0, 0, 0];
+      ix.forEach(i => { const g = TEN_G[n.months[i].ten]; if (g != null) cnt[g]++; });
+      const g = cnt.indexOf(Math.max(...cnt)), best = ix.map(i => n.months[i]).sort((x, y) => y.v - x.v)[0];
+      const mode = v >= 72 ? 0 : v >= 62 ? 1 : 2;
+      return { v, g, txt: `<b>${GN[g]}</b> 흐름 · ${['밀고 나갈 때', '다지는 때', '쉬어 가는 때'][mode]} — 핵심 과제: ${(() => { const o = qOcc[g] = (qOcc[g] || 0) + 1; return QACT[g][(mode + o - 1) % 3]; })()}. 이 분기의 가장 좋은 달은 <b>${mm(best)}</b>(${best.v}점)이에요.` };
+    });
+    const occ = {}, seenT = {};
     const months = n.months.map(m => {
       const g = TEN_G[m.ten] != null ? TEN_G[m.ten] : 0, tj = B.t ? B.t.months[m.n] : null, gd = goodDays(a, p, m);
       const good = m.v >= 66, oc = occ[g + (good ? 'g' : 'b')] = (occ[g + (good ? 'g' : 'b')] || 0) + 1, tip = TIPG[g][(good ? 0 : 1) + ((oc - 1) % 2) * 2];
       return `<div class="yf-m ${m.v >= 74 ? 'hi' : m.v < 58 ? 'lo' : ''}"><div class="yf-mh"><b>${mm(m)}</b><span>${SAJU.STK[m.s]}${SAJU.BRK[m.b]}월 · ${m.ten}</span><em>${m.v}</em></div>
-        <p>${m.txt}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</p>
+        <p>${(() => { const k = m.txt, c = seenT[k] = (seenT[k] || 0) + 1; return c === 1 ? k : WOL_ALT[g][(c - 2) % 2]; })()}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</p>
         <p class="yf-mf">🎯 이달의 초점: <b>${GN[g]}</b> — ${tip}</p>
-        ${tj ? `<p class="yf-mt">📜 토정 신수 (${tj.s || ['기운 좋음', '보통', '조심'][tj.q]}): ${tj.a}. 실천 — ${tj.b}.</p>` : ''}
+        ${tj ? `<p class="yf-mt">📜 토정 신수 · 음력 ${m.n + 1}월 (${tj.s || ['기운 좋음', '보통', '조심'][tj.q]}): ${tj.a}. 실천 — ${tj.b}.</p>` : ''}
         ${gd.length ? `<p class="yf-md">📌 좋은 날: ${gd.map(d => `${m.solarM}/${d}`).join(', ')}</p>` : ''}</div>`;
     }).join('');
     const cautions = [
       `${mm(n.worst)}은 한 해 중 기운이 가장 약한 달이에요. 큰 계약·이사·투자는 피하고 점검과 휴식에 쓰세요.`,
       `분야 중 ${AREAS[B.area.indexOf(Math.min(...B.area))][1]} 점수가 가장 낮아요(${Math.min(...B.area)}). ${TIPG[B.gA][1]}`,
-      n.drel && n.drel.v < 0 ? `일지와 올해 지지가 「${n.drel.n}」 관계라 생활 리듬·거처의 변화가 생기기 쉬워요. 일정에 여유를 두세요.` : `부족한 ${EKN[a.weak]} 기운을 채우지 않으면 하반기에 피로가 쌓이기 쉬워요. ${L.b}을(를) 챙기세요.`,
+      n.drel && n.drel.v < 0 ? `일지와 올해 지지가 「${n.drel.n}」 관계라 생활 리듬·거처의 변화가 생기기 쉬워요. 일정에 여유를 두세요.` : `부족한 ${EKN[a.weak]} 기운을 채우지 않으면 하반기에 피로가 쌓이기 쉬워요. ${jo(L.b, '을', '를')} 챙기세요.`,
     ];
     return `<div class="hhead"><small>${esc(p.name)}님 · ${n.gzHan}년 · 만 ${B.age - 1}~${B.age}세</small><h2>상세 사주 리포트 · 2027</h2></div>
 
@@ -184,8 +209,8 @@ const YearFull = (() => {
       ${relHTML(p, a, B)}
       ${mbtiHTML(a, B)}
       ${B.t ? `<div class="hcard"><h3 class="ht">📜 2027 토정비결 전체</h3>${Tojeong.fullHTML(B.t)}</div>` : ''}
-      <div class="hcard"><h3 class="ht">📅 12개월 상세</h3><p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터). 좋은 날은 그달 일진 중 오늘의 운세 점수가 가장 높은 날이에요.</p>${months}</div>
-      <div class="hcard"><h3 class="ht">🗓️ 분기 전략</h3>${qs.map((v, i) => `<div class="yf-q"><b>${['1분기 (2~4월)', '2분기 (5~7월)', '3분기 (8~10월)', '4분기 (11~1월)'][i]}</b><em>${v}</em><span>${qtxt(v)}</span></div>`).join('')}</div>
+      <div class="hcard"><h3 class="ht">📅 12개월 상세</h3><p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터 寅월). 토정 신수는 음력 달 기준이라, 寅월(양력 2월 무렵)에는 음력 1월 신수를 붙였어요. 좋은 날은 그달 일진 중 오늘의 운세 점수가 가장 높은 날이에요.</p>${months}</div>
+      <div class="hcard"><h3 class="ht">🗓️ 분기 전략</h3>${qs.map((q, i) => `<div class="yf-q"><b>${['1분기 (2~4월)', '2분기 (5~7월)', '3분기 (8~10월)', '4분기 (11~1월)'][i]}</b><em>${q.v}</em><span>${q.txt}</span></div>`).join('')}</div>
       <div class="hcard"><h3 class="ht">🍀 2027 개운 가이드</h3><div class="sjtxt">
         <p>부족한 <b>${EKN[a.weak]}</b> 기운을 채우면 한 해가 고르게 흘러요.</p>
         <ul class="yf-ul"><li>🎨 행운의 색: ${L.c}</li><li>🔢 행운의 숫자: ${L.n}</li><li>🧭 좋은 방향: ${L.d}</li><li>🍽️ 도움 되는 음식: ${L.f}</li><li>🩺 챙길 몸: ${L.b}</li><li>🌱 개운 습관: ${dm.개운}</li></ul></div></div>
@@ -221,7 +246,19 @@ const YearFull = (() => {
       <div class="kbal sm"><span>보유 카르마</span><b>✨ ${have}</b>${have < K ? `<small><b>${K - have}</b> 더 모으면 열려요 · 광고 1번 +${Karma.AD_K} · 인생 게임 엔딩 5~15</small>` : '<small>지금 열 수 있어요 · 한 번 열면 계속 볼 수 있어요</small>'}</div>
       <button class="bigbtn wide" id="yfOpen">${have >= K ? `✨ 카르마 ${K}로 상세 리포트 열기` : `✨ 카르마 모으기 (${K - have} 부족)`}</button></div>`;
   }
+  // 긴 리포트: 위쪽에 목차, 긴 섹션은 접어 두고 제목을 눌러 펼침
+  const FOLD = /12개월|토정비결|10년 대운|관계 · 궁합|MBTI|분야별 상세|인생 게임|나의 사주|오는 방식/;
+  function buildToc() {
+    const body = document.getElementById('hubBody'); if (!body || !body.querySelector('.yf-top') || body.querySelector('.yf-toc')) return;
+    const cards = [...body.querySelectorAll('.hcard')].filter(c => c.querySelector(':scope > h3.ht'));
+    cards.forEach((c, i) => { c.id = 'yfs' + i; const h = c.querySelector(':scope > h3.ht'); if (i && FOLD.test(h.textContent)) { c.classList.add('yf-fold', 'folded'); } h.onclick = () => { if (c.classList.contains('yf-fold')) c.classList.toggle('folded'); }; });
+    const toc = document.createElement('div'); toc.className = 'hcard yf-toc';
+    toc.innerHTML = `<b>📑 목차</b><div>${cards.map((c, i) => `<button data-s="yfs${i}">${c.querySelector(':scope > h3.ht').textContent.replace(/·.*$/, '').trim()}</button>`).join('')}</div><small>접힌 섹션은 제목을 누르면 펼쳐져요</small>`;
+    cards[0].after(toc);
+    toc.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const c = document.getElementById(b.dataset.s); c.classList.remove('folded'); c.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+  }
   function bind(p, a, rerender) {
+    buildToc();
     const g = document.getElementById('yfGo'); if (g) g.onclick = () => { Snd.sfx('reveal'); Hub.go('yearfull'); };
     const o = document.getElementById('yfOpen'); if (o) o.onclick = () => Karma.unlock('report', () => Hub.go('yearfull'));
   }

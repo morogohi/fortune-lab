@@ -213,7 +213,7 @@ const Fork = (() => {
     const u = P.forkUsed || 0;
     if (u >= FREE) {
       if (karma < KARMA_COST) { Hub.toast(`무료 미리 보기를 다 썼어요 · 카르마 ${KARMA_COST}가 필요해요`); return; }
-      karma -= KARMA_COST; saveMeta();
+      karma -= KARMA_COST; window.KREASON = '갈림길 극장 미리 보기'; saveMeta();
     }
     P.forkUsed = u + 1;
     busy = true; Snd.sfx('reveal');

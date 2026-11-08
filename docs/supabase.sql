@@ -17,6 +17,9 @@ create table if not exists public.game_state (
   updated_at  timestamptz not null default now()
 );
 
+-- 해제한 콘텐츠(상세 리포트·운명 조작 팩 등) 목록: 다른 기기·재설치 후 복원용. 개인정보 없음
+alter table public.game_state add column if not exists unlocks jsonb not null default '{}'::jsonb;
+
 -- 행 단위 보안: 로그인한 본인 행만 읽고 쓸 수 있음
 alter table public.members    enable row level security;
 alter table public.game_state enable row level security;

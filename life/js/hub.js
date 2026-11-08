@@ -230,7 +230,7 @@ const Hub = (() => {
     store.set('p8b_me', { ...TEST_ME }); rememberProfile(TEST_ME);
     { const l = people(); l.forEach(x => { if (x.name === '테스트 상대') x.name = '예시 상대(테스트용)'; }); store.set('p8b_people', l); }
     if (first) {
-      if (typeof karma !== 'undefined') { karma += 500; saveMeta(); }
+      if (typeof karma !== 'undefined') { karma += 500; window.KREASON = '테스트 계정 지급'; saveMeta(); }
       if (typeof Counsel !== 'undefined') Counsel.addCredits(30);
       const list = people(); if (!list.some(x => /테스트 상대|예시 상대/.test(x.name))) { list.unshift({ name: '예시 상대(테스트용)', date: '1978-08-15', cal: 's', time: '', sex: 'f', rel: 'love' }); store.set('p8b_people', list.slice(0, 20)); }
     }
@@ -611,7 +611,7 @@ const Hub = (() => {
       const Y = Tojeong.year();
       if (karma < Tojeong.COST) { go('game'); return; }
       openOverlay(`📜 ${Y} 토정비결 열기`, `<p class="sjtxt">카르마 <b>${Tojeong.COST}</b>를 쓰면 ${esc(p.name)}님의 ${Y}년 토정비결 전체가 열려요.</p><p class="sjnote">보유 카르마 ${karma} → ${karma - Tojeong.COST}</p>`,
-        [{ t: `✨ 카르마 ${Tojeong.COST} 쓰고 열기`, pri: 1, f: () => { karma -= Tojeong.COST; saveMeta(); Tojeong.open(p, Y); Snd.sfx('fanfare'); Auth.sync(); render(); } }, { t: '나중에' }]);
+        [{ t: `✨ 카르마 ${Tojeong.COST} 쓰고 열기`, pri: 1, f: () => { karma -= Tojeong.COST; window.KREASON = `토정비결 ${Y}`; saveMeta(); Tojeong.open(p, Y); Snd.sfx('fanfare'); Auth.sync(); render(); } }, { t: '나중에' }]);
     };
   }
   function openTojeong() { if (!analyzeP(getMe())) { openItem('tojeong'); return; } go('tojeong'); }
@@ -744,7 +744,7 @@ const Hub = (() => {
         <h4>📅 올해 두 사람의 ${R.yn}</h4><p><b>${esc(p.name)}</b> ${yl(a)}</p><p><b>${esc(q.name)}</b> ${yl(b)}</p></div>`
       : `<div class="lock"><b>🔒 궁합 상세 풀이</b><small>두 사람의 성격·${love ? '연애 스타일' : '강점'}·올해 ${R.yn} (모든 상대 무제한)</small></div>`;
     openOverlay(`${R.e} 궁합 결과 · ${R.n}`, Saju.compatHTML(esc(p.name), a, esc(q.name), b, q.rel || 'love') + relBox + detail + '<p class="sjnote" style="text-align:center">※ 궁합은 참고·재미용이에요. 관계는 서로의 노력이 만들어요.</p>',
-      [...(open ? [] : [{ t: `🔓 상세 풀이 열기 (${Store.price('compat')})`, pri: 1, f: () => openShop('compat') }]),
+      [...(open ? [] : [{ t: `🔓 상세 풀이 열기 (${Store.price('compat')})`, pri: 1, f: () => openProduct('compat', () => showCompat(p, a, q, b)) }]),
        { t: '🧮 두 사람 계산 과정 보기', f: () => { const pq = birthOf(q); openOverlay('🧮 궁합 계산 과정', `<iframe class="hlearn" src="learn.html?embed=1&d=${p.date}&cal=${p.cal || 's'}&sx=${p.sex}${p.time ? '&t=' + p.time : ''}&d2=${q.date}&cal2=${q.cal}&sx2=${q.sex}${q.time ? '&t2=' + q.time : ''}"></iframe>`, [{ t: '닫기' }]); } },
        { t: '닫기' }]);
   }
@@ -753,7 +753,7 @@ const Hub = (() => {
   const EXCH = [
     { k: 'pass2h', e: '🍀', n: '행운패스 2시간', c: 3, can: () => Ads.native && !Store.has('noads'), show: () => Ads.native, f: () => { Store.addPass(2 * 36e5); Ads.banner(false); } },
     { k: 'counsel', e: '🤖', n: 'AI 사주상담 1회', c: 5, can: () => true, f: () => { if (typeof Counsel !== 'undefined') Counsel.addCredits(1); } },
-    { k: 'karma', e: '✨', n: '카르마 20 (인생 게임)', c: 2, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 20; saveMeta(); } } },
+    { k: 'karma', e: '✨', n: '카르마 20 (인생 게임)', c: 2, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 20; window.KREASON = '복주머니 교환'; saveMeta(); } } },
     { k: 'theme', e: '🎨', n: '오행 컬러 테마 1개', c: 10, can: () => themesOwned().length < 5, f: () => { const o = themesOwned(), nx = [0, 1, 2, 3, 4].find(i => !o.includes(i)); o.push(nx); store.set('p8b_themes', o); setTheme(nx); } },
     { k: 'fate', e: '🎛️', n: '운명 조작 팩 (인생 게임)', c: 20, can: () => !Store.has('fate'), f: () => Store.grant('fate') },
     { k: 'report', e: '📜', n: '프리미엄 사주 리포트', c: 60, can: () => !Store.has('report'), f: () => Store.grant('report') },
@@ -787,6 +787,7 @@ const Hub = (() => {
         <button id="mExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개</small></button>
         <button id="mShop"><span>🛍️</span><b>상점</b><small>${Store.item('pass7') ? '행운패스 · ' : ''}리포트 · 궁합 상세 · 신년운세</small></button>
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
+        ${typeof Karma !== 'undefined' && Karma.testMode() ? '<button id="mMet"><span>📈</span><b>전환 기록 (테스트)</b><small>광고·결제·해제 횟수와 비율</small></button>' : ''}
         <button id="mRec"><span>📂</span><b>내 기록 보관함</b><small>운세 · 타로 · 검사 · 상담 · 궁합 · 게임</small></button>
       </div>
       <div class="hcard"><h3 class="ht">🎨 화면 테마</h3>
@@ -799,7 +800,7 @@ const Hub = (() => {
         <p class="sjnote">사주 풀이·운세·궁합·인생 게임 결과는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요. 만세력 계산: lunar-javascript (MIT).</p></div>`;
   }
   function bindMore() {
-    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords;
+    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
     document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.mode); Snd.sfx('tap'); render(); });
     $('#mWipe').onclick = openWipe;

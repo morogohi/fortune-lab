@@ -76,10 +76,19 @@ window.Auth = (() => {
     if (!user || !sb || syncing || typeof karma === 'undefined') return;
     syncing = true;
     try {
-      const { data } = await sb.from('game_state').select('karma,lives').eq('user_id', user.id).maybeSingle();
+      let { data, error } = await sb.from('game_state').select('karma,lives,unlocks').eq('user_id', user.id).maybeSingle();
+      const hasU = !error;   // unlocks 열이 아직 없는 서버면 예전 방식으로
+      if (error) ({ data } = await sb.from('game_state').select('karma,lives').eq('user_id', user.id).maybeSingle());
       const lives = (typeof hist !== 'undefined' ? hist.length : 0);
-      if (data && data.karma > karma) { karma = data.karma; saveMeta(); }
-      await sb.from('game_state').upsert({ user_id: user.id, karma, lives: Math.max(lives, (data && data.lives) || 0), updated_at: new Date().toISOString() });
+      if (data && data.karma > karma) { karma = data.karma; window.KREASON = '계정에서 복원'; saveMeta(); }
+      // 해제 권한: 기기와 계정의 합집합 (다른 기기·재설치 후에도 복원)
+      let un = {}; try { un = JSON.parse(localStorage.getItem('p8b_unlocks')) || {}; } catch (e) {}
+      const srv = (data && data.unlocks) || {}; let got = 0;
+      Object.keys(srv).forEach(k => { if (!un[k]) { un[k] = srv[k]; got++; } });
+      if (got) { try { localStorage.setItem('p8b_unlocks', JSON.stringify(un)); } catch (e) {} if (typeof Store !== 'undefined') Store.notify(); }
+      const row = { user_id: user.id, karma, lives: Math.max(lives, (data && data.lives) || 0), updated_at: new Date().toISOString() };
+      if (hasU) row.unlocks = un;
+      await sb.from('game_state').upsert(row);
       store.set('p8b_synced', Date.now()); emit();
     } catch (e) {}
     syncing = false;

@@ -5,11 +5,20 @@ window.P8B_MODE='commercial' 한 줄로 상품 구성만 바꾼다 (행운패스
 life/index.html을 고친 뒤에는 이 스크립트를 다시 실행하세요:  python3 tools/make_life_test.py
 """
 from pathlib import Path
+# 테스트 페이지 전용 저장 공간: 같은 사이트의 일반 페이지(life)와 카르마·해제 권한·프로필이 섞이지 않게
+# 앱 저장 키 'p8b_…'를 이 페이지에서만 'p8bT_…'로 바꿔 저장한다 (일반 페이지 데이터는 건드리지 않음)
+NS_SHIM = (
+    "<script>(function(){var NS='p8bT_',S=Storage.prototype,g=S.getItem,s=S.setItem,r=S.removeItem,k=S.key;"
+    "function m(st,key){return st===window.localStorage&&typeof key==='string'&&key.indexOf('p8b_')===0?NS+key.slice(4):key}"
+    "S.getItem=function(key){return g.call(this,m(this,key))};S.setItem=function(key,v){return s.call(this,m(this,key),v)};"
+    "S.removeItem=function(key){return r.call(this,m(this,key))};"
+    "S.key=function(i){var x=k.call(this,i);return this===window.localStorage&&x&&x.indexOf(NS)===0?'p8b_'+x.slice(NS.length):(this===window.localStorage&&x&&x.indexOf('p8b_')===0?'__life__'+x:x)};"
+    "window.P8B_NS=NS;})();</script>")
 root = Path(__file__).resolve().parent.parent
 src = (root / "life/index.html").read_text(encoding="utf-8")
 CS = '<meta charset="UTF-8">'
 inject = (CS + '\n<!-- 자동 생성 파일: tools/make_life_test.py 로 만듦. 직접 고치지 마세요. -->\n<base href="../life/">\n'
-          '<meta name="robots" content="noindex,nofollow">\n' "<script>window.P8B_MODE='commercial';</script>")
+          '<meta name="robots" content="noindex,nofollow">\n' "<script>window.P8B_MODE='commercial';</script>\n" + NS_SHIM)
 assert src.count(CS) == 1 and "<title>" in src
 out = src.replace(CS, inject, 1)
 out = out.replace("<title>운명 연구소 · 프로젝트 80억</title>", "<title>[상업용 테스트] 운명 연구소 · 프로젝트 80억</title>", 1)

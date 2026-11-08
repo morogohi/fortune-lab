@@ -14,7 +14,9 @@ const M=x=>Math.round(x*P.mult); // 선진국 기준 금액 → 출생국 물가
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let karma=store.get('p8b_karma',20);
 let hist=store.get('p8b_hist',[]);
-const saveMeta=()=>{store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20))};
+// 카르마가 바뀔 때마다 거래 내역에 남김 (이유는 window.KREASON에 직전 동작이 적어 둠, 없으면 추정)
+const saveMeta=()=>{const before=store.get('p8b_karma',20);store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20));
+  const d=karma-before;if(d){const why=window.KREASON||(d>0?'인생 게임 보상':'게임에서 사용');window.KREASON=null;const l=store.get('p8b_klog',[]);l.unshift({t:Date.now(),d,why,bal:karma});store.set('p8b_klog',l.slice(0,60))}};
 /* 다른 탭에서 카르마·기록이 바뀌면 이 탭도 따라감 (예전 값으로 덮어쓰는 것 방지) */
 function syncMeta(repaint){
   karma=store.get('p8b_karma',20);hist=store.get('p8b_hist',[]);
@@ -429,7 +431,7 @@ function checkDeath(){
   if(!P.revived&&(karma>=40||Ads.canReward())&&P.age<80){
     modalQ=[{e:'✨',t:'운명의 갈림길',d:`${P.age}세, ${reason}(으)로 생명이 위태롭다…`,ch:[
       ...(Ads.canReward()?[{t:'📺 광고 보고 기적 (무료)',s:'광고를 끝까지 보면 회복',f:()=>{P.pendingAd=reason;$('#modal').classList.remove('on');Ads.showReward(ok=>{const r=P.pendingAd;P.pendingAd=null;if(ok){P.revived=true;P.skipDeath=true;P.hp=Math.max(P.hp,35);log('✨ 기적처럼 회복했다!','good');playAnim('jump');renderStats();renderActions()}else die(r)})}}]:[]),
-      ...(karma>=40?[{t:'🌟 기적을 빈다 (카르마 40)',s:'1생에 1회',f:()=>{karma-=40;saveMeta();P.revived=true;P.skipDeath=true;P.hp=Math.max(P.hp,35);log('✨ 기적처럼 회복했다!','good');renderStats()}}]:[]),
+      ...(karma>=40?[{t:'🌟 기적을 빈다 (카르마 40)',s:'1생에 1회',f:()=>{karma-=40;window.KREASON='기적 (인생 게임)';saveMeta();P.revived=true;P.skipDeath=true;P.hp=Math.max(P.hp,35);log('✨ 기적처럼 회복했다!','good');renderStats()}}]:[]),
       {t:'운명을 받아들인다',f:()=>die(reason)}]}];
     openNext();return true;
   }
@@ -508,7 +510,7 @@ function die(reason){
   const grade=E.grade;
   const title=lifeTitle(avg);
   const epi=pick(['"그래도 꽤 괜찮은 인생이었다."','"한 번 더 산다면, 덜 걱정하고 더 사랑할 거야."','"다음 생엔 어디서 태어날까."','"후회는 없다. 아니, 조금 있다."','"인생, 생각보다 짧더라."']);
-  const gain=Math.max(5,Math.round(score/8));karma+=gain;
+  const gain=Math.max(5,Math.round(score/8));karma+=gain;window.KREASON=`인생 게임 엔딩 (${grade}등급)`;
   hist.unshift({f:P.country.f,name:P.name,age:P.age,grade,title});saveMeta();
   hist[0].years=P.age;hist[0].c=P.country.n;hist[0].bk=bk;saveMeta();
   snapAlbum(true);
@@ -561,7 +563,7 @@ function die(reason){
 
       <div class="badges">${[...P.badges].map(b=>`<span class="badge">🏅 ${b}</span>`).join('')||'<span class="badge">업적 없음</span>'}</div>
       <div id="karmaGain">✨ 카르마 +${gain} (보유 ${karma})</div>
-      ${(()=>{const me=typeof Hub!=='undefined'&&Hub.me();if(!me||!window.Tojeong||Tojeong.opened(me))return'';const need=Tojeong.COST-karma,Y=Tojeong.year();return `<button class="tjnudge" id="tjNudge">📜 ${Y} 토정비결 ${need>0?`열기까지 카르마 <b>${need}</b> 남음 · 한 판 더!`:'<b>지금 열 수 있어요!</b> 보러 가기 ›'}</button>`})()}
+      ${(()=>{const me=typeof Hub!=='undefined'&&Hub.me();if(!me||!window.Tojeong||Tojeong.opened(me)||(Tojeong.year()===2027&&Store.has('report')))return'';const need=Tojeong.COST-karma,Y=Tojeong.year();return `<button class="tjnudge" id="tjNudge">📜 ${Y} 토정비결 ${need>0?`열기까지 카르마 <b>${need}</b> 남음 · 한 판 더!`:'<b>지금 열 수 있어요!</b> 보러 가기 ›'}</button>`})()}
       <button class="adbtn" id="adKarmaBtn2" style="display:none"></button>
       <button class="bigbtn" id="againBtn" style="margin:8px 0">🎲 다른 인생 체험하기</button>
       <div style="display:flex;gap:8px"><button class="ghost" id="copyBtn">📤 인생 요약 공유하기</button><button class="ghost" id="homeBtn">처음으로</button></div>
@@ -783,7 +785,7 @@ function showBucket(){
 }
 $('#startBtn').onclick=()=>{Snd.sfx('tap');show('setup')};
 $('#liveBtn').onclick=()=>{Snd.sfx('tap');beginLife()};
-$('#rerollBtn').onclick=()=>{if(karma<15)return;karma-=15;saveMeta();startRoll()};
+$('#rerollBtn').onclick=()=>{if(karma<15)return;karma-=15;window.KREASON='다시 태어나기';saveMeta();startRoll()};
 $('#ageBtn').onclick=ageUp;
 $('#sajuBtn').onclick=()=>{if(!modalQ.length){Snd.sfx('page');showSaju()}};
 $('#bucketBtn').onclick=()=>{if(!modalQ.length){Snd.sfx('tap');showBucket()}};
@@ -795,7 +797,7 @@ renderTitle();
 function refreshAdUI(){
   const ok=Ads.canReward(),txt=`📺 광고 보고 카르마 +${AD_CONFIG.rewardKarma}<small>오늘 ${Ads.rewardsLeft()}회 남음</small>`;
   ['#adKarmaBtn','#adKarmaBtn2'].forEach(id=>{const b=$(id);if(!b)return;b.style.display=ok?'inline-block':'none';b.innerHTML=txt;
-    b.onclick=()=>Ads.showReward(g=>{if(!g)return;karma+=AD_CONFIG.rewardKarma;saveMeta();renderTitle();
+    b.onclick=()=>Ads.showReward(g=>{if(!g)return;karma+=AD_CONFIG.rewardKarma;window.KREASON='광고 보상';saveMeta();renderTitle();
       const kg=$('#karmaGain');if(kg)kg.textContent=`✨ 광고 보상 +${AD_CONFIG.rewardKarma} (보유 ${karma})`;buzz(30)})});
   const pb=$('#privBtn');if(pb){pb.style.display=Ads.privacyRequired?'inline':'none';pb.onclick=()=>Ads.privacyOptions()}
 }
