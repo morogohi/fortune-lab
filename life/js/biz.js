@@ -134,19 +134,19 @@ function makeLifeCard(info) {
   g.fillStyle = bg; g.fillRect(0, 0, Wc, Hc);
   for (let i = 0; i < 90; i++) { g.fillStyle = `rgba(255,255,255,${.15 + Math.random() * .5})`; g.beginPath(); g.arc(Math.random() * Wc, Math.random() * Hc * .6, Math.random() * 2.2 + .6, 0, 7); g.fill(); }
   g.textAlign = 'center'; g.textBaseline = 'alphabetic';
-  g.fillStyle = '#ff8a3d'; g.font = '40px Jua'; g.fillText('PROJECT 8 BILLION · 프로젝트 80억', Wc / 2, 110);
+  g.fillStyle = '#ff8a3d'; g.font = '700 40px \"Noto Sans KR\"'; g.fillText('PROJECT 8 BILLION · 프로젝트 80억', Wc / 2, 110);
   // 초상
   const last = P.album[P.album.length - 1], pc = document.createElement('canvas'); pc.width = 440; pc.height = 480;
   drawSnapTo(pc, last, true, { w: 440, h: 480, k: 1.85 });
   g.save(); roundRectOn(g, (Wc - 440) / 2, 140, 440, 480, 44); g.clip(); g.drawImage(pc, (Wc - 440) / 2, 140); g.restore();
   // 이름·국가
-  g.fillStyle = '#fff7ea'; g.font = '88px Jua'; g.fillText(P.name, Wc / 2, 720);
-  g.fillStyle = '#b9addb'; g.font = '38px "Gowun Dodum"';
+  g.fillStyle = '#fff7ea'; g.font = '700 88px \"Noto Sans KR\"'; g.fillText(P.name, Wc / 2, 720);
+  g.fillStyle = '#b9addb'; g.font = '500 38px \"Noto Sans KR\"';
   g.fillText(`${P.country.f} ${P.country.n} · ${P.rural ? '농촌' : '도시'} · ${P.clsInfo.n} · 향년 ${P.age}세`, Wc / 2, 778);
   // 등급·칭호
   const gc = { S: '#ffcc4d', A: '#5be08f', B: '#5ec8ff', C: '#c58bff', D: '#ff6b81' }[info.grade];
-  g.fillStyle = gc; g.font = '130px Jua'; g.fillText(info.grade, Wc / 2, 910);
-  g.fillStyle = '#fff7ea'; g.font = '50px Jua';
+  g.fillStyle = gc; g.font = '700 130px \"Noto Sans KR\"'; g.fillText(info.grade, Wc / 2, 910);
+  g.fillStyle = '#fff7ea'; g.font = '700 50px \"Noto Sans KR\"';
   let y = 985; y += wrapText(g, `「${info.title}」`, Wc / 2, y, 920, 60, 2);
   // 사주
   if (P.saju) {
@@ -161,7 +161,7 @@ function makeLifeCard(info) {
     y += 230;
   }
   // 버킷리스트
-  g.font = '40px "Gowun Dodum"'; g.textAlign = 'left';
+  g.font = '500 40px \"Noto Sans KR\"'; g.textAlign = 'left';
   P.bucket.forEach((b, i) => { g.fillStyle = b.done ? '#5be08f' : '#b9addb'; g.fillText(`${b.done ? '✅' : '⬜'} ${b.e} ${b.t}`, 140, y + 40 + i * 54); });
   y += 40 + 3 * 54;
   // 인생 그래프
@@ -169,15 +169,15 @@ function makeLifeCard(info) {
   g.strokeStyle = '#ffffff22'; g.lineWidth = 2; g.strokeRect(gx, gy0, gw, gh);
   g.strokeStyle = '#ffcc4d'; g.lineWidth = 6; g.beginPath();
   tr.forEach((p, i) => { const X = gx + gw * p.a / Math.max(10, P.age), Y = gy0 + gh * (1 - p.h / 100); i ? g.lineTo(X, Y) : g.moveTo(X, Y); }); g.stroke();
-  g.fillStyle = '#b9addb'; g.font = '30px "Gowun Dodum"'; g.fillText('행복 그래프', gx, gy0 - 12);
+  g.fillStyle = '#b9addb'; g.font = '500 30px \"Noto Sans KR\"'; g.fillText('행복 그래프', gx, gy0 - 12);
   y = Math.min(gy0 + gh + 58, Hc - 250);
   g.textAlign = 'center';
-  if (info.fr) { g.fillStyle = info.fr.ok ? '#5be08f' : '#ff8a3d'; g.font = '40px Jua'; g.fillText(`📜 사주 vs 실제: ${info.fr.verdict.replace(/^[^ ]+ /, '')}`, Wc / 2, y); y += 50; }
-  const ml = mateLine(); if (ml) { g.fillStyle = '#ff9ecf'; g.font = '32px "Gowun Dodum"'; y += wrapText(g, ml, Wc / 2, y, 980, 40, 1); }
+  if (info.fr) { g.fillStyle = info.fr.ok ? '#5be08f' : '#ff8a3d'; g.font = '700 40px \"Noto Sans KR\"'; g.fillText(`📜 사주 vs 실제: ${info.fr.verdict.replace(/^[^ ]+ /, '')}`, Wc / 2, y); y += 50; }
+  const ml = mateLine(); if (ml) { g.fillStyle = '#ff9ecf'; g.font = '500 32px \"Noto Sans KR\"'; y += wrapText(g, ml, Wc / 2, y, 980, 40, 1); }
   // 하단
   g.fillStyle = '#ff8a3d'; roundRectOn(g, 160, Hc - 165, Wc - 320, 96, 48); g.fill();
-  g.fillStyle = '#fff'; g.font = '48px Jua'; g.fillText('나도 다른 인생 살아보기 ▶', Wc / 2, Hc - 101);
-  g.fillStyle = '#b9addb'; g.font = '32px "Gowun Dodum"'; g.fillText('morogohi.github.io/fortune-lab/life', Wc / 2, Hc - 28);
+  g.fillStyle = '#fff'; g.font = '700 48px \"Noto Sans KR\"'; g.fillText('나도 다른 인생 살아보기 ▶', Wc / 2, Hc - 101);
+  g.fillStyle = '#b9addb'; g.font = '500 32px \"Noto Sans KR\"'; g.fillText('morogohi.github.io/fortune-lab/life', Wc / 2, Hc - 28);
   return cv2;
 }
 function roundRectOn(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }

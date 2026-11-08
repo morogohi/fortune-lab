@@ -92,11 +92,11 @@ const Hub = (() => {
   /* ---------- 화면 이동: 상단 뒤로가기 바 + 브라우저·안드로이드 뒤로가기 ---------- */
   const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', input: '내 정보 입력', tojeong: '토정비결', newyear: '신년운세', daily: '출석 · 미션' };
   let ignorePop = false;
-  const navHTML = t => `<div class="hnav"><button class="hnback" id="hnBack" aria-label="뒤로">‹</button><b>${TITLES[t] || ''}</b></div>`;
+  const navHTML = t => `<div class="hnav"><button class="hnback" id="hnBack" aria-label="뒤로">${ICONS.ic('back')}</button><b>${TITLES[t] || ''}</b></div>`;
   function back() { if (history.state && history.state.t) history.back(); else go('home'); }
   function hookHistory() {
     const oo = window.openOverlay, co = window.closeOverlay;
-    window.openOverlay = function () { oo.apply(this, arguments); if (!(history.state && history.state.ov)) history.pushState(Object.assign({}, history.state, { ov: 1 }), ''); };
+    window.openOverlay = function () { oo.apply(this, arguments); ICONS.clean($('#osheet')); if (!(history.state && history.state.ov)) history.pushState(Object.assign({}, history.state, { ov: 1 }), ''); };
     window.closeOverlay = function (fromPop) {
       co();
       if (fromPop === true) return;
@@ -198,22 +198,22 @@ const Hub = (() => {
   function topbarUI() {
     const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
     if (u) { const av = Auth.avatar(); b.classList.add('av'); b.innerHTML = av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1)); b.title = Auth.name(); }
-    else { b.classList.remove('av'); b.textContent = '👤'; b.title = '로그인'; }
+    else { b.classList.remove('av'); b.innerHTML = ICONS.ic('user'); b.title = '로그인'; }
   }
 
   /* ---------- 홈: 서비스 목록 → 항목 선택 → (정보 없으면) 단계별 입력 → 결과 ---------- */
   let pending = null;          // 정보 입력 후 이어서 열 항목
   const ITEMS = [
-    { k: 'today', g: 'main', e: '☀️', n: '오늘의 운세', d: '총운 · 애정 · 금전 · 직장 · 건강', need: 1, f: () => go('today') },
-    { k: 'saju', g: 'saju', c: 'lav', e: '📜', n: '내 사주 풀이', d: '사주팔자 · 오행 · 대운 · 성격', need: 1, f: () => go('saju') },
-    { k: 'tojeong', g: 'saju', c: 'peach', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => go('tojeong') },
-    { k: 'newyear', g: 'saju', c: 'pink', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => go('newyear') },
-    { k: 'learn', g: 'saju', c: 'sky', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
-    { k: 'compat', g: 'rel', c: 'pink', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
-    { k: 'flirt', g: 'rel', c: 'butter', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
-    { k: 'mbti', g: 'rel', c: 'mint', e: '🧩', n: '사주 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
-    { k: 'daily', g: 'daily', c: 'butter', e: '🧧', n: '출석 · 데일리 미션', d: '매일 들러 복주머니 받고 보상으로 교환', need: 0, f: () => go('daily') },
-    { k: 'game', g: 'game', c: 'sky', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
+    { k: 'today', g: 'main', ic: 'sun', e: '☀️', n: '오늘의 운세', d: '총운 · 애정 · 금전 · 직장 · 건강', need: 1, f: () => go('today') },
+    { k: 'saju', g: 'saju', c: 'lav', ic: 'book', e: '📜', n: '내 사주 풀이', d: '사주팔자 · 오행 · 대운 · 성격', need: 1, f: () => go('saju') },
+    { k: 'tojeong', g: 'saju', c: 'peach', ic: 'scroll', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => go('tojeong') },
+    { k: 'newyear', g: 'saju', c: 'pink', ic: 'calendar', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => go('newyear') },
+    { k: 'learn', g: 'saju', c: 'sky', ic: 'calc', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
+    { k: 'compat', g: 'rel', c: 'pink', ic: 'heart', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
+    { k: 'flirt', g: 'rel', c: 'butter', ic: 'spark', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
+    { k: 'mbti', g: 'rel', c: 'mint', ic: 'grid', e: '🧩', n: '사주 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
+    { k: 'daily', g: 'daily', c: 'butter', ic: 'gift', e: '🧧', n: '출석 · 데일리 미션', d: '매일 들러 복주머니 받고 보상으로 교환', need: 0, f: () => go('daily') },
+    { k: 'game', g: 'game', c: 'sky', ic: 'globe', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
   ];
   const itemName = it => typeof it.n === 'function' ? it.n() : it.n;
   function openItem(k) {
@@ -226,14 +226,14 @@ const Hub = (() => {
     const now = new Date(), wd = '일월화수목금토'[now.getDay()];
     const g = Fortune.dayGz ? Fortune.dayGz(now) : null;
     const f = a ? Fortune.today(a, keyOf(p)) : null;
-    const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${it.e}</i><b>${itemName(it)}</b><small>${it.d}</small></button>`;
+    const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${ICONS.ic(it.ic)}</i><b>${itemName(it)}</b><small>${it.d}</small></button>`;
     const sec = (t, gk) => `<h3 class="hsec">${t}</h3><div class="htiles">${ITEMS.filter(x => x.g === gk).map(tile).join('')}</div>`;
     return `<div class="hhome">
       <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1></div>
       ${p && a
-        ? `<button class="hme" id="hmMe"><span>🙂</span><div><b>${esc(p.name)}님</b><small>${pLine(p)}</small></div><em>›</em></button>`
-        : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>›</em></button>`}
-      <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>☀️</i></button>
+        ? `<button class="hme" id="hmMe"><span>${ICONS.ic('user')}</span><div><b>${esc(p.name)}님</b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
+        : `<button class="hme cta" data-item="today"><span>${ICONS.ic('pen')}</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
+      <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>${ICONS.ic('sun')}</i></button>
       ${sec('사주 · 운세', 'saju')}
       ${sec('궁합 · 관계', 'rel')}
       ${sec('인생 게임', 'game')}
@@ -252,8 +252,8 @@ const Hub = (() => {
     p = p || {};
     const it = !p.date && pending ? ITEMS.find(x => x.k === pending) : null;
     const sij = SIJIN.map(([v, l]) => `<option value="${v}"${p.time === v ? ' selected' : ''}>${l}</option>`).join('');
-    return `      ${it ? `<div class="hsteps"><span class="on">① 내 정보 입력</span><span>② ${it.e} ${itemName(it)}</span></div>` : ''}
-      <div class="hcard"><h3 class="ht">${p.date ? '✏️ 내 사주 정보 수정' : it ? `${it.e} ${itemName(it)} · 내 정보 입력` : '🔮 나의 사주 정보'}</h3>
+    return `      ${it ? `<div class="hsteps"><span class="on">① 내 정보 입력</span><span>② ${itemName(it)}</span></div>` : ''}
+      <div class="hcard"><h3 class="ht">${p.date ? '✏️ 내 사주 정보 수정' : it ? `${itemName(it)} · 내 정보 입력` : '🔮 나의 사주 정보'}</h3>
       <p class="hsub">${p.date ? '바꾼 정보는 모든 항목에 바로 반영돼요.' : '생년월일만 있으면 돼요. 한 번 입력하면 다른 항목에서도 다시 묻지 않아요.'}<br><small>가입 없음 · 입력한 정보는 이 기기 안에만 저장돼요.</small></p>
       <div class="form hform">
         ${!p.date && profiles().length ? `<div class="phist"><small>최근 입력에서 고르기</small><div>${profiles().slice(0, 5).map((x, i) => `<button data-ph="${i}">${esc(x.name)} <small>${x.date.slice(2).replace(/-/g, '.')}</small></button>`).join('')}</div></div>` : ''}
@@ -570,13 +570,15 @@ const Hub = (() => {
     else if (tab === 'daily') { attend(); body.innerHTML = dailyHTML(); bindDaily(); }
     else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
     else if (tab === 'newyear') { body.innerHTML = newYearHTML(p, a); const b = $('#nyOpen'); if (b) b.onclick = () => openShop('newyear'); }
-    body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav();
+    body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav(); ICONS.clean(body);
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
   }
 
   function bindNav() { const b = $('#hnBack'); if (b) b.onclick = () => { editing = false; pending = null; back(); }; }
+  function paintIcons(root = document) { root.querySelectorAll('i[data-ic]').forEach(i => { if (!i.firstChild) i.innerHTML = ICONS.ic(i.dataset.ic); }); }
   function init() {
+    paintIcons();
     // 기존 화면 전환에 하단 탭 표시와 미션 체크를 연결
     const base = show;
     show = function (id) { base(id); if (id === 'end') { mission('game'); Auth.sync(); } syncTabs(); };

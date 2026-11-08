@@ -1097,7 +1097,7 @@ const PLAYFX={
   origami:(x,gy,t,p)=>{prop('🦢',x,gy-56-p*20,18)},
 };
 function drawBubble(text,x,y){
-  cx.save();cx.font='600 12px "Gowun Dodum",sans-serif';const w=Math.min(W*.6,cx.measureText(text).width+18),h=24;
+  cx.save();cx.font='600 12px "Noto Sans KR",sans-serif';const w=Math.min(W*.6,cx.measureText(text).width+18),h=24;
   const bx=Math.max(6,Math.min(W-w-6,x-w/2+20)),by=Math.max(30,y-h);
   cx.fillStyle='#fff';roundRect(bx,by,w,h,12);cx.fill();cx.beginPath();cx.moveTo(x+6,by+h);cx.lineTo(x+14,by+h);cx.lineTo(x+4,by+h+8);cx.fill();
   cx.fillStyle='#3a2a4a';cx.textAlign='center';cx.textBaseline='middle';cx.fillText(text,bx+w/2,by+h/2+1);cx.restore();
