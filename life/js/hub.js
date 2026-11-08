@@ -197,8 +197,17 @@ const Hub = (() => {
   }
   function topbarUI() {
     const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
-    if (u) { const av = Auth.avatar(); b.classList.add('av'); b.innerHTML = av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1)); b.title = Auth.name(); }
-    else { b.classList.remove('av'); b.textContent = '👤'; b.title = '로그인'; }
+    const pv = Auth.provider();
+    if (u) {
+      const av = Auth.avatar();
+      b.className = 'auth in' + (pv ? ' ' + pv : '');
+      b.innerHTML = `<span class="aav">${av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1))}<i class="adot"></i></span><span class="alab">${esc(Auth.name().slice(0, 5))}</span>`;
+      b.title = `${Auth.name()} · ${pv === 'kakao' ? '카카오' : pv === 'google' ? '구글' : ''} 로그인됨`; b.setAttribute('aria-label', b.title);
+    } else {
+      b.className = 'auth out';
+      b.innerHTML = '<span class="aav">👤</span><span class="alab">로그인</span>';
+      b.title = '로그인하지 않음 · 눌러서 로그인'; b.setAttribute('aria-label', b.title);
+    }
   }
 
   /* ---------- 홈: 서비스 목록 → 항목 선택 → (정보 없으면) 단계별 입력 → 결과 ---------- */
@@ -224,6 +233,8 @@ const Hub = (() => {
     if (it.need && !analyzeP(getMe())) { pending = k; tab = 'input'; editing = false; show('hub'); render(); return; }
     it.f();
   }
+  // 띠 동물 (사주 년지 기준 — 입춘 전 출생은 전년 띠)
+  const DDI_E = ['🐭', '🐮', '🐯', '🐰', '🐲', '🐍', '🐴', '🐑', '🐵', '🐔', '🐶', '🐷'];
   function homeHTML(p, a) {
     const now = new Date(), wd = '일월화수목금토'[now.getDay()];
     const g = Fortune.dayGz ? Fortune.dayGz(now) : null;
@@ -233,7 +244,7 @@ const Hub = (() => {
     return `<div class="hhome">
       <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1></div>
       ${p && a
-        ? `<button class="hme" id="hmMe"><span>🙂</span><div><b>${esc(p.name)}님</b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
+        ? `<button class="hme" id="hmMe"><span class="ddi" title="${a.ddi}띠">${DDI_E[a.p.y.b]}</span><div><b>${esc(p.name)}님 <em class="ddit">${a.ddi}띠</em></b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
       <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>☀️</i></button>
       ${sec('사주 · 운세', 'saju')}
