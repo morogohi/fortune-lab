@@ -7,7 +7,7 @@ const Hub = (() => {
   const S = window.SAJU;
   const day = () => Fortune.ymd(new Date());
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  let tab = 'today', editing = false;
+  let tab = 'home', editing = false;
 
   /* ---------- 내 정보 ---------- */
   const getMe = () => store.get('p8b_me', null);
@@ -76,17 +76,67 @@ const Hub = (() => {
     const on = $('#hub').classList.contains('on') || $('#title').classList.contains('on');
     $('#tabbar').classList.toggle('on', on);
     document.documentElement.style.setProperty('--tab-h', on ? '60px' : '0px');
-    document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.t === ($('#title').classList.contains('on') ? 'game' : tab)));
+    const cur = $('#title').classList.contains('on') ? 'game' : (tab === 'today' || tab === 'input') ? 'home' : tab;
+    document.querySelectorAll('#tabbar button').forEach(b => b.classList.toggle('on', b.dataset.t === cur));
   }
   const bar = (v, c) => `<i class="hbar"><i style="width:${v}%;background:${c}"></i></i>`;
   const gColor = v => v >= 85 ? 'var(--money)' : v >= 72 ? 'var(--smart)' : v >= 58 ? 'var(--hap)' : 'var(--hp)';
 
-  /* ---------- 사주 정보 입력 ---------- */
+
+  /* ---------- 홈: 서비스 목록 → 항목 선택 → (정보 없으면) 단계별 입력 → 결과 ---------- */
+  let pending = null;          // 정보 입력 후 이어서 열 항목
+  const ITEMS = [
+    { k: 'today', g: 'main', e: '☀️', n: '오늘의 운세', d: '총운 · 애정 · 금전 · 직장 · 건강', need: 1, f: () => go('today') },
+    { k: 'saju', g: 'saju', e: '📜', n: '내 사주 풀이', d: '사주팔자 · 오행 · 대운 · 성격', need: 1, f: () => go('saju') },
+    { k: 'tojeong', g: 'saju', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => openTojeong() },
+    { k: 'newyear', g: 'saju', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => { const p = getMe(); openNewYear(p, analyzeP(p)); } },
+    { k: 'learn', g: 'saju', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
+    { k: 'compat', g: 'rel', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
+    { k: 'flirt', g: 'rel', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
+    { k: 'mbti', g: 'rel', e: '🧩', n: '사주 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
+    { k: 'game', g: 'game', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
+  ];
+  const itemName = it => typeof it.n === 'function' ? it.n() : it.n;
+  function openItem(k) {
+    const it = ITEMS.find(x => x.k === k); if (!it) return;
+    Snd.sfx('tap');
+    if (it.need && !analyzeP(getMe())) { pending = k; tab = 'input'; editing = false; show('hub'); render(); return; }
+    it.f();
+  }
+  function homeHTML(p, a) {
+    const now = new Date(), wd = '일월화수목금토'[now.getDay()];
+    const g = Fortune.dayGz ? Fortune.dayGz(now) : null;
+    const f = a ? Fortune.today(a, keyOf(p)) : null;
+    const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-item="${it.k}"><i>${it.e}</i><b>${itemName(it)}</b><small>${it.d}</small></button>`;
+    const sec = (t, gk) => `<h3 class="hsec">${t}</h3><div class="htiles">${ITEMS.filter(x => x.g === gk).map(tile).join('')}</div>`;
+    const tj = p && a && !Tojeong.opened(p) ? `<small class="hnote">🏮 토정비결은 인생 게임에서 모은 카르마로 열려요</small>` : '';
+    return `<div class="hhome">
+      <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1></div>
+      ${p && a
+        ? `<button class="hme" id="hmMe"><span>🙂</span><div><b>${esc(p.name)}님</b><small>${p.date.replace(/-/g, '.')} ${p.cal === 'll' ? '음력 윤달' : p.cal === 'l' ? '음력' : '양력'} · ${p.time ? SIJIN.find(x => x[0] === p.time)[1].split(' ')[0] : '시간 모름'} · ${p.sex === 'f' ? '여' : '남'}</small></div><em>수정</em></button>`
+        : `<div class="hme empty"><span>👋</span><div><b>보고 싶은 항목을 골라 주세요</b><small>필요할 때만 생년월일을 여쭤봐요 · 가입 없음</small></div></div>`}
+      <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span></div><i>☀️</i></button>
+      ${sec('사주 · 운세', 'saju')}${tj}
+      ${sec('궁합 · 관계', 'rel')}
+      ${sec('인생 게임', 'game')}
+      ${TRIAL()}
+      <p class="sjnote" style="text-align:center">※ 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>
+    </div>`;
+  }
+  function bindHome() {
+    document.querySelectorAll('[data-item]').forEach(b => b.onclick = () => openItem(b.dataset.item));
+    const me = $('#hmMe'); if (me) me.onclick = editProfile;
+  }
+
+  /* ---------- 사주 정보 입력 (단계형) ---------- */
   function formHTML(p) {
     p = p || {};
+    const it = !p.date && pending ? ITEMS.find(x => x.k === pending) : null;
     const sij = SIJIN.map(([v, l]) => `<option value="${v}"${p.time === v ? ' selected' : ''}>${l}</option>`).join('');
-    return `<div class="hcard"><h3 class="ht">${p.date ? '✏️ 내 사주 정보 수정' : '🔮 나의 사주로 시작해요'}</h3>
-      <p class="hsub">생년월일만 있으면 돼요. 가입은 필요 없고, 입력한 이름(별명)·생년월일·태어난 시간·성별은 이 기기 안에만 저장돼요.</p>${TRIAL()}
+    return `<button class="hback" id="hBack">‹ 처음 화면</button>
+      ${it ? `<div class="hsteps"><span class="on">① 내 정보 입력</span><span>② ${it.e} ${itemName(it)}</span></div>` : ''}
+      <div class="hcard"><h3 class="ht">${p.date ? '✏️ 내 사주 정보 수정' : it ? `${it.e} ${itemName(it)} · 내 정보 입력` : '🔮 나의 사주 정보'}</h3>
+      <p class="hsub">${p.date ? '바꾼 정보는 모든 항목에 바로 반영돼요.' : '생년월일만 있으면 돼요. 한 번 입력하면 다른 항목에서도 다시 묻지 않아요.'}<br><small>가입 없음 · 입력한 정보는 이 기기 안에만 저장돼요.</small></p>
       <div class="form hform">
         <label>이름(별명)<input type="text" id="hName" maxlength="10" value="${esc(p.name || '')}" placeholder="예: 김민준"></label>
         <label>생년월일<div class="row2"><input type="date" id="hDate" min="1900-01-01" max="${todayStr()}" value="${p.date || ''}">
@@ -94,7 +144,7 @@ const Hub = (() => {
         <label>태어난 시간<select id="hTime"><option value="">모름</option>${sij}</select></label>
         <label>성별<div class="seg" id="hSex"><button data-v="m" class="${p.sex !== 'f' ? 'on' : ''}">👦 남자</button><button data-v="f" class="${p.sex === 'f' ? 'on' : ''}">👧 여자</button></div></label>
         <div id="hErr" class="herr"></div>
-        <button class="bigbtn sm wide" id="hSave">${p.date ? '저장하기' : '✨ 오늘의 운세 보기'}</button>
+        <button class="bigbtn sm wide" id="hSave">${p.date ? '저장하기' : it ? `다음 → ${itemName(it)} 보기` : '저장하기'}</button>
         ${p.date ? '<button class="ghost wide" id="hCancel">취소</button>' : ''}
       </div></div>`;
   }
@@ -107,11 +157,13 @@ const Hub = (() => {
       const old = getMe() || {};
       const p = { ...old, name: $('#hName').value.trim() || '나', date, cal: $('#hCal').value, time: $('#hTime').value, sex: document.querySelector('#hSex .on').dataset.v };
       if (!analyzeP(p)) { $('#hErr').textContent = '날짜를 확인해 주세요. (존재하지 않는 음력 날짜일 수 있어요)'; return; }
-      store.set('p8b_me', p); editing = false; Snd.sfx('reveal'); scheduleNoti(); render();
+      store.set('p8b_me', p); editing = false; Snd.sfx('reveal'); scheduleNoti();
+      if (pending) { const k = pending; pending = null; tab = 'home'; render(); openItem(k); } else { if (tab === 'input') tab = 'home'; render(); }
     };
-    const c = $('#hCancel'); if (c) c.onclick = () => { editing = false; render(); };
+    const c = $('#hCancel'); if (c) c.onclick = () => { editing = false; if (tab === 'input') tab = 'home'; render(); };
+    $('#hBack').onclick = () => { editing = false; pending = null; tab = 'home'; render(); };
   }
-  function editProfile() { tab = 'today'; editing = true; show('hub'); render(); }
+  function editProfile() { if (tab === 'more' || tab === 'game') tab = 'home'; editing = true; show('hub'); render(); }
 
   /* ---------- 오늘 ---------- */
   function todayHTML(p, a) {
@@ -411,7 +463,8 @@ const Hub = (() => {
   /* ---------- 렌더 ---------- */
   function render() {
     const body = $('#hubBody'), p = getMe(), a = analyzeP(p);
-    if ((!a || editing) && tab !== 'more') { body.innerHTML = formHTML(editing ? p : null); bindForm(); syncTabs(); body.scrollTop = 0; return; }
+    if (tab === 'home' && !editing) { body.innerHTML = homeHTML(p, a); bindHome(); body.scrollTop = 0; syncTabs(); return; }
+    if ((!a || editing || tab === 'input') && tab !== 'more') { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = formHTML(editing ? p : null); bindForm(); syncTabs(); body.scrollTop = 0; return; }
     if (tab === 'today') { attend(); body.innerHTML = todayHTML(p, a); bindToday(p, a); }
     else if (tab === 'saju') { body.innerHTML = sajuHTML(p, a); bindSaju(p, a); }
     else if (tab === 'compat') { body.innerHTML = compatTabHTML(p, a); bindCompat(p, a); }
@@ -428,7 +481,7 @@ const Hub = (() => {
     const th = store.get('p8b_theme', null); if (th != null) setTheme(th);
     window.addEventListener('themechange', () => { const t = store.get('p8b_theme', null); if (t != null) setTheme(t); });
     Store.onChange(() => { if ($('#hub').classList.contains('on')) render(); });
-    tab = 'today'; show('hub'); render();
+    tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
   return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong };
