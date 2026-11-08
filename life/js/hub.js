@@ -419,14 +419,25 @@ const Hub = (() => {
     }
     return `<div class="hhead"><small>마음속 질문을 떠올리고 카드를 섞어 보세요</small><h2>타로카드</h2></div>
       ${tPhase === 'shuffle' || tPhase === 'pick' ? '' : setup}${stage}
-      ${done && tPhase === 'reveal' ? Tarot.readingHTML(D, a ? a.el : null) : ''}`;
+      ${done && tPhase === 'reveal' ? Tarot.readingHTML(D, a ? a.el : null) + tarotSajuHTML(D, p, a) : ''}`;
   }
   function startShuffle() {
     tPhase = 'shuffle'; tarotD = null; tPicks = []; tCards = []; tOrder = null; tBusy = false; stopShuffleLoop();
     tTimer = setInterval(() => { if (tab !== 'tarot') { stopShuffleLoop(); return; } Snd.sfx('riffle'); }, 900);   // 먼저 켜야 render 중 '섞기 중단'으로 오인하지 않음
     render(); Snd.sfx('riffle');
   }
+  // 사주 × 타로 상담: 일간·대운·올해·이번 달·MBTI·연인 궁합을 엮어 주제별로 풀이 (기기 안에서만 계산)
+  function tarotSajuHTML(D, p, a) {
+    if (!a || typeof TarotSaju === 'undefined') return a ? '' : '<div class="hcard"><p class="sjtxt" style="margin:0">☯️ 내 정보(생년월일)를 넣으면 카드를 사주와 엮은 <b>주제별 상담 풀이</b>를 볼 수 있어요.</p></div>';
+    try {
+      const mt = store.get('p8b_mbti_test', null), mbti = (mt && MbtiTest.settled(mt)) || (store.get('p8b_mbti', {})[p.date + p.name]) || (Fun.mbti(a) || {}).type || '';
+      const partners = people().filter(x => !x.rel || x.rel === 'love').map(x => ({ name: x.name, a: analyzeP(x) })).filter(x => x.a);
+      const age = new Date().getFullYear() - +String(p.date).slice(0, 4);
+      return TarotSaju.html(D, { a, p, age, mbti: typeof mbti === 'string' ? mbti : '', partners });
+    } catch (e) { return ''; }
+  }
   function bindTarot(p, a) {
+    const tc = $('#tsCounsel'); if (tc) tc.onclick = () => { Snd.sfx('tap'); go('counsel'); };
     if (tPhase === 'shuffle' && !tTimer) tPhase = tarotD ? 'reveal' : 'idle';   // 다른 화면에 다녀오면 섞기 중단
     document.querySelectorAll('#tTopic button').forEach(b => b.onclick = () => { tarotTopic = b.dataset.v; if (tarotD) tarotD.topic = tarotTopic; Snd.sfx('tap'); keepRender(); });
     document.querySelectorAll('#tN button').forEach(b => b.onclick = () => { tarotN = +b.dataset.v; Snd.sfx('tap'); keepRender(); });
