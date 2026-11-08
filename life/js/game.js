@@ -551,7 +551,7 @@ function die(reason){
       ${fr?`<div class="box fold"><div class="jua sec">📜 사주 vs 실제 인생</div>${Saju.summaryHTML(P.saju)}
         <div class="fate"><div><span>사주가 말한 운명</span><b>${Saju.GRPE[P.saju.dom]} ${fr.pred}</b><small>${P.saju.dm.key}</small></div>
         <div><span>실제로 산 인생</span><b>${fr.real}</b></div><div class="verdict ${fr.ok?'ok':''}">${fr.verdict}</div>
-        <p class="sjnote">부족한 기운 ${SAJU.EK[P.saju.weak]}을 채우는 개운법: ${P.saju.dm.개운}</p></div></div>`:''}
+        <p class="sjnote">부족한 기운 ${SAJU.EK[P.saju.weak]}${['목','금'].includes(SAJU.EK[P.saju.weak])?'을':'를'} 채우는 개운법: ${P.saju.dm.개운}</p></div></div>`:''}
       <div class="box story fold"><div class="jua sec">📝 인생 경험 요약</div>${st.paras.map(p=>`<p>${p}</p>`).join('')}</div>
 
       <div class="box fold"><div class="jua sec">⭐ 결정적 순간</div>

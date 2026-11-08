@@ -50,8 +50,8 @@ const Fun = (() => {
     else if (many === 0) why.push(['🧊', `${lover.n} 없음`, '이성 인연이 드물게 오지만 한번 오면 오래 가는 편']);
     const dzHap = br.filter((b, i) => d.cols[i][0] !== '일' && isPair(HAP6, a.p.d.b, b)).length;
     const dzChung = br.filter((b, i) => d.cols[i][0] !== '일' && isPair(CHUNG, a.p.d.b, b)).length;
-    if (dzHap) { swing += dzHap * 8; why.push(['🤝', '배우자 자리 합', `일지 ${S.BR[a.p.d.b]}가 다른 지지와 합 — 정에 약하고 마음이 잘 열려요`]); }
-    if (dzChung) { swing += dzChung * 7; why.push(['⚡', '배우자 자리 충', `일지 ${S.BR[a.p.d.b]}가 충을 맞아 — 연애에 변화와 자극을 찾는 편`]); }
+    if (dzHap) { swing += dzHap * 8; why.push(['🤝', '배우자 자리 합', `일지 ${S.BRK[a.p.d.b]}(${S.BR[a.p.d.b]})${(S.BRK[a.p.d.b].charCodeAt(0) - 0xAC00) % 28 ? '이' : '가'} 다른 지지와 합 — 정에 약하고 마음이 잘 열려요`]); }
+    if (dzChung) { swing += dzChung * 7; why.push(['⚡', '배우자 자리 충', `일지 ${S.BRK[a.p.d.b]}(${S.BR[a.p.d.b]})${(S.BRK[a.p.d.b].charCodeAt(0) - 0xAC00) % 28 ? '이' : '가'} 충을 맞아 — 연애에 변화와 자극을 찾는 편`]); }
     // 지키는 힘: 정관·정인·토(신의)
     const guard = g('정관') * 5 + g('정인') * 6 + (a.el[2] >= 3 ? 6 : 0);
     if (guard >= 10) why.push(['🛡️', '지키는 힘', '정관·정인·토 기운이 받쳐 줘 — 약속을 지키는 의리파']);

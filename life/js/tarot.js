@@ -81,10 +81,18 @@ window.Tarot = (() => {
     for (let k = 0; k < n; k++) { const j = rnd(pool.length); cards.push({ c: DECK[pool.splice(j, 1)[0]], rev: rnd(100) < 30 }); }
     return { n, cards, topic, opened: new Set() };
   }
-  function yesno(x) { if (x.rev) return YESNO[1]; if (x.c.major && ['m13', 'm15', 'm16', 'm18'].includes(x.c.id)) return YESNO[2]; if (x.c.id[0] === 's') return YESNO[2]; return YESNO[0]; }
+  // 카드별 뜻의 방향 (+1 좋은 흐름 · 0 양면 · -1 어려움). 역방향이 늘 '막힘'은 아님 — 컵 5·소드 3 역방향처럼 회복을 뜻하는 카드도 있음
+  const UPNEG = { m15: -1, m16: -1, m18: -1, m09: 0, m12: 0, m13: 0, w05: 0, w07: 0, w09: 0, w10: -1, c04: 0, c05: -1, c07: 0, c08: 0, s02: -1, s03: -1, s05: -1, s07: 0, s08: -1, s09: -1, s10: -1, p04: 0, p05: -1 };
+  const REVPOS = { m15: 1, m18: 1, m16: 0, m05: 0, w05: 1, w10: 1, c04: 1, c05: 1, c07: 1, c08: 0, s02: 0, s03: 1, s05: 1, s07: 0, s08: 1, s09: 1, s10: 1, p05: 1 };
+  function pol(x) { const id = x.c.id; return x.rev ? (id in REVPOS ? REVPOS[id] : -1) : (id in UPNEG ? UPNEG[id] : 1); }
+  const meaning = x => x.rev ? x.c.rev : x.c.up;
+  function yesno(x) { const v = pol(x); return v > 0 ? YESNO[0] : v < 0 ? YESNO[1] : YESNO[2]; }
   function advice(x) {
-    const act = { '불': '먼저 움직이세요', '물': '마음을 솔직하게 표현하세요', '바람': '생각을 정리해 분명히 말하세요', '흙': '작은 것부터 실천하세요' }[x.c.el];
-    return x.rev ? `‘${x.c.kw}’의 기운이 막혀 있어요. ${act.replace('세요', '기')} 전에 무엇이 걸림돌인지 먼저 점검하세요.` : `‘${x.c.kw}’의 흐름을 믿고 ${act}.`;
+    const act = { '불': '먼저 움직이세요', '물': '마음을 솔직하게 표현하세요', '바람': '생각을 정리해 분명히 말하세요', '흙': '작은 것부터 실천하세요' }[x.c.el], v = pol(x);
+    if (x.rev && v > 0) return `역방향이지만 이 카드에서는 회복의 신호예요. ${x.c.rev.replace(/\.$/, '')} — 그 흐름을 믿고 ${act}.`;
+    if (v < 0 && x.rev) return `‘${x.c.kw}’의 기운이 막혀 있어요. ${act.replace('세요', '기')} 전에 무엇이 걸림돌인지 먼저 점검하세요.`;
+    if (v < 0) return `‘${x.c.kw}’는 지금의 어려움을 보여 줘요. 피하지 말고 인정한 뒤 ${act}.`;
+    return `‘${x.c.kw}’의 흐름을 믿고 ${act}.`;
   }
   const img = c => `img/tarot/${c.id}.jpg`;
   const T2E = { '불': 1, '물': 4, '바람': 0, '흙': 2 }, EN = ['목', '화', '토', '금', '수'];
@@ -114,16 +122,16 @@ window.Tarot = (() => {
     const { n, cards, topic } = D, pos = SPREADS[n], tk = topic === 'all' ? null : topic, tn = TOPIC[topic];
     const per = cards.map((x, k) => { const C = x.c; return `<div class="hcard tcard"><img src="${img(C)}" class="${x.rev ? 'rev' : ''}" alt="${C.ko}">
       <div><small class="tpos">${pos[k][0]} · ${pos[k][1]}</small><h4>${C.ko} <span>${x.rev ? '역방향' : '정방향'}</span></h4>
-      <p><b>${C.kw}</b> — ${x.rev ? C.rev : C.up}</p>${tk ? `<p class="tsub">${tn}: ${C[tk]}${x.rev ? ' 다만 역방향이라 이 흐름이 늦거나 약하게 나타나요.' : ''}</p>` : ''}
+      <p><b>${C.kw}</b> — ${x.rev ? C.rev : C.up}</p>${tk ? `<p class="tsub">${tn}: ${C[tk]}${x.rev ? (pol(x) > 0 ? ` 역방향이라 지금은 ‘${C.rev.replace(/\.$/, '')}’ 쪽으로 읽어요.` : ' 다만 역방향이라 이 흐름이 늦거나 약하게 나타나요.') : ''}</p>` : ''}
       <details><summary>그림 읽기 · 연애 · 일 · 재물 · 조언</summary><dl class="tdl"><dt>그림</dt><dd>${C.pic}</dd><dt>연애</dt><dd>${C.love}</dd><dt>일</dt><dd>${C.work}</dd><dt>재물</dt><dd>${C.money}</dd><dt>예/아니오</dt><dd>${yesno(x)}</dd><dt>조언</dt><dd>${advice(x)}</dd></dl></details></div></div>`; }).join('');
-    const revs = cards.filter(x => x.rev).length, cnt = {}; cards.forEach(x => cnt[x.c.el] = (cnt[x.c.el] || 0) + 1);
+    const revs = cards.filter(x => x.rev).length, cnt = {}, posRev = cards.map((x, k) => x.rev && pol(x) > 0 ? pos[k][0] : '').filter(Boolean), negRev = cards.map((x, k) => x.rev && pol(x) <= 0 ? pos[k][0] : '').filter(Boolean); cards.forEach(x => cnt[x.c.el] = (cnt[x.c.el] || 0) + 1);
     const domE = Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0], majors = cards.filter(x => x.c.major).length;
-    let syn = n === 1 ? (cards[0].rev ? '역방향 카드는 조심하고 점검하라는 신호예요. 오늘은 무리한 결정을 미루세요.' : '정방향 카드예요. 카드의 기운을 오늘 하루의 행동 지침으로 삼으세요.')
-      : `${revs === 0 ? '모든 카드가 정방향이에요. 흐름이 막힘없이 이어져요.' : revs === n ? '모든 카드가 역방향이에요. 밀어붙이기보다 점검하고 정리할 때예요.' : `${revs}장이 역방향이에요. 그 자리의 메시지가 지금 풀어야 할 과제예요.`} ${cards.map((x, k) => `${pos[k][0]}의 <b>${x.c.kw}</b>`).join(', ')}로 이어지는 흐름이에요.`;
+    let syn = n === 1 ? (pol(cards[0]) > 0 ? (cards[0].rev ? '역방향이지만 회복·해소를 뜻하는 카드예요. 오늘은 풀리는 쪽으로 한 걸음 내디뎌 보세요.' : '좋은 흐름의 카드예요. 카드의 기운을 오늘 하루의 행동 지침으로 삼으세요.') : pol(cards[0]) < 0 ? '조심하고 점검하라는 카드예요. 오늘은 무리한 결정을 미루세요.' : '양면이 있는 카드예요. 서두르지 말고 균형을 잡으세요.')
+      : `${revs === 0 ? '모든 카드가 정방향이에요. 흐름이 막힘없이 이어져요.' : revs === n ? '모든 카드가 역방향이에요. 밀어붙이기보다 점검하고 정리할 때예요.' : `${revs}장이 역방향이에요.${negRev.length ? ` ${negRev.join('·')} 자리의 메시지가 지금 풀어야 할 과제예요.` : ''}${posRev.length ? ` ${posRev.join('·')} 자리는 역방향이지만 회복·해소를 뜻하는 카드라 좋은 신호예요.` : ''}`} ${cards.map((x, k) => `${pos[k][0]}의 <b>${x.c.kw}</b>`).join(', ')}로 이어지는 흐름이에요.`;
     if (n > 1) syn += majors >= Math.ceil(n / 2) ? ' 메이저 카드가 많아 개인의 노력을 넘어서는 큰 흐름이 작용하는 시기예요.' : ' 마이너 카드가 많아 일상의 선택으로 충분히 바꿀 수 있는 문제예요.';
     let topicBox = '';
     if (tk && TSYN[tk] && TSYN[tk][domE]) {
-      const [sit, act] = TSYN[tk][domE], revN = revs ? (revs === n ? '다만 카드가 모두 역방향이라 이 흐름이 아직 막혀 있거나 늦게 나타날 수 있어요.' : `역방향 ${revs}장은 그 자리(${cards.map((x, k) => x.rev ? pos[k][0] : '').filter(Boolean).join('·')})에서 속도를 늦추라는 신호예요.`) : '';
+      const [sit, act] = TSYN[tk][domE], revN = negRev.length ? (negRev.length === n ? '다만 카드가 모두 막힌 흐름이라 이 상황이 늦게 풀릴 수 있어요.' : `${negRev.join('·')} 자리의 역방향은 그 부분에서 속도를 늦추라는 신호예요.`) : '';
       topicBox = `<div class="tsyn"><b>${tn} · 지금 상황 예시</b><p>${sit} ${revN}</p><b>${tn} · 해 볼 일</b><p>${act}</p></div>`;
     }
     let link = '';
@@ -149,9 +157,9 @@ window.Tarot = (() => {
       <h4 class="tpopn">${C.ko} <small>${C.en}</small></h4>
       <div class="tpoptags"><span>${x.rev ? '역방향' : '정방향'}</span><span>${C.el}의 원소</span>${C.major ? '<span>메이저</span>' : ''}<span>${yesno(x)}</span></div>
       <div class="sjtxt"><h4>${C.kw}</h4><p>${x.rev ? C.rev : C.up}</p>
-        ${tk ? `<h4>${TOPIC[D.topic]}</h4><p>${C[tk]}${x.rev ? ' 다만 역방향이라 이 흐름이 늦거나 약하게 나타나요.' : ''}</p>` : ''}
+        ${tk ? `<h4>${TOPIC[D.topic]}</h4><p>${C[tk]}${x.rev ? (pol(x) > 0 ? ` 역방향이라 지금은 ‘${C.rev.replace(/\.$/, '')}’ 쪽으로 읽어요.` : ' 다만 역방향이라 이 흐름이 늦거나 약하게 나타나요.') : ''}</p>` : ''}
         <h4>조언</h4><p>${advice(x)}</p>
         <h4>그림 읽기</h4><p>${C.pic}</p></div></div>`;
   }
-  return { draw, spreadHTML, readingHTML, cardHTML, shuffled, cardAt, fromCards, img, fromPicks, TBACK, SPREADS, TOPIC, DECK };
+  return { pol, meaning, draw, spreadHTML, readingHTML, cardHTML, shuffled, cardAt, fromCards, img, fromPicks, TBACK, SPREADS, TOPIC, DECK };
 })();

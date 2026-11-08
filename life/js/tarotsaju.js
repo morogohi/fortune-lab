@@ -57,8 +57,17 @@ const TarotSaju = (() => {
   const tgOf = (a, gz) => S.tg10(a.me, gz.s).g;
   function monthGz(y, m) { try { return S.pillars('s', y, m, 15, 12, 0, false, false, 'm').m; } catch (e) { return null; } }
 
-  function cardScore(cards) {   // +: 정방향 · 밝은 카드, -: 역방향 · 무거운 메이저
-    let s = 0; cards.forEach(x => { s += x.rev ? -1 : 1; if (x.c.major && ['m13', 'm15', 'm16', 'm18'].includes(x.c.id)) s -= 1; if (['m17', 'm19', 'm21', 'm10'].includes(x.c.id) && !x.rev) s += 1; }); return s / cards.length;
+  // 카드 한 장의 뜻을 방향(좋음·양면·어려움)과 정·역방향에 맞게 한 문장으로
+  function msg(x) {
+    const v = Tarot.pol(x), t = Tarot.meaning(x).replace(/\.$/, '');
+    if (x.rev && v > 0) return `역방향이지만 이 카드에서는 좋은 신호예요 — ${t}. 막혔던 부분이 풀리는 흐름으로 읽어요.`;
+    if (x.rev) return `역방향이라 ‘${x.c.kw}’의 기운이 막혀 있거나 늦게 와요 — ${t}. 서두르지 말고 걸림돌부터 확인하세요.`;
+    if (v < 0) return `‘${x.c.kw}’는 지금의 어려움을 보여 줘요 — ${t}. 이 자리는 버티며 정리할 부분이에요.`;
+    if (v === 0) return `‘${x.c.kw}’는 양면이 있는 카드예요 — ${t}. 서두르지 말고 균형을 잡으세요.`;
+    return `카드의 ‘${x.c.kw}’ 메시지가 이 자리에서 그대로 살아나요 — ${t}.`;
+  }
+  function cardScore(cards) {   // 카드별 뜻의 방향(Tarot.pol)으로 — 역방향이라도 회복을 뜻하면 +
+    let t = 0; cards.forEach(x => { t += Tarot.pol(x); if (['m17', 'm19', 'm21', 'm10'].includes(x.c.id) && !x.rev) t += 0.5; }); return t / cards.length;
   }
 
   // 메인: D(리딩 묶음), ctx { a, p, age, mbti, partners:[{name,a,rel}] }
@@ -114,9 +123,9 @@ const TarotSaju = (() => {
     // C. 자리별 카드 × 사주
     const seenR = {};
     const rows = D.cards.map((x, k) => {
-      const e = T2E[x.c.el], r = relOf(meE, e), rep = seenR[r]; seenR[r] = 1;
+      const e = T2E[x.c.el], r = relOf(meE, e), rep = seenR[r], v = Tarot.pol(x); seenR[r] = 1;
       return `<div class="ts-card"><small>${pos[k][0]}</small><b>${x.c.ko}${x.rev ? ' (역)' : ''}</b> <span>${x.c.el} = ${EK[e]} · ${RELN[r]}</span>
-        <p>${rep ? `앞 자리처럼 ${RELN[r]}이 이어져요. 이 흐름이 ${tn}에서 한 방향으로 굳어지는 중이에요.` : RELT[topic][r]} ${x.rev ? '역방향이라 이 기운이 막혀 있거나 늦게 와요. 서두르지 말고 걸림돌부터 확인하세요.' : `카드의 ‘${x.c.kw}’ 메시지가 이 자리에서 그대로 살아나요.`}${e === weakE && !x.rev ? ` 특히 사주에 부족한 ${EK[e]} 기운을 채워 주는 카드라 반가워요.` : e === strongE ? ` 이미 강한 ${EK[e]} 기운이 겹쳐 지나치기 쉬우니 조절하세요.` : ''}</p></div>`;
+        <p>${rep ? `앞 자리처럼 ${RELN[r]}이 이어져요. 이 흐름이 ${tn}에서 한 방향으로 굳어지는 중이에요.` : RELT[topic][r]} ${msg(x)}${e === weakE && v > 0 ? ` 특히 사주에 부족한 ${EK[e]} 기운을 채워 주는 카드라 반가워요.` : e === strongE ? ` 이미 강한 ${EK[e]} 기운이 겹쳐 지나치기 쉬우니 조절하세요.` : ''}</p></div>`;
     }).join('');
     const secC = `<div class="ts-sec"><h4>🃏 ③ 자리별로 본 카드와 사주</h4>${rows}</div>`;
 
@@ -135,13 +144,16 @@ const TarotSaju = (() => {
     if ((topic === 'love' || topic === 'all') && ctx.partners && ctx.partners.length) {
       const q = ctx.partners[0], cp = Saju.compatPair(a, q.a);
       if (cp) secE = `<div class="ts-sec"><h4>💞 ${q.name}님과 함께 보면</h4><p>궁합 지수 <b>${cp.score}점</b> · ${cp.notes.join(' · ')}.</p>
-        <p>${D.cards.some(x => x.rev) ? '카드에 역방향이 있어 지금은 오해가 생기기 쉬운 때예요. 중요한 이야기는 글보다 얼굴을 보고 하세요.' : '카드 흐름이 순해서 관계를 한 단계 진전시키기 좋은 때예요. 함께할 계획 하나를 정해 보세요.'}</p></div>`;
+        <p>${D.cards.some(x => Tarot.pol(x) < 0) ? '카드에 어려움을 뜻하는 자리가 있어 지금은 오해가 생기기 쉬운 때예요. 중요한 이야기는 글보다 얼굴을 보고 하세요.' : '카드 흐름이 순해서 관계를 한 단계 진전시키기 좋은 때예요. 함께할 계획 하나를 정해 보세요.'}</p></div>`;
     }
     // F. 실천
     const mb = ctx.mbti, mtip = mb ? Object.entries(MB[topic]).find(([l]) => mb.includes(l)) : null;
-    const advCard = D.cards.find((x, k) => /조언/.test(pos[k][0])) || D.cards[D.cards.length - 1];
+    const ai0 = pos.findIndex(q => /조언/.test(q[0])), advI = ai0 >= 0 ? ai0 : D.cards.length - 1, advCard = D.cards[advI], advPos = pos[advI][0];
     const secF = `<div class="ts-sec"><h4>✅ ⑤ 상담 결론과 실천 계획</h4>
-      <ul class="ts-plan"><li><b>이번 주</b> — ${advCard.rev ? `‘${advCard.c.kw}’의 흐름을 막는 걸림돌 한 가지를 적고 없애 보세요.` : `‘${advCard.c.kw}’의 메시지를 행동으로 옮기세요. 카드가 말하는 ${tn}: ${advCard.c[topic === 'all' ? 'up' : topic] || advCard.c.up}`}</li>
+      <ul class="ts-plan"><li><b>이번 주</b> — ${(() => { const v = Tarot.pol(advCard), t = Tarot.meaning(advCard).replace(/\.$/, '');
+        if (v > 0) return `${advPos} 카드 ${advCard.c.ko}${advCard.rev ? '(역방향 · 회복의 뜻)' : ` ‘${advCard.c.kw}’`}의 메시지를 행동으로 옮기세요 — ${t}. ${advCard.rev ? '미뤄 둔 화해·정리·재시작을 이번 주에 하나 해 보세요.' : `카드가 말하는 ${tn}: ${advCard.c[topic === 'all' ? 'up' : topic] || advCard.c.up}`}`;
+        if (v < 0) return `${advPos} 카드 ‘${advCard.c.kw}’가 보여 준 걸림돌(${t})을 한 가지 적고, 줄일 방법을 하나 정해 실행하세요.`;
+        return `${advPos} 카드 ‘${advCard.c.kw}’처럼 양쪽을 저울질하는 때예요 — ${t}. 결정을 하나만 골라 작게 시험해 보세요.`; })()}</li>
       <li><b>이번 달</b> — ${perUp ? `${GNAME[mgg != null ? mgg : yg]} 기운을 살려 ${['내 이름을 건 일 하나를 시작', '결과물 하나를 만들어 공개', '수입·지출 구조를 한 가지 개선', '책임 맡은 일을 깔끔하게 마무리', '배움·자격 하나를 신청'][mgg != null ? mgg : yg]}하세요.` : `무리한 확장보다 ${['협력자 확보', '아이디어 정리', '지출 점검', '규칙 정비', '공부·준비'][mgg != null ? mgg : yg]}에 집중하세요.`}</li>
       <li><b>피할 것</b> — ${['감정적인 경쟁·자존심 싸움', '말이 앞서는 약속', '한 번에 크게 거는 결정', '혼자 다 떠안기', '생각만 하다 때 놓치기'][a.dom]}</li>
       ${mtip ? `<li><b>${mb} 성향</b> — ${mtip[1]}</li>` : ''}

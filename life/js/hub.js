@@ -410,7 +410,7 @@ const Hub = (() => {
       const left = tarotN - tPicks.length;
       stage = `<div class="hcard tstage"><p class="tguide">${left ? `끌리는 카드를 <b>${left}장</b> 더 골라 주세요<br><small>고르는 즉시 카드가 공개되고 설명이 나와요</small>` : '다 골랐어요! 종합 리딩을 확인해 보세요'}</p>
         <div class="tfan">${Array.from({ length: FAN }, (_, k) => { const pi = tPicks.indexOf(k), ang = (k - (FAN - 1) / 2) * 5;
-          return `<button class="fc${pi >= 0 ? ' on' : ''}" data-f="${k}" style="--a:${ang}deg;--i:${k}" aria-label="${k + 1}번째 카드">${pi >= 0 ? `<img src="${Tarot.img(tCards[pi].c)}" class="${tCards[pi].rev ? 'rev' : ''}" alt="${tCards[pi].c.ko}"><em>${pi + 1}</em>` : Tarot.TBACK}</button>`; }).join('')}</div>
+          return `<button class="fc${pi >= 0 ? ' on' : ''}" data-f="${k}" style="--a:${ang}deg;--i:${k}" aria-label="${k + 1}번째 카드${pi >= 0 ? ` · 고름 (${pi + 1}번째 선택)` : ''}"><span class="fcv">${pi >= 0 ? `<img src="${Tarot.img(tCards[pi].c)}" class="${tCards[pi].rev ? 'rev' : ''}" alt="${tCards[pi].c.ko}"><em>${pi + 1}</em>` : Tarot.TBACK}</span></button>`; }).join('')}</div>
         <div class="tpicked">${Array.from({ length: tarotN }, (_, k) => `<span class="${k < tPicks.length ? 'on' : ''}">${Tarot.SPREADS[tarotN][k][0]}</span>`).join('')}</div>
         <button class="bigbtn wide" id="tGo" ${left ? 'disabled' : ''}>${left ? `${left}장 남았어요` : '🔮 종합 리딩 보기'}</button>
         <button class="ghost wide" id="tReshuf">다시 섞기</button></div>`;
@@ -474,7 +474,7 @@ const Hub = (() => {
     const fan = document.querySelector('.tfan');
     const cardAtPoint = (x, y) => {
       const f = fan.getBoundingClientRect(), c = fan.querySelector('.fc'); if (!c) return -1;
-      const w = c.offsetWidth, h = c.offsetHeight, bottom = parseFloat(getComputedStyle(c).bottom) || 0;
+      const w = 60, h = 100, bottom = parseFloat(getComputedStyle(c).bottom) || 0;
       const px = f.left + f.width / 2, py = f.bottom - bottom - h + 2.3 * h;     // transform-origin: 50% 230%
       const dx = x - px, dy = py - y, r = Math.hypot(dx, dy), ang = Math.atan2(dx, dy) * 180 / Math.PI;
         for (let k = FAN - 1; k >= 0; k--) {                                     // 뒤(오른쪽) 카드가 위에 그려짐
@@ -492,7 +492,9 @@ const Hub = (() => {
         if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 12) { down = null; return; }
         const k = cardAtPoint(down.x, down.y); down = null; if (k >= 0) pickCard(k);
       };
-      fan.onkeydown = e => { if (e.key === 'Enter') { const n = tPicks.length ? -1 : Math.floor(FAN / 2); if (n >= 0) pickCard(n); } };
+      // 보조기기·키보드로 누른 카드(좌표 없는 click)는 그 버튼 번호 그대로
+      fan.querySelectorAll('.fc').forEach(b => b.onclick = e => { if (e.detail === 0) pickCard(+b.dataset.f); });
+      fan.onkeydown = e => { if (e.key === 'Enter' && !e.target.closest('.fc')) { const n = tPicks.length ? -1 : Math.floor(FAN / 2); if (n >= 0) pickCard(n); } };
     }
     function pickCard(k) {
       if (tBusy || $('#overlay').classList.contains('on')) return;   // 팝업이 뜨기 전 두 번 눌러 두 장이 골라지는 것 방지
@@ -667,7 +669,7 @@ const Hub = (() => {
       <h4>① 오늘의 일진</h4><p>오늘 ${f.date}은 60갑자로 <b>${f.gzTxt}(${f.gzHan})일</b>이에요. 날짜는 끊김 없이 60갑자를 돌기 때문에 기준일에서 며칠 지났는지로 구해요.</p>
       <h4>② 나의 일간</h4><p>당신의 일주 천간은 <b>${S.STK[me]}(${S.ST[me]}) · ${S.EK[S.SE[me]]}</b>이에요. 사주에서 '나 자신'을 뜻해요.</p>
       <h4>③ 두 글자의 관계 = 십성</h4><p>오늘 천간 ${S.ST[f.gz.s]}(${S.EK[S.SE[f.gz.s]]})은 나에게 <b>${REL[f.ts.g]}</b>이고 음양이 ${me % 2 === f.gz.s % 2 ? '같아' : '달라'} <b>${f.ts.n}</b>이 돼요. 그래서 오늘의 키워드가 '${f.key}'예요.<br>
-        오늘 지지 ${S.BR[f.gz.b]} 속 본기 ${S.ST[S.HID[f.gz.b]]}는 <b>${f.tb.n}</b>으로 분야 점수에 조금 더 반영했어요.</p>
+        오늘 지지 ${S.BR[f.gz.b]} 속 본기 ${S.STK[S.HID[f.gz.b]]}(${S.ST[S.HID[f.gz.b]]})${(S.STK[S.HID[f.gz.b]].charCodeAt(0) - 0xAC00) % 28 ? '은' : '는'} <b>${f.tb.n}</b>으로 분야 점수에 조금 더 반영했어요.</p>
       ${f.rel ? `<h4>④ 지지의 합·충</h4><p>내 ${f.rel.who}와 오늘 지지 ${S.BR[f.gz.b]}가 <b>${f.rel.n}</b> 관계라 점수에 ${f.rel.v > 0 ? '+' : ''}${f.rel.v}점을 반영했어요.</p>` : ''}
       ${f.helps ? `<h4>⑤ 부족한 기운 보완</h4><p>오늘 일진에 내게 부족한 ${S.EK[a.weak]} 기운이 들어 있어 +5점을 더했어요.</p>` : ''}
       <h4>시간대별 흐름</h4><p>오전 巳시·오후 未시·저녁 酉시의 천간을 '일상기시법'(일간에 따라 子시 천간이 정해지는 규칙)으로 구해 같은 방식으로 풀었어요.</p>

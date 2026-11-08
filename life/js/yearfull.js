@@ -236,7 +236,7 @@ const YearFull = (() => {
         <div class="yf-vsr"><span>분야별</span><em>총운 한 줄</em><em>6개 분야 점수·풀이<br><small>${AREAS[top][0]} ${AREAS[top][1]} <b>${B.area[top]}점</b> · 나머지 5개 ${lock}</small></em></div>
         <div class="yf-vsr"><span>달마다</span><em>점수·한마디</em><em>좋은 날까지<br><small>${m0.solarM}월 좋은 날 <b>${gd.map(d => `${m0.solarM}/${d}`).join(' · ')}</b> · 11달 더 ${lock}</small></em></div>
         <div class="yf-vsr"><span>대운</span><em>—</em><em>10년 대운 8구간<br><small>지금 <b>${luck ? luck.name : ''}</b>${next ? ` → ${next.age}살부터 ${lock}` : ''}</small></em></div>
-        <div class="yf-vsr"><span>궁합</span><em>지수만</em><em>${ppl.length ? `${ppl.slice(0, 2).map(q => esc(q.name)).join('·')}${ppl.length > 2 ? ` 외 ${ppl.length - 2}명` : ''}과 2027 흐름 ${lock}` : '관계도 상대별 2027 흐름'}</em></div>
+        <div class="yf-vsr"><span>궁합</span><em>지수만</em><em>${ppl.length ? `${ppl.length > 2 ? `${ppl.slice(0, 2).map(q => esc(q.name)).join('·')} 외 ${ppl.length - 2}명과` : jo(ppl.slice(0, 2).map(q => esc(q.name)).join('·'), '과', '와')} 2027 흐름 ${lock}` : '관계도 상대별 2027 흐름'}</em></div>
         <div class="yf-vsr"><span>토정비결</span><em>총평 한 줄</em><em>상·중·하괘 · 월별 신수 ${lock}</em></div>
         <div class="yf-vsr"><span>실행</span><em>—</em><em>MBTI 전략 · 분기 전략 · 개운 · 주의점 ${lock}</em></div></div>`;
     }

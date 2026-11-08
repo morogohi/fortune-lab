@@ -799,9 +799,11 @@
   @keyframes riffleR{0%,100%{transform:translate(0,calc(var(--k) * -1.2px)) rotate(0)}30%{transform:translate(62px,-6px) rotate(14deg)}55%{transform:translate(30px,10px) rotate(4deg)}75%{transform:translate(0,calc(var(--k) * -1.2px)) rotate(0)}}
   .tfan{position:relative;height:215px;margin:6px 0 4px;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
   .tfan .fc{pointer-events:none}
-  .tfan .fc{position:absolute;left:50%;bottom:52px;width:60px;aspect-ratio:3/5;margin-left:-30px;padding:0;background:none;border-radius:7px;overflow:visible;
-    transform-origin:50% 230%;transform:rotate(0) translateY(0);transition:transform .55s cubic-bezier(.2,.8,.2,1) calc(var(--i) * 18ms),filter .2s}
+  /* 버튼 상자 = 카드에서 겹치지 않고 보이는 왼쪽 띠 (보조기기·자동 클릭이 가운데를 눌러도 같은 카드가 골라지게). 그림은 .fcv가 60px로 그림 */
+  .tfan .fc{position:absolute;left:50%;bottom:52px;width:14px;height:100px;margin-left:-30px;padding:0;background:none;border:0;border-radius:7px 0 0 7px;overflow:visible;
+    transform-origin:30px 230px;transform:rotate(0) translateY(0);transition:transform .55s cubic-bezier(.2,.8,.2,1) calc(var(--i) * 18ms),filter .2s}
   .tfan.still .fc{transition:transform .2s}
+  .tfan .fcv{position:absolute;left:0;top:0;width:60px;height:100px;display:block}
   .tfan .fc svg{width:100%;height:100%;display:block;border-radius:7px;box-shadow:0 2px 6px #0004}
   .tfan.open .fc{transform:rotate(var(--a)) translateY(0)}
   .tfan.open .fc.on{transform:rotate(var(--a)) translateY(-26px);filter:drop-shadow(0 0 6px var(--accent))}
