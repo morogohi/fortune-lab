@@ -67,8 +67,13 @@ const Hub = (() => {
     const el = $('#toast'); el.textContent = t; el.classList.add('on');
     clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('on'), 2400);
   }
-  function go(t) {
+  function go(t, fromPop) {
     Snd.sfx('tap');
+    if (!fromPop) {
+      const st = history.state || {};
+      if (t === 'home') { if (st.t) { ignorePop = true; history.back(); } }
+      else if (st.t) history.replaceState({ t }, ''); else history.pushState({ t }, '');
+    }
     if (t === 'game') { tab = 'game'; show('title'); renderTitle && renderTitle(); syncTabs(); return; }
     tab = t; editing = false; show('hub'); render();
   }
@@ -82,6 +87,119 @@ const Hub = (() => {
   const bar = (v, c) => `<i class="hbar"><i style="width:${v}%;background:${c}"></i></i>`;
   const gColor = v => v >= 85 ? 'var(--money)' : v >= 72 ? 'var(--smart)' : v >= 58 ? 'var(--hap)' : 'var(--hp)';
 
+
+
+  /* ---------- 화면 이동: 상단 뒤로가기 바 + 브라우저·안드로이드 뒤로가기 ---------- */
+  const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', input: '내 정보 입력' };
+  let ignorePop = false;
+  const navHTML = t => `<div class="hnav"><button class="hnback" id="hnBack" aria-label="뒤로">‹</button><b>${TITLES[t] || ''}</b></div>`;
+  function back() { if (history.state && history.state.t) history.back(); else go('home'); }
+  function hookHistory() {
+    const oo = window.openOverlay, co = window.closeOverlay;
+    window.openOverlay = function () { oo.apply(this, arguments); if (!(history.state && history.state.ov)) history.pushState(Object.assign({}, history.state, { ov: 1 }), ''); };
+    window.closeOverlay = function (fromPop) {
+      co();
+      if (fromPop === true) return;
+      setTimeout(() => { if (!$('#overlay').classList.contains('on') && history.state && history.state.ov) { ignorePop = true; history.back(); } }, 0);
+    };
+    addEventListener('popstate', e => {
+      if (ignorePop) { ignorePop = false; return; }
+      if ($('#overlay').classList.contains('on')) { closeOverlay(true); return; }
+      const inLife = ['game', 'mini', 'setup'].some(id => { const el = document.getElementById(id); return el && el.classList.contains('on'); });
+      if (inLife) { history.pushState({ t: 'game' }, ''); toast('게임 화면에서는 메뉴(💾)로 저장하고 나갈 수 있어요'); return; }
+      go((e.state && e.state.t) || 'home', true);
+    });
+  }
+
+  /* ---------- 내 정보 입력 기록 (기기에만 저장, 최대 10명) ---------- */
+  const PKEY = 'p8b_profiles';
+  const pid = p => [p.name, p.date, p.cal, p.time, p.sex].join('|');
+  const profiles = () => store.get(PKEY, []);
+  function rememberProfile(p) {
+    const list = profiles().filter(x => pid(x) !== pid(p));
+    list.unshift({ name: p.name, date: p.date, cal: p.cal, time: p.time || '', sex: p.sex, at: Date.now() });
+    store.set(PKEY, list.slice(0, 10));
+  }
+  const pLine = p => `${p.date.replace(/-/g, '.')} ${p.cal === 'll' ? '음력 윤달' : p.cal === 'l' ? '음력' : '양력'} · ${p.time ? SIJIN.find(x => x[0] === p.time)[1].split(' ')[0] : '시간 모름'} · ${p.sex === 'f' ? '여' : '남'}`;
+  function openProfiles() {
+    const me = getMe(), list = profiles();
+    if (me && !list.some(x => pid(x) === pid(me))) { rememberProfile(me); return openProfiles(); }
+    const rows = list.map((x, i) => `<div class="prow${me && pid(x) === pid(me) ? ' on' : ''}"><button data-pick="${i}"><b>${esc(x.name)}</b><small>${pLine(x)}</small></button>${me && pid(x) === pid(me) ? '<em>지금 보는 중</em>' : `<button class="pdel" data-pdel="${i}" aria-label="삭제">✕</button>`}</div>`).join('');
+    openOverlay('🙂 내 정보 · 입력 기록', `<p class="sjnote">입력했던 정보는 이 기기에만 기록돼요 (최대 10명). 고르면 모든 운세가 그 정보로 바뀌어요.</p>
+      <div class="plist">${rows || '<p class="sjnote">아직 기록이 없어요.</p>'}</div>`,
+      [{ t: '✏️ 지금 정보 수정', f: editProfile }, { t: '➕ 새로운 사람 입력', pri: 1, f: () => { pending = 'today'; store.set('p8b_me', null); tab = 'input'; editing = false; show('hub'); render(); } }, { t: '닫기' }]);
+    document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const x = profiles()[+b.dataset.pick]; store.set('p8b_me', { name: x.name, date: x.date, cal: x.cal, time: x.time, sex: x.sex }); rememberProfile(x); closeOverlay(); scheduleNoti(); toast(`${x.name}님 정보로 바꿨어요`); render(); });
+    document.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => { const l = profiles(); l.splice(+b.dataset.pdel, 1); store.set(PKEY, l); closeOverlay(true); openProfiles(); });
+  }
+
+  /* ---------- ⚙️ 설정 · 👤 로그인 ---------- */
+  function openSettings() {
+    const me = getMe(), u = Auth.user();
+    openOverlay('⚙️ 설정', `<div class="sets">
+      <div class="setrow"><span>👤 계정</span><div>${u ? `<b>${esc(Auth.name())}</b> <small>${Auth.provider() === 'kakao' ? '카카오' : Auth.provider() === 'google' ? '구글' : ''} 로그인</small>` : '<small>로그인하지 않음</small>'}</div><button id="sAcc">${u ? '관리' : '로그인'}</button></div>
+      <div class="setrow"><span>🙂 내 정보</span><div>${me ? `<b>${esc(me.name)}</b> <small>${pLine(me)}</small>` : '<small>입력 전</small>'}</div><button id="sMe">${me ? '바꾸기' : '입력'}</button></div>
+      <div class="setrow col"><span>🎨 화면</span><div class="modeseg">${[['light', '라이트'], ['dark', '다크'], ['system', '휴대폰 설정']].map(([m, n]) => `<button data-smode="${m}" class="${Theme.mode() === m ? 'on' : ''}">${n}</button>`).join('')}</div></div>
+      <div class="setrow"><span>🎵 배경음악</span><div></div><button class="tgl${Snd.on.bgm ? ' on' : ''}" id="sBgm" aria-label="배경음악"><i></i></button></div>
+      <div class="setrow"><span>🔊 효과음</span><div></div><button class="tgl${Snd.on.sfx ? ' on' : ''}" id="sSfx" aria-label="효과음"><i></i></button></div>
+      <div class="setrow"><span>🔔 알림 · 상점</span><div><small>매일 운세 알림, 복주머니, 상점</small></div><button id="sMore">더보기</button></div>
+      <div class="setrow"><span>🔒 개인정보</span><div><small>정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
+    </div>`, [{ t: '닫기' }]);
+    $('#sAcc').onclick = () => { closeOverlay(true); u ? openAccount() : openLogin(); };
+    $('#sMe').onclick = () => { closeOverlay(true); me ? openProfiles() : openItem('today'); };
+    document.querySelectorAll('[data-smode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.smode); document.querySelectorAll('[data-smode]').forEach(x => x.classList.toggle('on', x === b)); render(); });
+    $('#sBgm').onclick = e => { Snd.toggle('bgm'); e.currentTarget.classList.toggle('on', Snd.on.bgm); };
+    $('#sSfx').onclick = e => { Snd.toggle('sfx'); e.currentTarget.classList.toggle('on', Snd.on.sfx); Snd.sfx('tap'); };
+    $('#sMore').onclick = () => { closeOverlay(); go('more'); };
+    $('#sPriv').onclick = () => { closeOverlay(true); openPrivacy(); };
+  }
+  function openWipe() {
+    const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day', 'p8b_auth']);   // 구매·패스·광고 제한은 유지
+    const wipe = all => {
+      const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i));
+      ks.filter(k => all ? (k.startsWith('p8b_') && !KEEP.has(k)) : ['p8b_me', 'p8b_people', 'p8b_mbti', 'p8b_profiles'].includes(k)).forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+      const ln = LN(); if (ln) ln.getPending().then(r => r.notifications.length && ln.cancel({ notifications: r.notifications.map(n => ({ id: n.id })) })).catch(() => {});
+      location.reload();
+    };
+    openOverlay('🗑️ 내 정보·기록 지우기', `<div class="sjtxt"><p>이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요.</p>
+      <h4>① 내 사주·궁합 정보만</h4><p>내 이름(별명)·생년월일·시간·성별, 최근 입력 기록(${profiles().length}명), 궁합 관계도(${people().length}명), 사주 MBTI 결과</p>
+      <h4>② 게임 기록까지 모두</h4><p>①에 더해 저장 슬롯·지난 생애·카르마·출석/복주머니·테마·알림 설정·소리 설정</p>
+      <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
+      { t: '내 사주·궁합 정보만 지우기', f: () => wipe(false) },
+      { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
+  }
+  function openPrivacy() {
+    openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대는 <b>이 기기 안에만</b> 저장돼요. 로그인해도 서버로 보내지 않아요.</p>
+      <p>로그인하면 서버에는 계정 정보(로그인 공급자·닉네임)와 게임 기록 요약(카르마·살아 본 인생 수)만 저장돼요.</p></div>`,
+      [{ t: '🗑️ 내 정보·기록 지우기', f: openWipe }, { t: '📄 개인정보 처리방침', f: () => { location.href = 'privacy.html'; } }, { t: '닫기' }]);
+  }
+  const KAKAO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>';
+  const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+  function openLogin() {
+    const ok = Auth.ready(), nat = Auth.native();
+    openOverlay('👤 로그인', `<p class="sjnote" style="text-align:center">로그인하면 인생 게임의 카르마 기록이 계정에 저장돼<br>다른 기기에서도 이어서 할 수 있어요.</p>
+      <button class="sso kakao" id="lgKakao" ${ok && !nat ? '' : 'disabled'}>${KAKAO_SVG}<span>카카오 로그인</span></button>
+      <button class="sso google" id="lgGoogle" ${ok && !nat ? '' : 'disabled'}>${GOOGLE_SVG}<span>Google 계정으로 로그인</span></button>
+      ${!ok ? '<p class="sjnote" style="text-align:center">로그인 서버 연결을 준비하고 있어요. 곧 열려요!</p>' : nat ? '<p class="sjnote" style="text-align:center">앱 로그인은 다음 업데이트에서 지원해요. 지금은 웹에서 로그인할 수 있어요.</p>' : ''}
+      <p class="sjnote" style="text-align:center">생년월일 등 개인정보는 서버로 보내지 않고 이 기기에만 저장돼요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
+    const run = async p => { toast('로그인 화면으로 이동해요…'); const r = await Auth.login(p); if (r.error) toast(r.error === 'not-configured' ? '로그인 서버 준비 중이에요' : '로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요'); };
+    $('#lgKakao').onclick = () => run('kakao'); $('#lgGoogle').onclick = () => run('google');
+  }
+  function openAccount() {
+    const t = store.get('p8b_synced', 0);
+    openOverlay('👤 내 계정', `<div class="sets"><div class="setrow"><span>${Auth.provider() === 'kakao' ? '💬 카카오' : '🔵 구글'}</span><div><b>${esc(Auth.name())}</b></div></div>
+      <div class="setrow"><span>☁️ 동기화</span><div><small>카르마 ${karma} · ${t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 저장' : '아직 저장 전'}</small></div><button id="acSync">지금 저장</button></div></div>
+      <p class="sjnote">서버에는 계정 정보와 게임 기록 요약만 있어요. 생년월일 등은 이 기기에만 있어요.</p>`,
+      [{ t: '로그아웃', f: async () => { await Auth.logout(); toast('로그아웃했어요'); } },
+       { t: '회원 탈퇴', f: () => openOverlay('회원 탈퇴', '<p class="sjtxt">서버에 저장된 계정과 게임 기록이 모두 삭제돼요. 이 기기의 정보는 그대로 남아요.</p>',
+           [{ t: '탈퇴하기', pri: 1, f: async () => toast(await Auth.deleteAccount() ? '탈퇴가 완료됐어요' : '탈퇴하지 못했어요. 문의: morogohi@gmail.com') }, { t: '취소' }]) },
+       { t: '닫기' }]);
+    $('#acSync').onclick = async () => { await Auth.sync(); toast('저장했어요'); closeOverlay(true); openAccount(); };
+  }
+  function topbarUI() {
+    const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
+    if (u) { const av = Auth.avatar(); b.classList.add('av'); b.innerHTML = av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1)); b.title = Auth.name(); }
+    else { b.classList.remove('av'); b.textContent = '👤'; b.title = '로그인'; }
+  }
 
   /* ---------- 홈: 서비스 목록 → 항목 선택 → (정보 없으면) 단계별 입력 → 결과 ---------- */
   let pending = null;          // 정보 입력 후 이어서 열 항목
@@ -113,9 +231,9 @@ const Hub = (() => {
     return `<div class="hhome">
       <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1></div>
       ${p && a
-        ? `<button class="hme" id="hmMe"><span>🙂</span><div><b>${esc(p.name)}님</b><small>${p.date.replace(/-/g, '.')} ${p.cal === 'll' ? '음력 윤달' : p.cal === 'l' ? '음력' : '양력'} · ${p.time ? SIJIN.find(x => x[0] === p.time)[1].split(' ')[0] : '시간 모름'} · ${p.sex === 'f' ? '여' : '남'}</small></div><em>수정</em></button>`
-        : `<div class="hme empty"><span>👋</span><div><b>보고 싶은 항목을 골라 주세요</b><small>필요할 때만 생년월일을 여쭤봐요 · 가입 없음</small></div></div>`}
-      <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span></div><i>☀️</i></button>
+        ? `<button class="hme" id="hmMe"><span>🙂</span><div><b>${esc(p.name)}님</b><small>${pLine(p)}</small></div><em>›</em></button>`
+        : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>›</em></button>`}
+      <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>☀️</i></button>
       ${sec('사주 · 운세', 'saju')}${tj}
       ${sec('궁합 · 관계', 'rel')}
       ${sec('인생 게임', 'game')}
@@ -125,7 +243,7 @@ const Hub = (() => {
   }
   function bindHome() {
     document.querySelectorAll('[data-item]').forEach(b => b.onclick = () => openItem(b.dataset.item));
-    const me = $('#hmMe'); if (me) me.onclick = editProfile;
+    const me = $('#hmMe'); if (me) me.onclick = openProfiles;
   }
 
   /* ---------- 사주 정보 입력 (단계형) ---------- */
@@ -133,11 +251,11 @@ const Hub = (() => {
     p = p || {};
     const it = !p.date && pending ? ITEMS.find(x => x.k === pending) : null;
     const sij = SIJIN.map(([v, l]) => `<option value="${v}"${p.time === v ? ' selected' : ''}>${l}</option>`).join('');
-    return `<button class="hback" id="hBack">‹ 처음 화면</button>
-      ${it ? `<div class="hsteps"><span class="on">① 내 정보 입력</span><span>② ${it.e} ${itemName(it)}</span></div>` : ''}
+    return `      ${it ? `<div class="hsteps"><span class="on">① 내 정보 입력</span><span>② ${it.e} ${itemName(it)}</span></div>` : ''}
       <div class="hcard"><h3 class="ht">${p.date ? '✏️ 내 사주 정보 수정' : it ? `${it.e} ${itemName(it)} · 내 정보 입력` : '🔮 나의 사주 정보'}</h3>
       <p class="hsub">${p.date ? '바꾼 정보는 모든 항목에 바로 반영돼요.' : '생년월일만 있으면 돼요. 한 번 입력하면 다른 항목에서도 다시 묻지 않아요.'}<br><small>가입 없음 · 입력한 정보는 이 기기 안에만 저장돼요.</small></p>
       <div class="form hform">
+        ${!p.date && profiles().length ? `<div class="phist"><small>최근 입력에서 고르기</small><div>${profiles().slice(0, 5).map((x, i) => `<button data-ph="${i}">${esc(x.name)} <small>${x.date.slice(2).replace(/-/g, '.')}</small></button>`).join('')}</div></div>` : ''}
         <label>이름(별명)<input type="text" id="hName" maxlength="10" value="${esc(p.name || '')}" placeholder="예: 김민준"></label>
         <label>생년월일<div class="row2"><input type="date" id="hDate" min="1900-01-01" max="${todayStr()}" value="${p.date || ''}">
           <select id="hCal"><option value="s">양력</option><option value="l"${p.cal === 'l' ? ' selected' : ''}>음력</option><option value="ll"${p.cal === 'll' ? ' selected' : ''}>음력(윤달)</option></select></div></label>
@@ -150,6 +268,10 @@ const Hub = (() => {
   }
   function bindForm() {
     document.querySelectorAll('#hSex button').forEach(b => b.onclick = () => { document.querySelectorAll('#hSex button').forEach(x => x.classList.toggle('on', x === b)); Snd.sfx('tap'); });
+    document.querySelectorAll('[data-ph]').forEach(b => b.onclick = () => {
+      const x = profiles()[+b.dataset.ph]; $('#hName').value = x.name; $('#hDate').value = x.date; $('#hCal').value = x.cal; $('#hTime').value = x.time || '';
+      document.querySelectorAll('#hSex button').forEach(y => y.classList.toggle('on', y.dataset.v === x.sex)); Snd.sfx('tap');
+    });
     $('#hSave').onclick = () => {
       const date = $('#hDate').value;
       if (!date) { $('#hErr').textContent = '생년월일을 입력해 주세요.'; return; }
@@ -157,11 +279,11 @@ const Hub = (() => {
       const old = getMe() || {};
       const p = { ...old, name: $('#hName').value.trim() || '나', date, cal: $('#hCal').value, time: $('#hTime').value, sex: document.querySelector('#hSex .on').dataset.v };
       if (!analyzeP(p)) { $('#hErr').textContent = '날짜를 확인해 주세요. (존재하지 않는 음력 날짜일 수 있어요)'; return; }
-      store.set('p8b_me', p); editing = false; Snd.sfx('reveal'); scheduleNoti();
+      store.set('p8b_me', p); rememberProfile(p); editing = false; Snd.sfx('reveal'); scheduleNoti();
       if (pending) { const k = pending; pending = null; tab = 'home'; render(); openItem(k); } else { if (tab === 'input') tab = 'home'; render(); }
     };
     const c = $('#hCancel'); if (c) c.onclick = () => { editing = false; if (tab === 'input') tab = 'home'; render(); };
-    $('#hBack').onclick = () => { editing = false; pending = null; tab = 'home'; render(); };
+
   }
   function editProfile() { if (tab === 'more' || tab === 'game') tab = 'home'; editing = true; show('hub'); render(); }
 
@@ -413,21 +535,7 @@ const Hub = (() => {
     const mb = $('#mBaram'); if (mb) mb.onclick = () => { location.href = '../baram/'; };
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
     document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.mode); Snd.sfx('tap'); render(); });
-    $('#mWipe').onclick = () => {
-      const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day']);   // 구매·패스·광고 제한은 유지
-      const wipe = all => {
-        const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i));
-        ks.filter(k => all ? (k.startsWith('p8b_') && !KEEP.has(k)) : ['p8b_me', 'p8b_people', 'p8b_mbti'].includes(k)).forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
-        const ln = LN(); if (ln) ln.getPending().then(r => r.notifications.length && ln.cancel({ notifications: r.notifications.map(n => ({ id: n.id })) })).catch(() => {});
-        location.reload();
-      };
-      openOverlay('🗑️ 내 정보·기록 지우기', `<div class="sjtxt"><p>이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요.</p>
-        <h4>① 내 사주·궁합 정보만</h4><p>내 이름(별명)·생년월일·시간·성별, 궁합 관계도(${people().length}명), 사주 MBTI 결과</p>
-        <h4>② 게임 기록까지 모두</h4><p>①에 더해 저장 슬롯·지난 생애·카르마·출석/복주머니·테마·알림 설정·소리 설정</p>
-        <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
-        { t: '내 사주·궁합 정보만 지우기', f: () => wipe(false) },
-        { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
-    };
+    $('#mWipe').onclick = openWipe;
     let qa = 0; const nt0 = document.querySelector('.hlinks .sjnote'); if (nt0) nt0.onclick = () => { if (++qa >= 5) { store.set('p8b_qa', !store.get('p8b_qa', false)); toast(store.get('p8b_qa', false) ? '🧪 테스트 도구 켜짐 (게임 화면의 QA 버튼)' : '테스트 도구 꺼짐'); qa = 0; } };
     const save = async () => {
       const nt = { on: $('#nOn').checked, t: $('#nT').value };
@@ -464,23 +572,30 @@ const Hub = (() => {
   function render() {
     const body = $('#hubBody'), p = getMe(), a = analyzeP(p);
     if (tab === 'home' && !editing) { body.innerHTML = homeHTML(p, a); bindHome(); body.scrollTop = 0; syncTabs(); return; }
-    if ((!a || editing || tab === 'input') && tab !== 'more') { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = formHTML(editing ? p : null); bindForm(); syncTabs(); body.scrollTop = 0; return; }
+    if ((!a || editing || tab === 'input') && tab !== 'more') { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = navHTML(editing ? 'input' : (tab === 'input' ? 'input' : tab)) + formHTML(editing ? p : null); bindForm(); bindNav(); syncTabs(); body.scrollTop = 0; return; }
     if (tab === 'today') { attend(); body.innerHTML = todayHTML(p, a); bindToday(p, a); }
     else if (tab === 'saju') { body.innerHTML = sajuHTML(p, a); bindSaju(p, a); }
     else if (tab === 'compat') { body.innerHTML = compatTabHTML(p, a); bindCompat(p, a); }
     else if (tab === 'more') { body.innerHTML = moreHTML(); bindMore(); }
+    body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav();
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
   }
 
+  function bindNav() { const b = $('#hnBack'); if (b) b.onclick = () => { editing = false; pending = null; back(); }; }
   function init() {
     // 기존 화면 전환에 하단 탭 표시와 미션 체크를 연결
     const base = show;
-    show = function (id) { base(id); if (id === 'end') mission('game'); syncTabs(); };
+    show = function (id) { base(id); if (id === 'end') { mission('game'); Auth.sync(); } syncTabs(); };
     document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => go(b.dataset.t));
     const th = store.get('p8b_theme', null); if (th != null) setTheme(th);
     window.addEventListener('themechange', () => { const t = store.get('p8b_theme', null); if (t != null) setTheme(t); });
     Store.onChange(() => { if ($('#hub').classList.contains('on')) render(); });
+    hookHistory();
+    $('#setBtn').onclick = () => { Snd.sfx('tap'); openSettings(); };
+    $('#loginBtn').onclick = () => { Snd.sfx('tap'); Auth.user() ? openAccount() : openLogin(); };
+    let wasIn = !!Auth.user();
+    Auth.on(u => { topbarUI(); if (u && !wasIn) { if ($('#lgKakao')) closeOverlay(); toast(`👋 ${Auth.name()}님, 로그인했어요`); } wasIn = !!u; }); topbarUI();
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }

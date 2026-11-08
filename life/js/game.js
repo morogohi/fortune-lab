@@ -704,8 +704,8 @@ $('#rerollBtn').onclick=()=>{if(karma<15)return;karma-=15;saveMeta();startRoll()
 $('#ageBtn').onclick=ageUp;
 $('#sajuBtn').onclick=()=>{if(!modalQ.length){Snd.sfx('page');showSaju()}};
 $('#bucketBtn').onclick=()=>{if(!modalQ.length){Snd.sfx('tap');showBucket()}};
-const sndUI=()=>{$('#bgmBtn').classList.toggle('off',!Snd.on.bgm);$('#sfxBtn').classList.toggle('off',!Snd.on.sfx);$('#sfxBtn').textContent=Snd.on.sfx?'🔊':'🔇'};
-$('#bgmBtn').onclick=()=>{Snd.toggle('bgm');sndUI()};$('#sfxBtn').onclick=()=>{Snd.toggle('sfx');sndUI();Snd.sfx('tap')};
+const sndUI=()=>{};   // 소리 켜기/끄기는 ⚙️ 설정으로 이동
+
 sndUI();initSetup();Snd.mood('title');
 renderTitle();
 /* ===== 광고 UI ===== */
