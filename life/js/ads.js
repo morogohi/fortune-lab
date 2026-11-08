@@ -149,6 +149,10 @@ window.Ads = (() => {
 })();
 
 /* 앱 기능: 진동·공유·시작 화면·상태바 */
+/* 공유 문구에 서비스 주소를 붙여, 받은 사람이 바로 들어올 수 있게 */
+const SHARE_URL = 'https://morogohi.github.io/fortune-lab/life/';
+function withLink(t) { t = String(t || ''); return t.includes('morogohi.github.io') ? t : `${t}\n\n🔮 운명 연구소에서 나도 보기 👉 ${SHARE_URL}`; }
+
 window.Native = (() => {
   const C = window.Capacitor, native = !!(C && C.isNativePlatform && C.isNativePlatform());
   return {
@@ -159,12 +163,14 @@ window.Native = (() => {
       } else { try { navigator.vibrate && navigator.vibrate(ms) } catch (e) {} }
     },
     async share(text) {
+      text = withLink(text);
       if (native && C.Plugins.Share) { await C.Plugins.Share.share({ title: '프로젝트 80억', text }); return 'shared'; }
       if (navigator.share) { await navigator.share({ text }); return 'shared'; }
       await navigator.clipboard.writeText(text); return 'copied';
     },
     /* 인생 카드 이미지 저장·공유: 앱은 공유 시트, 웹은 공유(지원 시) 또는 다운로드 */
     async shareImage(dataUrl, text, mode) {
+      text = withLink(text);
       const b64 = dataUrl.split(',')[1];
       if (native && C.Plugins.Filesystem && C.Plugins.Share) {
         const w = await C.Plugins.Filesystem.writeFile({ path: 'life-card.png', data: b64, directory: 'CACHE' });

@@ -28,11 +28,22 @@ const Counsel = (() => {
     { k: 'love', e: '💞', n: '연애 · 결혼', ex: ['올해 결혼한다', '조금 더 기다린다'] },
     { k: 'money', e: '💰', n: '돈 · 투자', ex: ['집을 산다', '전세로 더 모은다'] },
     { k: 'move', e: '🧳', n: '이사 · 해외', ex: ['해외로 나간다', '한국에 남는다'] },
+    { k: 'hobby', e: '🎨', n: '취미 · 배움', ex: ['그림을 배운다', '피아노를 배운다'] },
   ];
+  // 주제별 실행 조언 (질문과 맞는 조언만)
+  const TIPS = {
+    career: ['🤝 옮기기 전에 지금 자리에서 바꿀 수 있는 것(역할·연봉·근무 방식)을 먼저 요청해 보세요. 답을 듣고 결정해도 늦지 않아요.', '📋 새 자리의 ‘3년 뒤 내 모습’을 그 회사 사람에게 직접 물어보고, 지금 자리와 나란히 적어 비교해요.'],
+    biz: ['🧪 바로 뛰어들기보다 3개월짜리 작은 실험(부업·시제품·주말 운영)으로 수요를 먼저 확인해요.', '💰 수입이 없어도 버틸 생활비 6개월치를 먼저 확보하고 시작 날짜를 정해요.'],
+    study: ['📝 합격·수료까지 드는 비용(돈·시간)과 끝난 뒤 얻을 기회를 표로 나란히 적어 보세요.', '⏱️ 2주 동안 매일 같은 시간에 공부해 보고, 그 리듬이 지속 가능한지 먼저 확인해요.'],
+    love: ['💬 상대와 “5년 뒤 우리 모습”을 각자 써서 바꿔 읽어 보세요. 차이가 곧 미리 풀어야 할 숙제예요.', '🧭 다툼이 생겼을 때 서로 푸는 방식이 맞는지 한 번 이야기해 보세요. 결정보다 오래가는 기준이 돼요.'],
+    money: ['🧮 최악의 경우(금리 +2%, 수입 −20%)에도 버틸 수 있는지 계산한 뒤 결정해요.', '🪜 한 번에 다 하지 말고 나눠서 실행(분할 매수·단계적 이전)할 수 있는지 먼저 찾아보세요.'],
+    move: ['🧳 떠나기 전에 그곳에서 2주 이상 살아 보거나, 먼저 다녀온 사람 3명에게 물어보세요.', '🏠 주거·일·언어 중 가장 걱정되는 한 가지를 먼저 해결할 계획을 세워요.'],
+    hobby: ['🎟️ 두 가지 모두 원데이 클래스나 한 달 체험 수업으로 먼저 해 보세요. 해 보고 더 기다려지는 쪽이 답이에요.', '🗓️ 일주일에 쓸 수 있는 시간과 비용(수강료·재료비·악기)을 나란히 적어 보고, 3개월 이상 이어 갈 수 있는 쪽을 골라요.'],
+  };
   // 사주 5대 운 그룹: 0 독립·경쟁 · 1 재능·표현 · 2 재물 · 3 승진·명예(직장) · 4 학업·귀인 / 5 관계 · 6 이동
   const KW = [
     ['창업', '독립', '사업', '프리랜서', '자영업', '개업', '퇴사', '내 가게', '도전', '스타트업', '경쟁'],
-    ['예술', '유튜브', '크리에이터', '디자인', '작가', '음악', '표현', '콘텐츠', '방송', '취미', '글'],
+    ['예술', '유튜브', '크리에이터', '디자인', '작가', '음악', '표현', '콘텐츠', '방송', '취미', '글', '그림', '피아노', '악기', '노래', '춤', '사진', '요리', '운동'],
     ['투자', '부동산', '주식', '집을 산', '매수', '코인', '재테크', '연봉', '돈', '모은다', '저축'],
     ['회사', '직장', '승진', '공무원', '대기업', '정규직', '남는다', '취업', '안정', '이직', '다닌다'],
     ['공부', '대학원', '유학', '시험', '자격증', '학위', '박사', '석사', '배운다', '진학', '재수'],
@@ -41,6 +52,7 @@ const Counsel = (() => {
   ];
   const GN = ['독립·경쟁', '재능·표현', '재물', '직장·명예', '학업·귀인', '관계·가정', '이동·변화'];
   const POL_OF = ['money', 'art', 'money', 'balance', 'study', 'family', 'balance'];
+  const TIE = 5;   // 이 점수 차 이하는 '우열 없음'
   function groupOf(t) {
     let best = -1, bs = 0;
     KW.forEach((ws, g) => { const s = ws.filter(w => t.includes(w)).length; if (s > bs) { bs = s; best = g; } });
@@ -54,7 +66,10 @@ const Counsel = (() => {
     const luck = Saju.luckAt(a, age), nextD = a.dy.find(d => d.age > age);
     const ny = Fortune.newYear(a, Y), ny2 = Fortune.newYear(a, Y + 1);
     const test = store.get('p8b_mbti_test', null), sm = Fun.mbti(a);
-    const mbti = test ? { type: test.type, src: 'MBTI 성향 검사 결과' } : { type: sm.type, src: '사주로 본 MBTI (검사를 하면 더 정확해요)' };
+    const set = MbtiTest.settled(test);
+    const mbti = set ? { type: set, src: 'MBTI 성향 검사 결과', sure: true }
+      : test ? { type: sm.type, src: '성향 검사 결과가 뚜렷하지 않아(반반인 축이 있음) 사주로 본 MBTI를 참고했어요', sure: false }
+      : { type: sm.type, src: '사주로 본 MBTI (성향 검사를 하면 더 정확해요)', sure: false };
     const hist = store.get('p8b_hist', []);
     const GV = { S: 5, A: 4, B: 3, C: 2, D: 1 };
     const game = hist.length ? { n: hist.length, avg: (hist.reduce((s, h) => s + (GV[h.grade] || 2), 0) / hist.length), best: hist.reduce((m, h) => (GV[h.grade] || 0) > (GV[m.grade] || 0) ? h : m, hist[0]) } : null;
@@ -156,7 +171,8 @@ const Counsel = (() => {
       stepT('내 생년월일로 태어난 가상 인물이 선택지마다 살아 보는 중…');
       const birth = { cal: p.cal || 's', y: +p.date.slice(0, 4), m: +p.date.slice(5, 7), d: +p.date.slice(8, 10), hh: p.time ? +p.time.split(':')[0] : 12, mm: p.time ? +p.time.split(':')[1] : 0, unk: !p.time };
       let sims = null;
-      if (typeof Fork !== 'undefined' && !Fork.busy && !(P && P.alive && $('#game').classList.contains('on'))) {
+      const sameField = groups.every(g => g === groups[0]);
+      if (!sameField && typeof Fork !== 'undefined' && !Fork.busy && !(P && P.alive && $('#game').classList.contains('on'))) {
         try {
           const raw = await Fork.simulateVirtual({ birth, male: p.sex !== 'f', age: Math.max(1, c.age), q: st.q },
             opts.slice(0, 3).map((t, i) => ({ t, pol: POL_OF[groups[i]] || 'balance', fx: FX[groups[i]] })),
@@ -168,7 +184,7 @@ const Counsel = (() => {
       const res = compose(c, opts, groups, fits, sims);
       if (!useCredit()) { st.busy = false; closeOverlay(); return; }
       st.res = res; st.busy = false;
-      const h = store.get(HIST, []); h.unshift({ t: Date.now(), e: (TOPICS.find(t => t.k === st.topic) || {}).e || '🤖', q: st.q, opts, pick: opts[res.best], html: res.html }); store.set(HIST, h.slice(0, 10));
+      const h = store.get(HIST, []); h.unshift({ t: Date.now(), e: (TOPICS.find(t => t.k === st.topic) || {}).e || '🤖', q: st.q, opts, pick: res.best < 0 ? '우열 없음' : opts[res.best], html: res.html }); store.set(HIST, h.slice(0, 10));
       closeOverlay(); Snd.sfx('reveal'); r();
       askAI(c, opts, groups, fits, sims, res);
     } catch (e) { console.warn(e); st.busy = false; closeOverlay(); Hub.toast('상담을 만들지 못했어요. 다시 시도해 주세요'); }
@@ -185,26 +201,22 @@ const Counsel = (() => {
       if (sims && sims[i]) s = Math.round(s * .55 + sims[i].total * .45 + (sims[i].A.joy - 50) * .1);
       return clampN(s);
     });
-    const best = total.indexOf(Math.max(...total)), sorted = [...total].sort((x, y) => y - x), close = sorted[0] - sorted[1] <= 5;
+    const best = total.indexOf(Math.max(...total)), sorted = [...total].sort((x, y) => y - x), tie = sorted[0] - sorted[1] <= TIE;
     const NY = new Date().getMonth() >= 9 ? c.ny2 : c.ny, L = c.luck, bm = [...NY.best].sort((x, y) => x.yr - y.yr || x.solarM - y.solarM).map(x => `${x.yr !== c.Y ? x.yr + '년 ' : ''}${x.solarM}월`).join('·'), wm = `${NY.worst.yr !== c.Y ? NY.worst.yr + '년 ' : ''}${NY.worst.solarM}월`;
     const gtxt = g => g >= 0 ? GN[g] : '일반';
-    const line = close
-      ? `두 길의 점수가 비슷해요(${sorted[0]} vs ${sorted[1]}). 사주는 어느 쪽도 막지 않으니, <b>‘${esc(opts[best])}’</b> 쪽을 기본으로 두되 아래 조건을 먼저 확인해 보세요.`
-      : `종합하면 <b>‘${esc(opts[best])}’</b> 쪽이 지금의 당신에게 더 잘 맞아요. ${fits[best].why[0] ? fits[best].why[0] + '이고, ' : ''}${sims && sims[best] ? `가상 인생에서도 「${sims[best].type}」으로 가장 좋은 평가를 받았어요.` : '흐름이 받쳐 주는 시기예요.'}`;
+    const line = tie
+      ? `두 길의 적합도가 거의 같아요(${opts.map((o, i) => total[i]).join(' vs ')}). 사주·성향·미리 살아 본 결과로는 <b>우열을 가리기 어려워요</b>. 이럴 땐 어느 쪽이 맞는지보다 <b>내가 더 끌리는 쪽</b>과 아래 실행 조언으로 정하는 것이 좋아요.`
+      : `종합하면 <b>‘${esc(opts[best])}’</b> 쪽이 지금의 당신에게 조금 더 잘 맞아요(${sorted[0]} vs ${sorted[1]}). ${fits[best].why[0] ? fits[best].why[0] + '이고, ' : ''}${sims && sims[best] ? `가상 인생에서도 「${sims[best].type}」으로 더 좋은 평가를 받았어요.` : '흐름이 받쳐 주는 시기예요.'}`;
     const mtip = (m.J ? '계획형(J)이라 결정 뒤 흔들리지 않는 대신, 정보가 부족해도 빨리 결론을 내리는 함정이 있어요. 결정 기한을 일부러 2주 늦춰 보세요.' : '유연형(P)이라 기회를 잘 잡지만, 마지막까지 선택을 미루다 좋은 시기를 놓치기 쉬워요. 결정할 날짜를 먼저 정해 두세요.')
-      + ' ' + (m.T ? '논리(T)로 판단하니 연봉·숫자만 보다 마음의 만족을 놓치지 않게 "1년 뒤 나는 행복한가?"를 같이 물어보세요.' : '감정(F)을 중시하니 주변의 기대보다 내 마음이 끌리는 쪽을 따로 적어 보세요. 의외로 답이 빨리 나와요.');
+      + ' ' + (m.T ? '논리(T)로 판단하니 조건·숫자만 보다 마음의 만족을 놓치지 않게 "1년 뒤 나는 행복한가?"를 같이 물어보세요.' : '감정(F)을 중시하니 주변의 기대보다 내 마음이 끌리는 쪽을 따로 적어 보세요. 의외로 답이 빨리 나와요.');
+    const tips = TIPS[st.topic] || TIPS.career;
     const acts = [
-      `📅 움직이기 좋은 달: <b>${bm}</b> — 중요한 계약·면접·고백은 이때로. <b>${wm}</b>은 서두르지 말고 점검하는 달이에요.`,
-      groups[best] === 0 ? '🧪 바로 뛰어들기보다 3개월짜리 작은 실험(부업·시제품·주말 운영)으로 수요를 먼저 확인해요.'
-        : groups[best] === 4 ? '📝 합격·수료까지의 비용(돈·시간)을 표로 적고, 끝난 뒤 얻을 기회를 구체적으로 써 보세요.'
-        : groups[best] === 5 ? '💬 상대와 "5년 뒤 우리 모습"을 각자 써서 바꿔 읽어 보세요. 차이가 곧 미리 풀어야 할 숙제예요.'
-        : groups[best] === 2 ? '🧮 최악의 경우(금리 +2%, 수입 −20%)에도 버틸 수 있는지 계산한 뒤 결정해요.'
-        : groups[best] === 6 ? '🧳 떠나기 전 현지에서 2주 이상 살아 보거나, 먼저 다녀온 사람 3명에게 물어보세요.'
-        : '🤝 지금 자리에서 협상할 수 있는 것(역할·연봉·근무 방식)을 먼저 요청해 보고 결정해도 늦지 않아요.',
+      ...tips,
+      `📅 시작하기 좋은 달: <b>${bm}</b> · <b>${wm}</b>은 서두르지 말고 점검하는 달이에요.`,
       `🌱 개운 습관: ${a.dm.개운} — 부족한 기운(${SAJU.EK[a.weak]})을 채우면 결정 뒤의 실행력이 좋아져요.`,
     ];
     const KS = Fork.KS || ['wealth', 'bond', 'health', 'achieve', 'joy'];
-    const simHTML = sims ? `<div class="hcard"><h3 class="ht">🎲 인생 게임으로 미리 살아 본 결과</h3>
+    const simHTML = !sims && groups.every(g => g === groups[0]) ? `<div class="hcard"><h3 class="ht">🎲 인생 게임 시뮬레이션</h3><p class="cs-p">두 선택이 같은 분야(${gtxt(groups[0])})라 인생 전체의 큰 흐름은 비슷하게 나와요. 그래서 이번에는 가상 인생 비교를 생략했어요.</p></div>` : sims ? `<div class="hcard"><h3 class="ht">🎲 인생 게임으로 미리 살아 본 결과</h3>
       <p class="sjnote">${c.p.name ? esc(c.p.name) + '님과' : '나와'} 같은 생년월일·시간으로 태어난 가상 인물을 지금 나이(${c.age}살)까지 키운 뒤, 선택지마다 3번씩 끝까지 살아 봤어요.</p>
       <div class="fk-cmp"><div class="fk-cmph"><span></span>${opts.slice(0, 3).map((o, i) => `<b>${AB[i]}</b>`).join('')}</div>
       ${KS.map(k => { const mx = Math.max(...sims.map(r => r.A[k])); return `<div class="fk-row"><span>${EVAL_N[k][0]} ${EVAL_N[k][1]}</span>${sims.map(r => `<i class="${r.A[k] === mx && sims.length > 1 ? 'win' : ''}"><em style="width:${r.A[k]}%"></em><small>${r.A[k]}</small></i>`).join('')}</div>`; }).join('')}</div>
@@ -212,20 +224,20 @@ const Counsel = (() => {
       <p class="sjnote">게임 속 인생은 재미로 보는 가상 실행이에요. 실제 직업·자산은 반영되지 않아요.</p></div>` : '';
     const html = `<div class="hcard cs-res"><div class="cs-q">“${esc(st.q || opts.join(' vs '))}”</div>
       <h3 class="ht">🧭 종합 의견</h3><p class="cs-line">${line}</p>
-      <div class="cs-opts">${opts.map((o, i) => `<div class="cs-opt${i === best ? ' best' : ''}"><div class="cs-oh"><b>${AB[i]}</b><span>${esc(o)}</span><em>${total[i]}</em></div>
+      <div class="cs-opts">${opts.map((o, i) => `<div class="cs-opt${i === best && !tie ? ' best' : ''}"><div class="cs-oh"><b>${AB[i]}</b><span>${esc(o)}</span><em>${total[i]}</em></div>
         <div class="cs-ob"><i style="width:${total[i]}%"></i></div><small>${gtxt(groups[i])} 분야 · ${fits[i].why.slice(0, 2).join(' · ') || '사주에서 특별히 막거나 미는 기운은 없어요'}</small></div>`).join('')}</div></div>
       <div class="hcard"><h3 class="ht">🔮 사주로 본 지금</h3>
         <p class="cs-p"><b>${L.e} 지금 대운: ${L.name}</b> (${L.start}살~) — ${L.desc}</p>
         ${c.nextD ? `<p class="cs-p">⏭️ ${c.nextD.age}살부터는 ${c.nextD.g === L.g ? `<b>${Saju.GRPN[c.nextD.g]}</b> 흐름이 한 번 더 이어져요.` : `<b>${Saju.GRPN[c.nextD.g]}</b>으로 바뀌어요.`}</p>` : ''}
         <p class="cs-p">📆 ${NY.year}년(${NY.gzTxt}년) 움직이기 좋은 달 <b>${bm}</b> · 조심할 달 <b>${wm}</b></p>
         <p class="cs-p">🌿 타고난 기질: ${a.dm.nm} — ${a.dm.key}</p></div>
-      <div class="hcard"><h3 class="ht">🧠 MBTI로 본 결정 스타일 · ${c.mbti.type}</h3><p class="cs-p">${mtip}</p><p class="sjnote">기준: ${c.mbti.src}</p></div>
+      <div class="hcard"><h3 class="ht">🧠 ${c.mbti.sure ? 'MBTI' : '사주로 본 MBTI'}로 본 결정 스타일 · ${c.mbti.type}</h3><p class="cs-p">${mtip}</p><p class="sjnote">기준: ${c.mbti.src}</p></div>
       ${simHTML}
       <div class="hcard"><h3 class="ht">✅ 바로 해 볼 일</h3>${acts.map(x => `<p class="cs-p">${x}</p>`).join('')}
       ${c.game ? `<p class="sjnote">🎮 지금까지 인생 게임 ${c.game.n}판 · 최고 「${esc(c.game.best.title)}」(${c.game.best.grade}) — 게임 속에서도 선택의 결과를 비교해 보세요.</p>` : ''}</div>
       <div id="csAI"></div>
       <p class="sjnote" style="text-align:center">※ 명리 이론과 게임 시뮬레이션을 바탕으로 한 참고·재미용 상담이에요. 건강·법률·투자처럼 중요한 결정은 전문가와 꼭 상의하세요.</p>`;
-    return { html, best, total };
+    return { html, best: tie ? -1 : best, total, tie };
   }
   function bindResult() {
     const b = $('#csAIgo'); if (b) b.onclick = () => sendAI();

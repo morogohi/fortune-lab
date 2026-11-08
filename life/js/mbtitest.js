@@ -34,9 +34,21 @@ window.MbtiTest = (() => {
     const ax = AX.map(([k, x, y, xn, yn]) => {
       let s = 0, m = 0; Q.forEach((q, i) => { if (q[0] === k && ans[i] != null) { s += q[1] * ans[i]; m += 2; } });
       const p = m ? Math.round(50 + s / m * 50) : 50;                // x 쪽 비율
-      return { k, x, y, xn, yn, p, pick: p >= 50 ? x : y };
+      // 45~55%는 한쪽으로 확정하지 않음 → 'X'(균형) — 중립 응답이 특정 유형이 되지 않게
+      return { k, x, y, xn, yn, p, pick: p >= 56 ? x : p <= 44 ? y : 'X', lean: p >= 50 ? x : y };
     });
-    return { type: ax.map(a => a.pick).join(''), ax, at: Date.now() };
+    const bal = ax.filter(a => a.pick === 'X').length;
+    return { type: ax.map(a => a.pick).join(''), ax, bal, clear: bal === 0, at: Date.now() };
   }
-  return { Q, SCALE, AX, score };
+  // 저장된 결과가 '뚜렷한' 4글자 유형일 때만 다른 기능의 근거로 사용
+  function settled(res) { return res && /^[EI][SN][TF][JP]$/.test(res.type) ? res.type : null; }
+  // 균형 축이 있으면 가능한 유형 목록 (최대 4개)
+  function candidates(res) {
+    let out = [''];
+    res.ax.forEach(a => { const opts = a.pick === 'X' ? [a.x, a.y] : [a.pick]; out = out.flatMap(o => opts.map(c => o + c)); });
+    return out.slice(0, 4);
+  }
+  // 문항 순서: 네 축을 섞어서 (한 화면에 한 축만 몰리지 않게)
+  const ORDER = Array.from({ length: 24 }, (_, i) => (i % 4) * 6 + Math.floor(i / 4));
+  return { Q, SCALE, AX, score, settled, candidates, ORDER };
 })();
