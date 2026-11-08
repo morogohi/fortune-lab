@@ -90,13 +90,13 @@ const Hub = (() => {
 
 
   /* ---------- 화면 이동: 상단 뒤로가기 바 + 브라우저·안드로이드 뒤로가기 ---------- */
-  const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', input: '내 정보 입력', tojeong: '토정비결', newyear: '신년운세', daily: '출석 · 미션' };
+  const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', input: '내 정보 입력', tojeong: '토정비결', newyear: '신년운세', daily: '출석 · 미션', tarot: '타로카드', mbtitest: 'MBTI 성향 검사' };
   let ignorePop = false;
   const navHTML = t => `<div class="hnav"><button class="hnback" id="hnBack" aria-label="뒤로">${ICONS.ic('back')}</button><b>${TITLES[t] || ''}</b></div>`;
   function back() { if (history.state && history.state.t) history.back(); else go('home'); }
   function hookHistory() {
     const oo = window.openOverlay, co = window.closeOverlay;
-    window.openOverlay = function () { oo.apply(this, arguments); ICONS.clean($('#osheet')); if (!(history.state && history.state.ov)) history.pushState(Object.assign({}, history.state, { ov: 1 }), ''); };
+    window.openOverlay = function () { oo.apply(this, arguments); if (!(history.state && history.state.ov)) history.pushState(Object.assign({}, history.state, { ov: 1 }), ''); };
     window.closeOverlay = function (fromPop) {
       co();
       if (fromPop === true) return;
@@ -156,7 +156,7 @@ const Hub = (() => {
     const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day', 'p8b_auth']);   // 구매·패스·광고 제한은 유지
     const wipe = all => {
       const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i));
-      ks.filter(k => all ? (k.startsWith('p8b_') && !KEEP.has(k)) : ['p8b_me', 'p8b_people', 'p8b_mbti', 'p8b_profiles'].includes(k)).forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
+      ks.filter(k => all ? (k.startsWith('p8b_') && !KEEP.has(k)) : ['p8b_me', 'p8b_people', 'p8b_mbti', 'p8b_profiles', 'p8b_mbti_test'].includes(k)).forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
       const ln = LN(); if (ln) ln.getPending().then(r => r.notifications.length && ln.cancel({ notifications: r.notifications.map(n => ({ id: n.id })) })).catch(() => {});
       location.reload();
     };
@@ -198,7 +198,7 @@ const Hub = (() => {
   function topbarUI() {
     const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
     if (u) { const av = Auth.avatar(); b.classList.add('av'); b.innerHTML = av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1)); b.title = Auth.name(); }
-    else { b.classList.remove('av'); b.innerHTML = ICONS.ic('user'); b.title = '로그인'; }
+    else { b.classList.remove('av'); b.textContent = '👤'; b.title = '로그인'; }
   }
 
   /* ---------- 홈: 서비스 목록 → 항목 선택 → (정보 없으면) 단계별 입력 → 결과 ---------- */
@@ -211,7 +211,9 @@ const Hub = (() => {
     { k: 'learn', g: 'saju', c: 'sky', ic: 'calc', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
     { k: 'compat', g: 'rel', c: 'pink', ic: 'heart', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
     { k: 'flirt', g: 'rel', c: 'butter', ic: 'spark', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
-    { k: 'mbti', g: 'rel', c: 'mint', ic: 'grid', e: '🧩', n: '사주 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
+    { k: 'mbti', g: 'rel', c: 'mint', ic: 'grid', e: '🧩', n: '사주로 보는 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
+    { k: 'tarot', g: 'rel', c: 'lav', ic: 'spark', e: '🃏', n: '타로카드', d: '78장 · 연애 · 일 · 재물', need: 0, f: () => go('tarot') },
+    { k: 'mbtitest', g: 'rel', c: 'sky', ic: 'grid', e: '📝', n: 'MBTI 성향 검사', d: '24문항 설문으로 알아보는 내 성향 · 사주 MBTI와 비교', need: 0, f: () => go('mbtitest') },
     { k: 'daily', g: 'daily', c: 'butter', ic: 'gift', e: '🧧', n: '출석 · 데일리 미션', d: '매일 들러 복주머니 받고 보상으로 교환', need: 0, f: () => go('daily') },
     { k: 'game', g: 'game', c: 'sky', ic: 'globe', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
   ];
@@ -226,14 +228,14 @@ const Hub = (() => {
     const now = new Date(), wd = '일월화수목금토'[now.getDay()];
     const g = Fortune.dayGz ? Fortune.dayGz(now) : null;
     const f = a ? Fortune.today(a, keyOf(p)) : null;
-    const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${ICONS.ic(it.ic)}</i><b>${itemName(it)}</b><small>${it.d}</small></button>`;
+    const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${it.e}</i><span><b>${itemName(it)}</b><small>${it.d}</small></span></button>`;
     const sec = (t, gk) => `<h3 class="hsec">${t}</h3><div class="htiles">${ITEMS.filter(x => x.g === gk).map(tile).join('')}</div>`;
     return `<div class="hhome">
       <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1></div>
       ${p && a
-        ? `<button class="hme" id="hmMe"><span>${ICONS.ic('user')}</span><div><b>${esc(p.name)}님</b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
-        : `<button class="hme cta" data-item="today"><span>${ICONS.ic('pen')}</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
-      <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>${ICONS.ic('sun')}</i></button>
+        ? `<button class="hme" id="hmMe"><span>🙂</span><div><b>${esc(p.name)}님</b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
+        : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
+      <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>☀️</i></button>
       ${sec('사주 · 운세', 'saju')}
       ${sec('궁합 · 관계', 'rel')}
       ${sec('인생 게임', 'game')}
@@ -308,6 +310,79 @@ const Hub = (() => {
         <div class="hluck"><div><small>색</small><b>${f.lucky.color}</b></div><div><small>숫자</small><b>${f.lucky.num}</b></div><div><small>방향</small><b>${f.lucky.dir}</b></div><div><small>소품</small><b>${f.lucky.item}</b></div></div></div>
       <button class="ghost wide" id="hShare">📤 오늘의 운세 공유하기</button>
       <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
+  }
+
+  /* ---------- 타로카드 (독립 화면) ---------- */
+  let tarotD = null, tarotTopic = 'all', tarotN = 3;
+  const SPN = { 1: '1장 · 오늘의 카드', 3: '3장 · 과거·현재·미래', 5: '5장 · 고민 해결' };
+  function tarotHTML(p, a) {
+    const D = tarotD, done = D && D.opened.size === D.n;
+    return `<div class="hhead"><small>마음속 질문을 떠올리고 카드를 뽑아 보세요</small><h2>타로카드</h2></div>
+      <div class="hcard"><h3 class="ht">주제</h3><div class="tsel" id="tTopic">${Object.entries(Tarot.TOPIC).map(([k, n]) => `<button data-v="${k}" class="${k === tarotTopic ? 'on' : ''}">${n}</button>`).join('')}</div>
+        <h3 class="ht">펼칠 카드</h3><div class="tsel" id="tN">${[1, 3, 5].map(n => `<button data-v="${n}" class="${n === tarotN ? 'on' : ''}">${SPN[n]}</button>`).join('')}</div>
+        <button class="bigbtn wide" id="tDraw">🃏 ${D ? '다시 섞고 뽑기' : '카드 섞고 뽑기'}</button>
+        ${!a ? '<p class="sjnote" style="text-align:center;margin:8px 0 0">생년월일을 입력하면 카드 원소를 내 사주 오행과 연결해 풀어 드려요 · <a id="tIn">입력하기</a></p>' : ''}</div>
+      ${D ? `<div class="hcard">${done ? '' : '<p class="sjnote" style="text-align:center;margin:0">카드를 눌러 한 장씩 뒤집으세요</p>'}${Tarot.spreadHTML(D)}</div>` : ''}
+      ${done ? Tarot.readingHTML(D, a ? a.el : null) : ''}`;
+  }
+  function bindTarot(p, a) {
+    document.querySelectorAll('#tTopic button').forEach(b => b.onclick = () => { tarotTopic = b.dataset.v; if (tarotD) tarotD.topic = tarotTopic; Snd.sfx('tap'); keepRender(); });
+    document.querySelectorAll('#tN button').forEach(b => b.onclick = () => { tarotN = +b.dataset.v; Snd.sfx('tap'); keepRender(); });
+    $('#tDraw').onclick = () => { tarotD = Tarot.draw(tarotN, tarotTopic); Snd.sfx('reveal'); render(); setTimeout(() => { const sp = document.querySelector('.tspread'); if (sp) sp.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60); };
+    const ti = $('#tIn'); if (ti) ti.onclick = () => { pending = 'tarot'; tab = 'input'; render(); };
+    document.querySelectorAll('.tflip').forEach(b => b.onclick = () => {
+      if (!tarotD || b.classList.contains('open')) return;
+      b.classList.add('open'); tarotD.opened.add(+b.dataset.k); Snd.sfx('tap');
+      if (tarotD.opened.size === tarotD.n) setTimeout(() => { keepRender(); setTimeout(() => { const r = document.querySelector('.tspread'); if (r) r.parentElement.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }, 650);
+    });
+  }
+  function keepRender() { const body = $('#hubBody'), y = body.scrollTop; body.dataset.keep = 1; render(); body.scrollTop = y; delete body.dataset.keep; }
+
+  /* ---------- MBTI 성향 검사 (설문 · 독립 화면) ---------- */
+  let mtAns = null;
+  function mbtiTestHTML(p, a) {
+    const res = store.get('p8b_mbti_test', null);
+    if (res && !mtAns) {
+      const info = Fun.MBTI[res.type] || ['', ''], sm = a ? Fun.mbti(a) : null;
+      const same = sm ? [...res.type].filter((c, i) => c === sm.type[i]).length : 0;
+      return `<div class="hhead"><small>${new Date(res.at).toLocaleDateString('ko-KR')} 검사 결과 · 이 기기에만 저장돼요</small><h2>MBTI 성향 검사</h2></div>
+        <div class="hcard"><div class="mtype"><b>${res.type}</b><span>${info[0]}</span></div><p class="sjtxt" style="text-align:center;margin:0">${info[1]}</p></div>
+        <div class="hcard"><h3 class="ht">성향 비율</h3>${res.ax.map(x => `<div class="maxr"><span class="${x.pick === x.x ? 'on' : ''}">${x.x} ${x.xn}<br>${x.p}%</span><div class="tjbar"><i style="width:${x.p}%"></i></div><span class="${x.pick === x.y ? 'on' : ''}">${x.y} ${x.yn}<br>${100 - x.p}%</span></div>`).join('')}
+          <p class="sjnote">50%에 가까운 축은 상황에 따라 양쪽을 오가는 편이에요.</p></div>
+        <div class="hcard"><h3 class="ht">🧩 사주로 본 MBTI와 비교</h3>${sm
+          ? `<p class="sjtxt" style="margin:0">사주 MBTI <b>${sm.type}</b> · 설문 결과 <b>${res.type}</b> → 4글자 중 <b>${same}개</b> 일치 (${same * 25}%)</p>
+             <p class="sjtxt">${same >= 3 ? '타고난 기질과 지금의 성향이 거의 같아요. 사주의 흐름을 그대로 살리면 편안해요.' : same === 2 ? '절반은 타고난 대로, 절반은 살아오며 바뀐 모습이에요.' : '살아오면서 타고난 기질과 다른 모습을 많이 길렀어요. 그만큼 노력으로 만든 성향이에요.'}</p>`
+          : '<p class="sjtxt" style="margin:0">생년월일을 입력하면 사주로 본 MBTI와 비교해 드려요.</p>'}</div>
+        <button class="bigbtn wide" id="mtAgain">📝 다시 검사하기</button>
+        ${sm ? '<button class="ghost wide" id="mtSaju">🧩 사주로 보는 MBTI 자세히</button>' : '<button class="ghost wide" id="mtIn">🎂 생년월일 입력하고 비교하기</button>'}
+        <p class="sjnote">자체 제작한 24문항 성향 검사로, 공식 MBTI® 검사가 아니에요. 재미와 자기 이해를 위한 참고용이에요.</p>`;
+    }
+    const A = mtAns || [], n = A.filter(v => v != null).length, N = MbtiTest.Q.length;
+    return `<div class="hhead"><small>정답은 없어요 · 평소의 나에 가깝게 골라 주세요</small><h2>MBTI 성향 검사</h2></div>
+      <div class="mprog"><div class="tjbar"><i style="width:${n / N * 100}%"></i></div><small class="hnote">${n} / ${N} 문항</small></div>
+      <div class="hcard">${MbtiTest.Q.map((q, i) => `<div class="mq" id="mq${i}"><p><b>${i + 1}.</b>${q[2]}</p><div class="sc">${MbtiTest.SCALE.map(([t, v]) => `<button data-q="${i}" data-v="${v}" class="${A[i] === v ? 'on' : ''}">${t}</button>`).join('')}</div></div>`).join('')}</div>
+      <button class="bigbtn wide" id="mtDone" ${n < N ? 'disabled' : ''}>${n < N ? `${N - n}문항 남았어요` : '결과 보기'}</button>`;
+  }
+  function bindMbtiTest(p, a) {
+    const ag = $('#mtAgain'); if (ag) ag.onclick = () => { mtAns = Array(MbtiTest.Q.length).fill(null); render(); };
+    const sj = $('#mtSaju'); if (sj) sj.onclick = () => Fun.openMbti(0);
+    const mi = $('#mtIn'); if (mi) mi.onclick = () => { pending = 'mbtitest'; tab = 'input'; render(); };
+    if (!mtAns && store.get('p8b_mbti_test', null)) return;
+    if (!mtAns) mtAns = Array(MbtiTest.Q.length).fill(null);
+    document.querySelectorAll('.mq .sc button').forEach(b => b.onclick = () => {
+      const i = +b.dataset.q; mtAns[i] = +b.dataset.v; Snd.sfx('tap');
+      b.parentElement.querySelectorAll('button').forEach(x => x.classList.toggle('on', x === b));
+      const n = mtAns.filter(v => v != null).length, N = mtAns.length;
+      document.querySelector('.mprog i').style.width = n / N * 100 + '%'; document.querySelector('.mprog small').textContent = `${n} / ${N} 문항`;
+      const d = $('#mtDone'); d.disabled = n < N; d.textContent = n < N ? `${N - n}문항 남았어요` : '결과 보기';
+      const next = mtAns.findIndex(v => v == null); if (next >= 0 && next > i) { const el = $('#mq' + next); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+    });
+    $('#mtDone').onclick = () => {
+      if (mtAns.some(v => v == null)) return;
+      const res = MbtiTest.score(mtAns); store.set('p8b_mbti_test', res); mtAns = null;
+      const me = getMe(); if (me) { const s = store.get('p8b_mbti', {}); s[me.date + me.name] = res.type; store.set('p8b_mbti', s); }
+      Snd.sfx('fanfare'); render();
+    };
   }
   /* ---------- 출석 · 데일리 미션 (독립 화면) ---------- */
   function dailyHTML() {
@@ -562,15 +637,17 @@ const Hub = (() => {
   function render() {
     const body = $('#hubBody'), p = getMe(), a = analyzeP(p);
     if (tab === 'home' && !editing) { body.innerHTML = homeHTML(p, a); bindHome(); body.scrollTop = 0; syncTabs(); return; }
-    if ((!a || editing || tab === 'input') && tab !== 'more' && tab !== 'daily') { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = navHTML(editing ? 'input' : (tab === 'input' ? 'input' : tab)) + formHTML(editing ? p : null); bindForm(); bindNav(); syncTabs(); body.scrollTop = 0; return; }
+    if ((!a || editing || tab === 'input') && !['more', 'daily', 'tarot', 'mbtitest'].includes(tab)) { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = navHTML(editing ? 'input' : (tab === 'input' ? 'input' : tab)) + formHTML(editing ? p : null); bindForm(); bindNav(); syncTabs(); body.scrollTop = 0; return; }
     if (tab === 'today') { attend(); body.innerHTML = todayHTML(p, a); bindToday(p, a); }
     else if (tab === 'saju') { body.innerHTML = sajuHTML(p, a); bindSaju(p, a); }
     else if (tab === 'compat') { body.innerHTML = compatTabHTML(p, a); bindCompat(p, a); }
     else if (tab === 'more') { body.innerHTML = moreHTML(); bindMore(); }
     else if (tab === 'daily') { attend(); body.innerHTML = dailyHTML(); bindDaily(); }
+    else if (tab === 'tarot') { body.innerHTML = tarotHTML(p, a); bindTarot(p, a); }
+    else if (tab === 'mbtitest') { body.innerHTML = mbtiTestHTML(p, a); bindMbtiTest(p, a); }
     else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
     else if (tab === 'newyear') { body.innerHTML = newYearHTML(p, a); const b = $('#nyOpen'); if (b) b.onclick = () => openShop('newyear'); }
-    body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav(); ICONS.clean(body);
+    body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav();
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
   }
