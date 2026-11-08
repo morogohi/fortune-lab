@@ -87,14 +87,14 @@ const Hub = (() => {
   let pending = null;          // 정보 입력 후 이어서 열 항목
   const ITEMS = [
     { k: 'today', g: 'main', e: '☀️', n: '오늘의 운세', d: '총운 · 애정 · 금전 · 직장 · 건강', need: 1, f: () => go('today') },
-    { k: 'saju', g: 'saju', e: '📜', n: '내 사주 풀이', d: '사주팔자 · 오행 · 대운 · 성격', need: 1, f: () => go('saju') },
-    { k: 'tojeong', g: 'saju', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => openTojeong() },
-    { k: 'newyear', g: 'saju', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => { const p = getMe(); openNewYear(p, analyzeP(p)); } },
-    { k: 'learn', g: 'saju', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
-    { k: 'compat', g: 'rel', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
-    { k: 'flirt', g: 'rel', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
-    { k: 'mbti', g: 'rel', e: '🧩', n: '사주 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
-    { k: 'game', g: 'game', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
+    { k: 'saju', g: 'saju', c: 'lav', e: '📜', n: '내 사주 풀이', d: '사주팔자 · 오행 · 대운 · 성격', need: 1, f: () => go('saju') },
+    { k: 'tojeong', g: 'saju', c: 'peach', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => openTojeong() },
+    { k: 'newyear', g: 'saju', c: 'pink', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => { const p = getMe(); openNewYear(p, analyzeP(p)); } },
+    { k: 'learn', g: 'saju', c: 'sky', e: '🧮', n: '사주 계산 원리', d: '내 사주가 나오는 과정', need: 1, f: () => openLearn() },
+    { k: 'compat', g: 'rel', c: 'pink', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
+    { k: 'flirt', g: 'rel', c: 'butter', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
+    { k: 'mbti', g: 'rel', c: 'mint', e: '🧩', n: '사주 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
+    { k: 'game', g: 'game', c: 'sky', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
   ];
   const itemName = it => typeof it.n === 'function' ? it.n() : it.n;
   function openItem(k) {
@@ -107,7 +107,7 @@ const Hub = (() => {
     const now = new Date(), wd = '일월화수목금토'[now.getDay()];
     const g = Fortune.dayGz ? Fortune.dayGz(now) : null;
     const f = a ? Fortune.today(a, keyOf(p)) : null;
-    const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-item="${it.k}"><i>${it.e}</i><b>${itemName(it)}</b><small>${it.d}</small></button>`;
+    const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${it.e}</i><b>${itemName(it)}</b><small>${it.d}</small></button>`;
     const sec = (t, gk) => `<h3 class="hsec">${t}</h3><div class="htiles">${ITEMS.filter(x => x.g === gk).map(tile).join('')}</div>`;
     const tj = p && a && !Tojeong.opened(p) ? `<small class="hnote">🏮 토정비결은 인생 게임에서 모은 카르마로 열려요</small>` : '';
     return `<div class="hhome">
@@ -369,7 +369,7 @@ const Hub = (() => {
     { k: 'report', e: '📜', n: '프리미엄 사주 리포트', c: 60, can: () => !Store.has('report'), f: () => Store.grant('report') },
   ];
   // [이름, 블랙 테마용, 화이트 테마용] — 흰 바탕에서도 글씨 대비 4.5:1 이상 되도록 밝기 분리
-  const THEMES = [['목', '#3fbf7f', '#1f7a4d'], ['화', '#ff6b5a', '#c8322b'], ['토', '#e2b13c', '#8a5a00'], ['금', '#b9c3d6', '#4f5d75'], ['수', '#5f9cff', '#1f5fb8']];
+  const THEMES = [['목', '#a8dcc0', '#3d7a5c'], ['화', '#f5b3a8', '#a8493f'], ['토', '#ecd49a', '#80621c'], ['금', '#cfd4de', '#5a6170'], ['수', '#aac6f0', '#3a5f96']];
   const themesOwned = () => store.get('p8b_themes', []);
   function setTheme(i) {
     store.set('p8b_theme', i);
@@ -381,7 +381,7 @@ const Hub = (() => {
     const n = pouch();
     openOverlay(`🎁 복주머니 교환 · 보유 ${n}개`, EXCH.map(x => `<div class="shopitem"><span class="se">${x.e}</span><div><b>${x.n}</b><small>복주머니 ${x.c}개</small></div>
       <button data-x="${x.k}" ${n >= x.c && x.can() ? '' : 'disabled'} class="${x.can() ? '' : 'own'}">${x.can() ? '교환' : '보유 중'}</button></div>`).join('')
-      + (themesOwned().length ? `<div class="hthemes"><small>내 테마</small>${themesOwned().map(i => `<button data-th="${i}" style="background:${THEMES[i][Theme.current() === 'light' ? 2 : 1]};color:#fff">${THEMES[i][0]}</button>`).join('')}<button data-th="-1">기본</button></div>` : '')
+      + (themesOwned().length ? `<div class="hthemes"><small>내 테마</small>${themesOwned().map(i => `<button data-th="${i}" style="background:${THEMES[i][Theme.current() === 'light' ? 2 : 1]};color:${Theme.current() === 'light' ? '#fff' : '#1b1d2b'}">${THEMES[i][0]}</button>`).join('')}<button data-th="-1">기본</button></div>` : '')
       + '<p class="sjnote" style="text-align:center">복주머니는 출석·미션·공유로 하루 최대 6개(연속 출석 보너스 별도) 모을 수 있어요.</p>');
     document.querySelectorAll('[data-x]').forEach(b => b.onclick = () => {
       const x = EXCH.find(e => e.k === b.dataset.x); if (pouch() < x.c || !x.can()) return;
@@ -401,7 +401,7 @@ const Hub = (() => {
       </div>
       <div class="hcard"><h3 class="ht">🎨 화면 테마</h3>
         <p class="hsub">글씨가 잘 보이는 바탕을 고르세요. 화이트가 기본이에요.</p>
-        <div class="modeseg">${[['light', '화이트', '#f6f3ee'], ['dark', '블랙', '#111114'], ['system', '휴대폰 설정', 'linear-gradient(90deg,#f6f3ee 50%,#111114 50%)']].map(([m, n, c]) => `<button data-mode="${m}" class="${Theme.mode() === m ? 'on' : ''}"><i class="sw" style="background:${c}"></i>${n}</button>`).join('')}</div></div>
+        <div class="modeseg">${[['light', '라이트', '#f3f4f6'], ['dark', '다크', '#16171a'], ['system', '휴대폰 설정', 'linear-gradient(90deg,#f3f4f6 50%,#16171a 50%)']].map(([m, n, c]) => `<button data-mode="${m}" class="${Theme.mode() === m ? 'on' : ''}"><i class="sw" style="background:${c}"></i>${n}</button>`).join('')}</div></div>
       <div class="hcard"><h3 class="ht">🔔 매일 운세 알림</h3>
         <p class="hsub">${native ? '정한 시각에 그날의 총운 점수와 한 줄 운세를 보내 드려요.' : '알림은 앱에서만 받을 수 있어요.'}</p>
         <div class="row2"><label class="chk"><input type="checkbox" id="nOn" ${nt.on ? 'checked' : ''} ${native ? '' : 'disabled'}> 알림 받기</label><select id="nT" ${native ? '' : 'disabled'}>${times}</select></div></div>

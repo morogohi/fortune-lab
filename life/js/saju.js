@@ -35,7 +35,7 @@ window.Saju = (() => {
     ],
   };
   const descAt = (g, age) => age < 13 ? GRPDESC_AGE.kid[g] : age < 20 ? GRPDESC_AGE.teen[g] : age >= 65 ? GRPDESC_AGE.senior[g] : GRPDESC[g];
-  const ELC = ['#4fbf85', '#ef6a5a', '#e2b947', '#c3cad6', '#7ea8f2'];
+  const ELC = ['#a9dcbf', '#f4b7ac', '#ecd391', '#d5d9e1', '#b3cbf2'];   // 목·화·토·금·수 파스텔 (진한 글씨와 대비 8:1 이상)
   const ELE = ['🌳', '🔥', '⛰️', '⚔️', '💧'];
   // 오행 → 과목 적성
   const ELSUB = [['kor', 'soc'], ['music', 'art', 'pe'], ['soc', 'pe'], ['math', 'sci', 'code'], ['sci', 'eng', 'math']];

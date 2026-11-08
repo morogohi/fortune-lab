@@ -3,7 +3,7 @@
  * 실제 적용은 <html data-theme="light|dark"> — index.html <head>의 인라인 스크립트가 첫 그림 전에 먼저 적용한다 */
 window.Theme = (() => {
   const KEY = 'p8b_mode', MQ = window.matchMedia ? matchMedia('(prefers-color-scheme: dark)') : null;
-  const BG = { light: '#f6f3ee', dark: '#111114' };
+  const BG = { light: '#f3f4f6', dark: '#16171a' };
   const get = () => { try { return JSON.parse(localStorage.getItem(KEY)) || 'light'; } catch (e) { return 'light'; } };
   const resolve = m => m === 'system' ? (MQ && MQ.matches ? 'dark' : 'light') : (m === 'dark' ? 'dark' : 'light');
   function apply() {
