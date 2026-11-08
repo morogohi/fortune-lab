@@ -123,9 +123,10 @@ const Grow = (() => {
   function paintAuto() {
     const b = $('#autoBar'); if (!b) return;
     const p = pol();
-    b.innerHTML = `<button id="saveBtn" class="savebtn" title="중간 저장">💾</button><button id="polBtn" class="polbtn">${P && P.policy ? p.e + ' ' + p.n : '🧭 방침 정하기'}</button>
+    b.innerHTML = `<button id="exitBtn" class="savebtn" title="저장하고 메인 화면으로" aria-label="저장하고 메인 화면으로">🏠</button><button id="saveBtn" class="savebtn" title="중간 저장" aria-label="중간 저장">💾</button><button id="polBtn" class="polbtn">${P && P.policy ? p.e + ' ' + p.n : '🧭 방침 정하기'}</button>
       <div class="spd"><button data-s="0" class="${speed === 0 ? 'on' : ''}">⏸</button><button data-s="1" class="${speed === 1 ? 'on' : ''}">▶ 자동</button><button data-s="2" class="${speed === 2 ? 'on' : ''}">⏩ 빠르게</button><button data-s="3" class="${speed === 3 ? 'on' : ''}">⏭️ 5년</button></div>`;
     $('#polBtn').onclick = () => { Snd.sfx('tap'); openPolicy(true); };
+    $('#exitBtn').onclick = () => { Snd.sfx('tap'); stop(); if (window.Save) Save.askExit(); };
     $('#saveBtn').onclick = () => { Snd.sfx('tap'); stop(); if (window.Save) Save.openSlots('save'); };
     b.querySelectorAll('[data-s]').forEach(x => x.onclick = () => {
       Snd.sfx('tap'); buzz(12);

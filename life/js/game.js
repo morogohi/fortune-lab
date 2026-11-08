@@ -307,6 +307,8 @@ function openNext(){
       renderActions();checkBucket();if(checkDeath())return;openNext()};
     gw.appendChild(b)});
   if(window.Grow)Grow.decorateModal(ev,gw);
+  const ci=ev.ch.findIndex(c=>/^\s*(닫기|취소|나중에|그만두기|돌아가기|안 (사|할|해)|넘어가기)/.test(String(c.t).replace(/<[^>]+>/g,'').replace(/^[^\p{L}]+/u,'')));
+  if(ci>=0){const x=document.createElement('button');x.className='mclose';x.setAttribute('aria-label','닫기');x.textContent='✕';x.onclick=()=>gw.querySelectorAll('.choice')[ci].click();$('#sheet').prepend(x)}
   $('#modal').classList.add('on');
 }
 

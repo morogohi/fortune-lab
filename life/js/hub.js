@@ -69,6 +69,7 @@ const Hub = (() => {
   }
   function go(t, fromPop) {
     Snd.sfx('tap');
+    if (t !== 'tarot') { stopShuffleLoop(); if (tPhase === 'shuffle') tPhase = tarotD ? 'reveal' : 'idle'; }   // 섞는 도중 다른 화면으로 가면 소리·섞기 즉시 중단
     if (!fromPop) {
       const st = history.state || {};
       if (t === 'home') { if (st.t) { ignorePop = true; history.back(); } }
@@ -96,7 +97,10 @@ const Hub = (() => {
   function back() { if (history.state && history.state.t) history.back(); else go('home'); }
   function hookHistory() {
     const oo = window.openOverlay, co = window.closeOverlay;
-    window.openOverlay = function () { oo.apply(this, arguments); if (!(history.state && history.state.ov)) history.pushState(Object.assign({}, history.state, { ov: 1 }), ''); };
+    // 팝업이 뜬 직후(0.45초) 바탕 터치는 무시 — 같은 손가락의 뒤따르는 click이 바로 팝업을 닫는 '유령 클릭' 방지
+    let openedAt = 0;
+    $('#overlay').addEventListener('click', e => { if (e.target.id === 'overlay' && Date.now() - openedAt < 450) e.stopImmediatePropagation(); }, true);
+    window.openOverlay = function () { openedAt = Date.now(); oo.apply(this, arguments); if (!(history.state && history.state.ov)) history.pushState(Object.assign({}, history.state, { ov: 1 }), ''); };
     window.closeOverlay = function (fromPop) {
       co();
       if (fromPop === true) return;
@@ -106,7 +110,7 @@ const Hub = (() => {
       if (ignorePop) { ignorePop = false; return; }
       if ($('#overlay').classList.contains('on')) { closeOverlay(true); return; }
       const inLife = ['game', 'mini', 'setup'].some(id => { const el = document.getElementById(id); return el && el.classList.contains('on'); });
-      if (inLife) { history.pushState({ t: 'game' }, ''); toast('게임 화면에서는 메뉴(💾)로 저장하고 나갈 수 있어요'); return; }
+      if (inLife) { history.pushState({ t: 'game' }, ''); if ($('#game').classList.contains('on') && window.Save) Save.askExit(); else toast('게임 화면에서는 🏠 버튼으로 저장하고 나갈 수 있어요'); return; }
       go((e.state && e.state.t) || 'home', true);
     });
   }
@@ -324,7 +328,7 @@ const Hub = (() => {
   }
 
   /* ---------- 타로카드 (독립 화면) : 섞기(소리·애니메이션) → 멈춤 → 부채꼴에서 직접 고르기 → 뒤집기 → 리딩 ---------- */
-  let tarotD = null, tarotTopic = 'all', tarotN = 3, tPhase = 'idle', tOrder = null, tPicks = [], tCards = [], tTimer = null;
+  let tarotD = null, tarotTopic = 'all', tarotN = 3, tPhase = 'idle', tOrder = null, tPicks = [], tCards = [], tTimer = null, tBusy = false;
   const SPN = { 1: '1장 · 오늘의 카드', 3: '3장 · 과거·현재·미래', 5: '5장 · 고민 해결' };
   const FAN = 15;                                     // 펼쳐 놓는 카드 수
   function stopShuffleLoop() { if (tTimer) { clearInterval(tTimer); tTimer = null; } }
@@ -336,8 +340,8 @@ const Hub = (() => {
         ${!a ? '<p class="sjnote" style="text-align:center;margin:8px 0 0">생년월일을 입력하면 카드 원소를 내 사주 오행과 연결해 풀어 드려요 · <a id="tIn">입력하기</a></p>' : ''}</div>`;
     let stage = '';
     if (tPhase === 'shuffle') {
-      stage = `<div class="hcard tstage"><p class="tguide">마음속 질문을 떠올리세요.<br><b>원하는 순간에 멈춤</b>을 누르면 카드가 펼쳐져요.</p>
-        <div class="tshuf">${Array.from({ length: 10 }, (_, k) => `<span class="sc${k % 2 ? ' r' : ' l'}" style="--k:${k}">${Tarot.TBACK}</span>`).join('')}</div>
+      stage = `<div class="hcard tstage"><p class="tguide">마음속 질문을 떠올리세요.<br><b>섞이는 카드를 터치하거나 멈춤</b>을 누르면 카드가 펼쳐져요.</p>
+        <div class="tshuf" role="button" tabindex="0" aria-label="섞는 카드 멈추기">${Array.from({ length: 10 }, (_, k) => `<span class="sc${k % 2 ? ' r' : ' l'}" style="--k:${k}">${Tarot.TBACK}</span>`).join('')}</div>
         <button class="bigbtn wide" id="tStop">✋ 멈춤</button></div>`;
     } else if (tPhase === 'pick') {
       const left = tarotN - tPicks.length;
@@ -355,18 +359,22 @@ const Hub = (() => {
       ${done && tPhase === 'reveal' ? Tarot.readingHTML(D, a ? a.el : null) : ''}`;
   }
   function startShuffle() {
-    tPhase = 'shuffle'; tarotD = null; tPicks = []; tCards = []; tOrder = null; stopShuffleLoop();
-    render(); Snd.sfx('riffle'); tTimer = setInterval(() => { if (tab !== 'tarot') { stopShuffleLoop(); return; } Snd.sfx('riffle'); }, 900);
+    tPhase = 'shuffle'; tarotD = null; tPicks = []; tCards = []; tOrder = null; tBusy = false; stopShuffleLoop();
+    tTimer = setInterval(() => { if (tab !== 'tarot') { stopShuffleLoop(); return; } Snd.sfx('riffle'); }, 900);   // 먼저 켜야 render 중 '섞기 중단'으로 오인하지 않음
+    render(); Snd.sfx('riffle');
   }
   function bindTarot(p, a) {
     if (tPhase === 'shuffle' && !tTimer) tPhase = tarotD ? 'reveal' : 'idle';   // 다른 화면에 다녀오면 섞기 중단
     document.querySelectorAll('#tTopic button').forEach(b => b.onclick = () => { tarotTopic = b.dataset.v; if (tarotD) tarotD.topic = tarotTopic; Snd.sfx('tap'); keepRender(); });
     document.querySelectorAll('#tN button').forEach(b => b.onclick = () => { tarotN = +b.dataset.v; Snd.sfx('tap'); keepRender(); });
     const sh = $('#tShuf'); if (sh) sh.onclick = startShuffle;
-    const st = $('#tStop'); if (st) st.onclick = () => {
+    const stop = () => {
+      if (tPhase !== 'shuffle') return;
       stopShuffleLoop(); tOrder = Tarot.shuffled(); tPicks = []; tCards = []; tPhase = 'pick'; Snd.sfx('whoosh'); render();
       setTimeout(() => { const f = document.querySelector('.tfan'); if (f) f.classList.add('open'); }, 30);
     };
+    const st = $('#tStop'); if (st) st.onclick = stop;
+    const sf = document.querySelector('.tshuf'); if (sf) { sf.onclick = stop; sf.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); stop(); } }; }
     const showAll = () => { tarotD = Tarot.fromCards(tCards.slice(), tarotTopic, true); tPhase = 'reveal'; render(); setTimeout(() => { const r = document.querySelector('.tspread'); if (r && r.parentElement.nextElementSibling) r.parentElement.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 80); };
     const popPick = idx => {
       const D = Tarot.fromCards(tCards.slice(), tarotTopic, true); D.n = tarotN;   // 자리 이름은 고를 장 수 기준
@@ -374,14 +382,40 @@ const Hub = (() => {
       openOverlay(`🃏 ${Tarot.SPREADS[tarotN][idx][0]}의 카드`, Tarot.cardHTML(D, idx),
         left ? [{ t: `다음 카드 고르기 (${left}장 남음)`, pri: 1 }] : [{ t: '🔮 종합 리딩 보기', pri: 1, f: showAll }, { t: '닫기' }]);
     };
-    document.querySelectorAll('.tfan .fc').forEach(b => b.onclick = () => {
-      const k = +b.dataset.f, i = tPicks.indexOf(k);
+    // 부채꼴 카드 고르기: 카드끼리 겹쳐 휴대폰의 '터치 보정'이 옆 카드를 고르는 문제를 막기 위해
+    // 카드 하나하나가 아니라 부채꼴 전체에서 손가락 위치(원본 좌표)와 부채 기하로 '맨 위에 보이는 카드'를 계산한다
+    const fan = document.querySelector('.tfan');
+    const cardAtPoint = (x, y) => {
+      const f = fan.getBoundingClientRect(), c = fan.querySelector('.fc'); if (!c) return -1;
+      const w = c.offsetWidth, h = c.offsetHeight, bottom = parseFloat(getComputedStyle(c).bottom) || 0;
+      const px = f.left + f.width / 2, py = f.bottom - bottom - h + 2.3 * h;     // transform-origin: 50% 230%
+      const dx = x - px, dy = py - y, r = Math.hypot(dx, dy), ang = Math.atan2(dx, dy) * 180 / Math.PI;
+        for (let k = FAN - 1; k >= 0; k--) {                                     // 뒤(오른쪽) 카드가 위에 그려짐
+          const lift = tPicks.includes(k) ? 26 : 0, d = (ang - (k - (FAN - 1) / 2) * 5) * Math.PI / 180;
+          const along = r * Math.cos(d), perp = r * Math.sin(d);                  // 카드 축 방향 / 옆 방향 거리
+          const badge = lift ? 12 : 0, tol = lift ? 1 : 0;                        // 고른 카드: 번호 동그라미 + 들어 올린 위치 반올림 오차
+          if (Math.abs(perp) <= w / 2 + tol && along >= 1.3 * h + lift - tol && along <= 2.3 * h + lift + badge + tol) return k;
+        }
+      return -1;
+    };
+    let down = null;
+    if (fan) {
+      fan.onpointerdown = e => { down = { x: e.clientX, y: e.clientY }; };
+      fan.onpointerup = e => {
+        if (!down || Math.hypot(e.clientX - down.x, e.clientY - down.y) > 12) { down = null; return; }
+        const k = cardAtPoint(down.x, down.y); down = null; if (k >= 0) pickCard(k);
+      };
+      fan.onkeydown = e => { if (e.key === 'Enter') { const n = tPicks.length ? -1 : Math.floor(FAN / 2); if (n >= 0) pickCard(n); } };
+    }
+    function pickCard(k) {
+      if (tBusy || $('#overlay').classList.contains('on')) return;   // 팝업이 뜨기 전 두 번 눌러 두 장이 골라지는 것 방지
+      const i = tPicks.indexOf(k);
       if (i >= 0) { popPick(i); return; }                 // 이미 고른 카드는 설명 다시 보기
       if (tPicks.length >= tarotN) return;
-      tPicks.push(k); tCards.push(Tarot.cardAt(tOrder, k));
+      tBusy = true; tPicks.push(k); tCards.push(Tarot.cardAt(tOrder, k));
       Snd.sfx('cardpick'); keepRender(); const f = document.querySelector('.tfan'); if (f) f.classList.add('open', 'still');
-      setTimeout(() => { Snd.sfx('reveal'); popPick(tCards.length - 1); }, 380);
-    });
+      setTimeout(() => { tBusy = false; if (tab !== 'tarot' || tPhase !== 'pick') return; Snd.sfx('reveal'); popPick(tCards.length - 1); }, 320);
+    }
     const go2 = $('#tGo'); if (go2) go2.onclick = () => { Snd.sfx('reveal'); showAll(); };
     const rs = $('#tReshuf'); if (rs) rs.onclick = startShuffle;
     const ti = $('#tIn'); if (ti) ti.onclick = () => { pending = 'tarot'; tab = 'input'; render(); };

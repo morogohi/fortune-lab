@@ -449,6 +449,8 @@
   .fmatch{margin-top:8px;background:#ffcc4d18;border-radius:12px;padding:10px;font-size:14px;text-align:center}.fmatch b{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:22px;color:var(--hap)}
 
   /* ===== 중간 저장 ===== */
+  #sheet,#osheet{position:relative}
+  .mclose{position:sticky;top:0;float:right;margin:-6px -4px 0 8px;z-index:3;width:38px;height:38px;border-radius:50%;background:var(--line);color:var(--ink);font-size:18px;line-height:38px;text-align:center;padding:0;box-shadow:0 1px 4px #0002}
   .savebtn{background:var(--line);border-radius:12px;padding:7px 9px;font-size:15px}
   .savebtn.saved{animation:saved .8s}
   @keyframes saved{30%{background:var(--money);transform:scale(1.15)}}
@@ -675,14 +677,16 @@
   /* 타로: 섞기 애니메이션 · 부채꼴 고르기 */
   .tstage{overflow:hidden}
   .tguide{text-align:center;font-size:14px;color:var(--ink2);margin:2px 0 8px;line-height:1.55}.tguide b{color:var(--accent)}
-  .tshuf{position:relative;height:210px;margin:6px 0 12px}
+  .tshuf{position:relative;height:210px;margin:6px 0 12px;cursor:pointer;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
+  .tshuf:active .sc{animation-play-state:paused}
   .tshuf .sc{position:absolute;left:50%;top:50%;width:92px;aspect-ratio:3/5;margin:-77px 0 0 -46px;border-radius:9px;overflow:hidden;box-shadow:0 3px 8px #0003;
     animation:riffle .9s cubic-bezier(.45,0,.55,1) infinite;animation-delay:calc(var(--k) * -.045s)}
   .tshuf .sc svg{width:100%;height:100%;display:block}
   .tshuf .sc.r{animation-name:riffleR}
   @keyframes riffle{0%,100%{transform:translate(0,calc(var(--k) * -1.2px)) rotate(0)}30%{transform:translate(-62px,-6px) rotate(-14deg)}55%{transform:translate(-30px,10px) rotate(-4deg)}75%{transform:translate(0,calc(var(--k) * -1.2px)) rotate(0)}}
   @keyframes riffleR{0%,100%{transform:translate(0,calc(var(--k) * -1.2px)) rotate(0)}30%{transform:translate(62px,-6px) rotate(14deg)}55%{transform:translate(30px,10px) rotate(4deg)}75%{transform:translate(0,calc(var(--k) * -1.2px)) rotate(0)}}
-  .tfan{position:relative;height:215px;margin:6px 0 4px}
+  .tfan{position:relative;height:215px;margin:6px 0 4px;touch-action:manipulation;cursor:pointer;-webkit-tap-highlight-color:transparent;user-select:none}
+  .tfan .fc{pointer-events:none}
   .tfan .fc{position:absolute;left:50%;bottom:52px;width:60px;aspect-ratio:3/5;margin-left:-30px;padding:0;background:none;border-radius:7px;overflow:visible;
     transform-origin:50% 230%;transform:rotate(0) translateY(0);transition:transform .55s cubic-bezier(.2,.8,.2,1) calc(var(--i) * 18ms),filter .2s}
   .tfan.still .fc{transition:transform .2s}

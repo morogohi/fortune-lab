@@ -6,7 +6,8 @@
 /* ---------- 공용 오버레이 ---------- */
 function openOverlay(title, html, btns = [{ t: '닫기' }]) {
   const o = document.getElementById('overlay'), sh = document.getElementById('osheet');
-  sh.innerHTML = `<h3>${title}</h3>${html}`;
+  sh.innerHTML = `<button class="mclose" aria-label="닫기">✕</button><h3>${title}</h3>${html}`;
+  sh.firstChild.onclick = () => { Snd.sfx('tap'); const c = btns.find(b => /^(닫기|취소|계속 하기)$/.test(b.t)); closeOverlay(); c && c.f && c.f(); };
   btns.forEach(b => {
     const el = document.createElement('button'); el.className = 'obtn' + (b.pri ? ' pri' : ''); el.innerHTML = b.t;
     el.onclick = () => { Snd.sfx('tap'); if (!b.keep) closeOverlay(); b.f && b.f(); };

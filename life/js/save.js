@@ -90,7 +90,7 @@ const Save = (() => {
     openOverlay(inGame ? '💾 인생 저장하기' : '📂 저장한 인생 불러오기',
       SLOTS.map(sl => slotHTML(sl, o[sl], mode)).join('') +
       `<p class="sjnote" style="text-align:center">저장은 이 기기 안에만 돼요. 자동 저장은 선택 창이 없을 때마다 갱신되고, 인생이 끝나면 지워져요.</p>`,
-      [{ t: '닫기' }]);
+      inGame ? [{ t: '🏠 저장하고 메인 화면으로', pri: 1, keep: 1, f: exitHome }, { t: '계속 하기' }] : [{ t: '닫기' }]);
     document.querySelectorAll('.svslot [data-a]').forEach(b => b.onclick = () => {
       const sl = b.dataset.s, a = b.dataset.a; Snd.sfx('tap');
       if (a === 'save') { save(sl); openSlots(mode); }
@@ -109,6 +109,23 @@ const Save = (() => {
           [{ t: '지우기', pri: 1, f: () => { remove(sl); openSlots(mode); } }, { t: '취소', f: () => openSlots(mode) }]);
       }
     });
+  }
+
+  /* ---------- 저장하고 메인 화면(허브)으로 ---------- */
+  function exitHome() {
+    if (typeof modalQ !== 'undefined' && modalQ.length) { Hub.toast('지금 뜬 선택을 마친 뒤에 나갈 수 있어요'); return; }
+    if (window.Grow) Grow.setSpeed(0);
+    const ok = !P || !P.alive || save('auto', true);
+    closeOverlay();
+    if (!ok) { Hub.toast('저장 공간이 부족해요. 다른 슬롯을 지워 주세요'); return; }
+    Hub.go('home');
+    Hub.toast('💾 저장했어요 · 인생 게임에서 ▶ 이어하기로 돌아올 수 있어요');
+  }
+  function askExit() {
+    if (typeof modalQ !== 'undefined' && modalQ.length) { Hub.toast('지금 뜬 선택을 마친 뒤에 나갈 수 있어요'); return; }
+    if (window.Grow) Grow.setSpeed(0);
+    openOverlay('🏠 메인 화면으로', '<p class="sjtxt" style="text-align:center">지금까지의 인생을 자동 저장하고 메인 화면으로 갈까요?<br>인생 게임에 다시 들어와 <b>▶ 이어하기</b>를 누르면 그대로 이어져요.</p>',
+      [{ t: '💾 저장하고 나가기', pri: 1, keep: 1, f: exitHome }, { t: '계속 하기' }]);
   }
 
   /* ---------- 첫 화면: 이어하기 ---------- */
@@ -143,7 +160,7 @@ const Save = (() => {
     if (!free) { Hub.toast('빈 슬롯이 없어요. 슬롯을 하나 지워 주세요'); openSlots('load'); return; }
     o[free] = a; put(o); Hub.toast(`📁 슬롯 ${free.slice(1)}에 보관했어요`); show('setup');
   }
-  return { init, save, load, openSlots, paintTitle };
+  return { init, save, load, openSlots, paintTitle, exitHome, askExit };
 })();
 window.Save = Save;
 Save.init();
