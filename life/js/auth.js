@@ -42,8 +42,11 @@ window.Auth = (() => {
   async function sha(t) { const b = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(t)); return [...new Uint8Array(b)].map(x => x.toString(16).padStart(2, '0')).join(''); }
   async function loginTest(id, pw) {
     if (native()) return { error: 'native' };
-    if (String(id).trim().toLowerCase() !== TEST.id) return { error: 'id' };
-    if (await sha('p8b-test|' + TEST.id + '|' + pw) !== TEST.hash) return { error: 'pw' };
+    const uid = String(id).trim().toLowerCase();
+    // 테스트 페이지(life-test) 전용 간단 계정 1 / 1
+    const quick = window.P8B_COMMERCIAL && uid === '1';
+    if (!quick && uid !== TEST.id) return { error: 'id' };
+    if (await sha('p8b-test|' + (quick ? '1' : TEST.id) + '|' + pw) !== (quick ? '20ec28ba28cbb2c16444111cdb88ca16b0515d5d52fce5ceac8eae50ed958289' : TEST.hash)) return { error: 'pw' };
     const first = !localStorage.getItem(TKEY + '_granted');
     localStorage.setItem(TKEY, JSON.stringify({ id: TEST.id, at: Date.now() }));
     if (first) localStorage.setItem(TKEY + '_granted', '1');

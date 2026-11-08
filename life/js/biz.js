@@ -18,77 +18,55 @@ function openOverlay(title, html, btns = [{ t: '닫기' }]) {
 function closeOverlay() { document.getElementById('overlay').classList.remove('on'); }
 document.getElementById('overlay').addEventListener('click', e => { if (e.target.id === 'overlay') closeOverlay(); });
 
-/* ---------- 상점 ---------- */
-// 상품 한눈에 비교: 무엇이 열리는지 · 무료와 차이 · 이용 기간
-const SHOP_CMP = {
-  report: ['올해 운세 · 10년 대운 상세 · 개운법', '무료는 사주 원국·오행·성격 요약'],
-  newyear: ['2027 종합 사주풀이 (분야 6개·12개월·좋은 날·토정비결 전체)', '무료는 총운·좋은 달 요약 · 광고로 하루 열람 가능'],
-  compat: ['두 사람 성격·연애 스타일·올해 연애운', '무료는 궁합 지수·한 줄 평'],
-  counsel: ['갈림길 고민 상담 3회 (사주·MBTI·가상 인생)', '첫 1회 무료'],
-  noads: ['배너·전면 광고 제거', '보상형 광고는 선택'],
-  fate: ['인생 게임 출생 조건 직접 선택', '무료는 랜덤 출생'],
-  karma: ['카르마 100 (다시 태어나기·기적)', '게임으로도 모을 수 있음'],
-  netpass: ['넷시티 시즌 프리미엄 보상', '무료 보상 줄은 누구나'],
-  pass7: ['7일 광고 없음 + 복주머니 2배', '기간제'], pass30: ['30일 광고 없음 + 복주머니 2배', '기간제'],
-};
-const periodOf = it => it.passDays ? `${it.passDays}일` : it.consumable ? '쓰면 소진' : /시즌/.test(it.n) ? '해당 시즌' : '영구';
-function shopCompareHTML() {
-  const ks = Store.list();
-  return `<details class="shopcmp"><summary>📊 상품 한눈에 비교</summary><div class="cmpt">
-    <div class="cmph"><span>상품</span><span>무엇이 열리나</span><span>기간</span><span>가격</span></div>
-    ${ks.map(k => { const it = Store.item(k), c = SHOP_CMP[k] || [it.d, '']; return `<div class="cmpr" data-k="${k}"><span>${it.e} ${it.n}</span><span>${c[0]}<small>${c[1]}</small></span><span>${periodOf(it)}</span><span>${Store.has(k) && !it.consumable ? '보유' : Store.price(k)}</span></div>`; }).join('')}
-  </div></details>`;
-}
-const priceLabel = (k, own) => own ? '보유 중' : (Store.native || window.P8B_COMMERCIAL) ? Store.price(k) : '앱 전용';
-/* 잠긴 콘텐츠에서 누르면 해당 상품 하나만 바로 보여 주고 구매 (전체 상점을 거치지 않게) */
+/* ---------- 상점 (카르마 하나로 단순화) ---------- */
+// 콘텐츠: 카르마로 열기 / 카르마: 광고·게임으로 모으거나 구매 / 광고 제거: 유일한 현금 상품
+const periodOf = it => it.k ? '영구 (이 기기)' : it.consumable ? '쓰면 소진' : '영구';
 function openProduct(k, back) {
   const it = Store.item(k); if (!it) return openShop(null, true);
-  const own = Store.has(k) && !it.consumable, info = Store.info(k), why = Store.why(k);
-  const note = Store.native ? '' : window.P8B_COMMERCIAL ? '<div class="webtrial">🧪 상업용 테스트 · 실제 결제 없음 — 누르면 구매 의향만 여쭤봐요</div>' : '<div class="webtrial">🌐 웹 체험판 · 결제는 앱에서 할 수 있어요</div>';
-  openOverlay(`${it.e} ${it.n}`, `${note}<div class="prodhero"><span>${it.e}</span><b>${it.n}</b><em>${own ? '보유 중' : Store.price(k)}</em><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}</div>
-    <div class="prodinfo"><b>무엇을 받나요?</b>${(info.length ? info : [it.d]).map(x => `<small>· ${x}</small>`).join('')}<small>· 이용 기간: ${periodOf(it)}</small></div>`,
-    [...(own ? [] : [{ t: `${it.e} ${Store.native || window.P8B_COMMERCIAL ? Store.price(k) + '에 구매하기' : '앱에서 구매하기 안내'}`, pri: 1, keep: true, f: () => doBuy(k, () => back ? back() : openProduct(k)) }]),
-     { t: '🛍️ 다른 상품과 비교하기', f: () => openShop(null, true) }, { t: '닫기', f: () => back && back() }]);
+  if (it.karma) return Karma.buyPack(k, back || (() => openShop(null, true)));
+  const own = Store.has(k), info = Store.info(k), why = Store.why(k);
+  openOverlay(`${it.e} ${it.n}`, `<div class="prodhero"><span>${it.e}</span><b>${it.n}</b><em>${own ? '열림' : it.k ? `✨ 카르마 ${it.k}` : Store.price(k)}</em><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}</div>
+    <div class="prodinfo"><b>무엇을 받나요?</b>${(info.length ? info : [it.d]).map(x => `<small>· ${x}</small>`).join('')}<small>· 이용 기간: ${periodOf(it)}</small></div>
+    ${it.k && !own ? `<div class="kbal sm"><span>보유 카르마</span><b>✨ ${Karma.bal()}</b>${Karma.bal() < it.k ? `<small><b>${it.k - Karma.bal()}</b> 더 필요해요 · 광고 1번 +${Karma.AD_K}</small>` : ''}</div>` : ''}`,
+    [...(own ? [] : it.k
+      ? [{ t: Karma.bal() >= it.k ? `✨ 카르마 ${it.k}로 열기` : '✨ 카르마 모으기', pri: 1, keep: true, f: () => Karma.unlock(k, () => back ? back() : (closeOverlay(), Hub.render())) }]
+      : [{ t: `${it.e} ${Store.native || Karma.testMode() ? Store.price(k) + '에 구매하기' : '앱에서 구매할 수 있어요'}`, pri: 1, keep: true, f: () => doBuy(k, back) }]),
+     { t: '✨ 카르마 상점 보기', f: () => openShop(null, true) }, { t: '닫기', f: () => back && back() }]);
 }
 function doBuy(k, after) {
   const it = Store.item(k);
+  if (it.karma) return Karma.buyPack(k, after);
   if (Store.has(k) && !it.consumable) return;
   Snd.sfx('tap');
+  if (!Store.native && Karma.testMode()) {
+    openOverlay('🧪 테스트 결제', `<p class="sjtxt" style="text-align:center">${it.e} <b>${it.n}</b> · ${it.price}<br>테스트 모드라 실제 결제 없이 적용돼요.</p>`,
+      [{ t: `🧪 ${it.price} 결제한 것으로 하기`, pri: 1, f: () => { Store.grant(k); if (k === 'noads') Ads.banner(false); Snd.sfx('fanfare'); after ? after() : openShop(null, true); } }, { t: '취소' }]);
+    return;
+  }
   Store.buy(k, (ok, err) => {
-    if (ok) {
-      if (it.karma) { karma += it.karma; saveMeta(); renderTitle(); }
-      if (it.counsel && typeof Counsel !== 'undefined') { Counsel.addCredits(it.counsel); Hub.toast(`🎟️ 상담권 ${it.counsel}회를 받았어요`); }
-      Snd.sfx('fanfare'); if (k === 'noads') Ads.banner(false); refreshFateLock(); closeOverlay(); after ? after() : openShop(null, true);
-    } else if (err === 'web' && window.P8B_COMMERCIAL) {
-      const form = () => window.open(STORE_CONFIG.feedbackUrl, '_blank', 'noopener');
-      openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">상업용 테스트 중이라 실제 결제는 없어요.<br>정식 출시 때 <b>${Store.price(k)}</b>이라면 사시겠어요?</p><div class="sjnote">${(Store.info(k).length ? Store.info(k) : [it.d]).map(x => `· ${x}`).join('<br>')}</div><p class="sjnote" style="text-align:center">설문에서 사고 싶은 이유·아쉬운 점·적정 가격을 알려 주세요.</p>`, [
-        { t: '👍 이 가격이면 살 것 같아요 (설문에 남기기)', pri: 1, f: form },
-        { t: '🤔 가격·구성이 아쉬워요 (의견 남기기)', f: form },
-        { t: '상점으로', f: () => openShop(null, true) }]);
-    } else if (err === 'web') {
-      openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">결제는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.<br>웹 체험판에서는 일부 상품을 무료로 열어 두었어요.</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
-    } else if (err && !/cancel/i.test(err)) {
-      openOverlay('결제 실패', `<p style="text-align:center;color:var(--dim)">${err}</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
-    }
+    if (ok) { Snd.sfx('fanfare'); if (k === 'noads') Ads.banner(false); refreshFateLock(); closeOverlay(); after ? after() : openShop(null, true); }
+    else if (err === 'web') openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">결제는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
+    else if (err && !/cancel/i.test(err)) openOverlay('결제 실패', `<p style="text-align:center;color:var(--dim)">${err}</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
   });
 }
 function openShop(focus, full) {
   if (focus && !full && Store.item(focus)) return openProduct(focus);
-  const rows = Store.list().map(k => {
-    const it = Store.item(k), own = Store.has(k) && !it.consumable, why = Store.why(k);
-    return `<div class="shopitem${focus === k ? ' focus' : ''}"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${why ? `<small style="color:var(--money)">${why}</small>` : ''}${!Store.native && !window.P8B_COMMERCIAL && !own ? `<small style="opacity:.7">앱 가격 ${Store.price(k)}</small>` : ''}${Store.info(k).length ? `<details class="shopinfo"><summary>무엇을 받나요?</summary>${Store.info(k).map(x => `<small>· ${x}</small>`).join('')}</details>` : ''}</div>
-      <button data-k="${k}" class="${own ? 'own' : ''}">${priceLabel(k, own)}</button></div>`;
-  }).join('');
-  const note = Store.native ? '구매 내역은 스토어 계정에 저장돼요. 기기를 바꾸면 「구매 복원」을 눌러 주세요.' : '웹 체험판에서는 결제가 없어요. 앱에서 구매할 수 있어요.';
-  const top = (Store.native ? '' : window.P8B_COMMERCIAL ? '<div class="webtrial">🧪 상업용 테스트 · 실제 결제 없음<br>정식 출시 가격으로 표시돼요. 눌러 보시면 구매 의향만 여쭤봐요.</div>'
-    : '<div class="webtrial">🌐 웹 체험판 · 결제 불가<br>표시된 가격은 앱 기준 안내예요. 「웹 체험판 무료 개방」 상품은 지금 바로 써 볼 수 있어요.</div>')
-    + (Store.item('pass7') ? '<p class="sjnote">🚫 <b>광고 제거</b>는 한 번 사면 영구 적용 · 🍀 <b>행운패스</b>는 정해진 기간만 광고가 없고 출석 복주머니가 2배예요. 광고 제거를 이미 가지고 있다면 패스는 복주머니 2배 효과만 남아요. 🤖 <b>AI 사주상담 상담권</b>과 ✨ <b>카르마</b>는 쓰면 없어지는 소모성이에요.</p>'
-      : '<p class="sjnote">유료 상품은 한 번 사면 기간 제한 없이 쓰는 일회성 상품이에요. 예외: 카르마와 AI 사주상담 상담권은 쓰면 없어지는 소모성, 넷시티 시즌 패스는 해당 시즌 동안만 보상을 받을 수 있어요. 각 상품의 「무엇을 받나요?」에서 범위를 확인하세요.</p>')
-    + shopCompareHTML();
-  openOverlay('🛍️ 상점', top + rows + `<p class="sjnote" style="text-align:center">${note}</p>`,
-    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { const n = await Store.restore(); log && P && log(`구매 ${n}건 복원`); openShop(null, true); } }] : []), { t: '닫기' }]);
-  document.querySelectorAll('#osheet .shopitem button').forEach(b => b.onclick = () => doBuy(b.dataset.k));
-  document.querySelectorAll('#osheet .cmpr').forEach(r => r.onclick = () => openProduct(r.dataset.k, () => openShop(null, true)));
+  const cont = Store.contents().map(k => {
+    const it = Store.item(k), own = Store.has(k);
+    return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${own ? `<small style="color:var(--money)">${Store.why(k)}</small>` : ''}</div>
+      <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`;
+  }).join('') + `<div class="shopitem"><span class="se">📜</span><div><b>토정비결 전체</b><small>월별 신수·재물·처세 (해마다 · 사람별)</small></div><button data-go="tojeong">✨ ${window.Tojeong ? Tojeong.COST : 30}</button></div>
+    <div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담 1회</b><small>첫 상담 무료 · 이후 1회마다</small></div><button data-go="counsel">✨ 20</button></div>`;
+  const noads = Store.item('noads'), nown = Store.has('noads');
+  openOverlay('✨ 카르마 상점',
+    `<p class="sjnote" style="text-align:center;margin-top:0">유료 콘텐츠는 모두 <b>카르마</b>로 열어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요.</p>`
+    + Karma.chargeHTML(0) + `<h4 class="kh">🔓 카르마로 여는 콘텐츠</h4>` + cont
+    + (noads ? `<h4 class="kh">🚫 광고 제거</h4><div class="shopitem"><span class="se">${noads.e}</span><div><b>${noads.n}</b><small>${noads.d}</small></div><button data-buy="noads" class="${nown ? 'own' : ''}">${nown ? '보유 중' : Store.native || Karma.testMode() ? noads.price : '앱 전용'}</button></div>` : ''),
+    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { await Store.restore(); openShop(null, true); } }] : []), { t: '닫기' }]);
+  Karma.bindCharge(() => openShop(null, true));
+  document.querySelectorAll('#osheet [data-c]').forEach(b => b.onclick = () => openProduct(b.dataset.c, () => openShop(null, true)));
+  document.querySelectorAll('#osheet [data-go]').forEach(b => b.onclick = () => { closeOverlay(); Hub.go(b.dataset.go); });
+  document.querySelectorAll('#osheet [data-buy]').forEach(b => b.onclick = () => doBuy(b.dataset.buy));
 }
 
 /* ---------- 프리미엄 사주 리포트 ---------- */
@@ -152,7 +130,7 @@ function mateLine() {
 function refreshFateLock() {
   const own = Store.has('fate'), fl = document.getElementById('fateLock');
   if (!fl) return;
-  fl.textContent = own ? '가정형편과 재능을 직접 골라요' : '🔒 상점에서 열기';
+  fl.textContent = own ? '가정형편과 재능을 직접 골라요' : '🔒 카르마 30으로 열기';
   ['fCls', 'fTal'].forEach(id => { const el = document.getElementById(id); el.disabled = !own; });
 }
 

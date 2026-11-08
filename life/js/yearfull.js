@@ -87,6 +87,46 @@ const YearFull = (() => {
     return out.sort((x, y2) => y2[1] - x[1]).slice(0, 2).map(x => x[0]).sort((x, y2) => x - y2);
   }
 
+  /* ---------- 관계·궁합 · MBTI · 인생 게임 (보강) ---------- */
+  const RELN = { love: ['💕', '연인'], family: ['🏠', '가족'], friend: ['🤝', '친구'], work: ['💼', '동료'] };
+  const WITH = ['함께 새 일을 벌이기', '함께 배우고 만들기', '돈 계획·살림 함께 세우기', '역할을 나눠 목표 이루기', '함께 공부하고 조언 주고받기'];
+  function relHTML(p, a, B) {
+    const ppl = store.get('p8b_people', []).map(q => ({ q, b: Hub.analyze(q) })).filter(x => x.b).slice(0, 4);
+    if (!ppl.length) return `<div class="hcard"><h3 class="ht">💞 2027 관계 · 궁합</h3><p class="sjtxt" style="margin:0">궁합 메뉴에 가족·연인·친구·동료를 등록하면, 여기에서 그 사람과의 2027년 흐름을 함께 풀어 드려요.</p></div>`;
+    const myBest = B.n.best.map(m => m.solarM);
+    return `<div class="hcard"><h3 class="ht">💞 2027 관계 · 궁합</h3><p class="sjnote">궁합 관계도에 등록한 사람과 올해를 함께 보낼 때의 흐름이에요.</p>
+      ${ppl.map(({ q, b }) => {
+        const c = Saju.compatPair(a, b), nb = Fortune.newYear(b, Y), r = RELN[q.rel] || RELN.love;
+        const both = nb.best.map(m => m.solarM).filter(m => myBest.includes(m));
+        const same = nb.ts.g === B.gA;
+        return `<div class="yf-rel"><div class="yf-relh"><b>${r[0]} ${esc(q.name)}</b><span>${r[1]} · 궁합 ${c ? c.score : '-'}점</span></div>
+          <p>${esc(q.name)}님의 2027년은 <b>${GN[nb.ts.g]}</b>의 해예요. ${same ? '나와 같은 방향의 해라 서로의 상황을 잘 이해해요.' : `나는 ${GN[B.gA]}, 상대는 ${GN[nb.ts.g]} — 서로 다른 쪽에 힘을 쓰는 해라 역할을 나누면 좋아요.`}</p>
+          <p>🤝 올해 함께하면 좋은 일: <b>${WITH[nb.ts.g]}</b>${both.length ? ` · 둘 다 좋은 달: <b>${both.map(m => m + '월').join(', ')}</b>` : ''}</p>
+          ${c && c.notes ? `<small>${c.notes.slice(0, 2).join(' · ')}</small>` : ''}</div>`;
+      }).join('')}</div>`;
+  }
+  const MB_Y = { E: '사람을 만나는 자리에서 기회가 와요. 모임·발표를 올해의 무대로 쓰세요.', I: '혼자 깊이 파고드는 시간이 성과를 만들어요. 일정에 집중 시간을 먼저 넣으세요.',
+    S: '구체적인 계획과 숫자로 움직일 때 운이 붙어요. 월별 목표를 작게 쪼개세요.', N: '새 아이디어가 올해의 자산이에요. 떠오른 생각을 기록하고 한 가지는 실행해 보세요.',
+    T: '판단은 빠르지만 사람의 마음을 놓치기 쉬워요. 결정 전에 한 번 더 상대 입장을 물어보세요.', F: '사람을 챙기는 힘이 귀인을 부르지만, 거절해야 할 땐 분명히 하세요.',
+    J: '계획대로 밀고 갈 때 강해요. 다만 변수가 생기면 계획을 고치는 것도 실력이에요.', P: '유연함이 기회를 잡지만 마감이 흐려지기 쉬워요. 중요한 일은 날짜부터 정하세요.' };
+  function mbtiHTML(a, B) {
+    const test = store.get('p8b_mbti_test', null), set = window.MbtiTest ? MbtiTest.settled(test) : null, sm = Fun.mbti(a);
+    const type = set || sm.type, info = Fun.MBTI[type] || ['', ''];
+    return `<div class="hcard"><h3 class="ht">🧩 MBTI로 본 2027 전략 · ${type}</h3><div class="sjtxt">
+      <p><b>${info[0]}</b> ${info[1]}</p>
+      <p>올해는 <b>${GN[B.gA]}</b>의 해 — ${type}에게는 이렇게 쓰면 좋아요.</p>
+      ${[...type].map(c => `<p>· <b>${c}</b> ${MB_Y[c] || ''}</p>`).join('')}
+      <p class="sjnote">기준: ${set ? 'MBTI 성향 검사 결과' : test ? '성향 검사 결과가 뚜렷하지 않아 사주로 본 MBTI' : '사주로 본 MBTI (성향 검사를 하면 더 정확해요)'}${set && set !== sm.type ? ` · 사주로 본 MBTI는 ${sm.type}` : ''}</p></div></div>`;
+  }
+  function gameHTML(B) {
+    const h = store.get('p8b_hist', []);
+    if (!h.length) return `<div class="hcard"><h3 class="ht">🎲 인생 게임으로 미리 보는 선택</h3><p class="sjtxt" style="margin:0">인생 게임에서 갈림길마다 두 갈래 인생을 미리 살아 볼 수 있어요. 한 판 끝까지 살면 카르마도 모여요.</p></div>`;
+    const GV = { S: 5, A: 4, B: 3, C: 2, D: 1 }, best = h.reduce((m, x) => (GV[x.grade] || 0) > (GV[m.grade] || 0) ? x : m, h[0]);
+    return `<div class="hcard"><h3 class="ht">🎲 인생 게임 속 나</h3><div class="sjtxt">
+      <p>지금까지 <b>${h.length}번</b>의 인생을 살아 봤어요. 가장 좋았던 인생은 ${best.f} ${esc(best.name)} — 「${esc(best.title)}」(${best.grade}등급).</p>
+      <p>올해의 중심 기운 <b>${GN[B.gA]}</b>을(를) 게임 속 육성 방침으로 시험해 보고, 갈림길 극장에서 선택의 결과를 비교해 보세요.</p></div></div>`;
+  }
+
   /* ---------- 화면 ---------- */
   function html(p, a) {
     if (!a) return '<div class="hcard"><p class="hsub">생년월일을 먼저 입력해 주세요.</p></div>';
@@ -119,7 +159,7 @@ const YearFull = (() => {
       n.drel && n.drel.v < 0 ? `일지와 올해 지지가 「${n.drel.n}」 관계라 생활 리듬·거처의 변화가 생기기 쉬워요. 일정에 여유를 두세요.` : `부족한 ${EKN[a.weak]} 기운을 채우지 않으면 하반기에 피로가 쌓이기 쉬워요. ${L.b}을(를) 챙기세요.`,
     ];
     return `<div class="hhead"><small>${esc(p.name)}님 · ${n.gzHan}년 · 만 ${B.age - 1}~${B.age}세</small><h2>2027 종합 사주풀이</h2></div>
-      ${ps && !owned() ? `<div class="yf-pass">📺 광고로 연 상세 풀이 · 오늘 ${new Date(ps.until).getHours()}시 59분까지 볼 수 있어요 <button id="yfBuy2">평생 보기 ${Store.price('newyear')}</button></div>` : ''}
+
       <div class="hcard"><h3 class="ht">📊 한눈에 보는 2027</h3>
         <div class="yf-top"><div class="yf-sc"><b>${B.total}</b><small>한 해 총점</small></div><div><div class="yf-kw">${B.kw.map(k => `<span>#${k}</span>`).join('')}</div><p>${S6.총운}</p></div></div>
         ${AREAS.map((x, i) => bar(`${x[0]} ${x[1]}`, B.area[i])).join('')}
@@ -135,33 +175,36 @@ const YearFull = (() => {
         ${n.yrel ? `<p>🐑 띠 관계: 내 띠 ↔ 2027 양띠 「${n.yrel.n}」 — ${n.yrel.d.replace('날', '해')}</p>` : ''}
         ${n.drel ? `<p>🏠 일지 관계: 「${n.drel.n}」 — ${n.drel.d.replace('날', '해')}</p>` : ''}</div></div>
       <div class="hcard"><h3 class="ht">🗂️ 분야별 상세</h3><div class="sjtxt">${AREAS.map((x, i) => `<h4>${x[0]} ${x[1]} <small class="yf-s">${B.area[i]}점</small></h4><p>${areaTxt[i]}</p>`).join('')}</div></div>
+      ${relHTML(p, a, B)}
+      ${mbtiHTML(a, B)}
       ${B.t ? `<div class="hcard"><h3 class="ht">📜 2027 토정비결 전체</h3>${Tojeong.fullHTML(B.t)}</div>` : ''}
       <div class="hcard"><h3 class="ht">📅 12개월 상세</h3><p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터). 좋은 날은 그달 일진 중 오늘의 운세 점수가 가장 높은 날이에요.</p>${months}</div>
       <div class="hcard"><h3 class="ht">🗓️ 분기 전략</h3>${qs.map((v, i) => `<div class="yf-q"><b>${['1분기 (2~4월)', '2분기 (5~7월)', '3분기 (8~10월)', '4분기 (11~1월)'][i]}</b><em>${v}</em><span>${qtxt(v)}</span></div>`).join('')}</div>
       <div class="hcard"><h3 class="ht">🍀 2027 개운 가이드</h3><div class="sjtxt">
         <p>부족한 <b>${EKN[a.weak]}</b> 기운을 채우면 한 해가 고르게 흘러요.</p>
         <ul class="yf-ul"><li>🎨 행운의 색: ${L.c}</li><li>🔢 행운의 숫자: ${L.n}</li><li>🧭 좋은 방향: ${L.d}</li><li>🍽️ 도움 되는 음식: ${L.f}</li><li>🩺 챙길 몸: ${L.b}</li><li>🌱 개운 습관: ${dm.개운}</li></ul></div></div>
+      ${gameHTML(B)}
       <div class="hcard"><h3 class="ht">⚠️ 2027 주의할 점</h3><div class="sjtxt">${cautions.map(c => `<p>· ${c}</p>`).join('')}</div></div>
       <div class="hcard"><p class="sjtxt" style="margin:0">💌 ${esc(p.name)}님, 2027년은 <b>${B.kw[0]}</b>의 기운이 중심이 되는 해예요. 좋은 달에 움직이고 조심할 달에 쉬어 가며, 부족한 기운을 채워 가면 한 해를 내 편으로 만들 수 있어요.</p>
         <p class="sjnote">※ 전통 명리·토정비결 이론을 바탕으로 한 참고·재미용 풀이예요.</p></div>`;
   }
   // 무료 화면(신년운세·토정비결) 아래에 붙는 안내 카드
   function ctaHTML(p, page) {
-    if (unlocked(p)) return `<div class="hcard yf-cta open"><b>📖 2027 종합 사주풀이</b><small>${owned() ? '보유 중 · 언제든 다시 볼 수 있어요' : '광고로 열림 · 오늘 하루 볼 수 있어요'}</small><button class="bigbtn wide" id="yfGo">📖 아주 자세한 종합 풀이 보기</button></div>`;
+    const K = (Store.item('newyear') || {}).k || 50;
+    if (unlocked(p)) return `<div class="hcard yf-cta open"><b>📖 2027 종합 사주풀이</b><small>${Store.why('newyear') || '열림'} · 언제든 다시 볼 수 있어요</small><button class="bigbtn wide" id="yfGo">📖 아주 자세한 종합 풀이 보기</button></div>`;
+    const have = typeof karma !== 'undefined' ? karma : 0;
     return `<div class="hcard yf-cta"><b>📖 2027 종합 사주풀이 · 아주 자세히</b>
       <small>지금 보신 무료 풀이는 요약이에요. 상세 풀이에는 이런 내용이 들어 있어요.</small>
       <ul class="yf-ul"><li>📊 분야 6개 점수와 상세 풀이 (직업·재물·연애·건강·가정·학업)</li><li>🔄 대운·세운·띠·일지 관계로 본 2027년의 흐름</li>
-        <li>📜 토정비결 전체 (상·중·하괘 · 월별 신수)</li><li>📅 12개월 상세 + 달마다 좋은 날</li><li>🗓️ 분기 전략 · 🍀 개운 가이드 · ⚠️ 주의할 점</li></ul>
-      <button class="adbtn yf-adb" id="yfAd">📺 광고 보고 오늘 무료로 보기</button>
-      <button class="bigbtn wide" id="yfBuy">💳 ${Store.price('newyear')} · 기간 제한 없이 보기</button>
-      <p class="sjnote">광고로 열면 오늘 하루(자정까지) 볼 수 있어요. 결제하면 2027년이 지나도 계속 다시 볼 수 있어요.</p></div>`;
+        <li>💞 관계도에 등록한 사람과의 2027 궁합 · 🧩 MBTI 2027 전략</li><li>📜 토정비결 전체 (상·중·하괘 · 월별 신수)</li>
+        <li>📅 12개월 상세 + 달마다 좋은 날</li><li>🗓️ 분기 전략 · 🍀 개운 가이드 · ⚠️ 주의할 점</li></ul>
+      <div class="kbal sm"><span>보유 카르마</span><b>✨ ${have}</b>${have < K ? `<small><b>${K - have}</b> 더 모으면 열려요 · 광고 1번 +${Karma.AD_K}</small>` : '<small>지금 열 수 있어요</small>'}</div>
+      <button class="bigbtn wide" id="yfOpen">${have >= K ? `✨ 카르마 ${K}로 열기` : `✨ 카르마 모으기 (${K - have} 부족)`}</button>
+      <p class="sjnote">한 번 열면 2027년이 지나도 계속 다시 볼 수 있어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요.</p></div>`;
   }
   function bind(p, a, rerender) {
-    const r = rerender || (() => Hub.render());
     const g = document.getElementById('yfGo'); if (g) g.onclick = () => { Snd.sfx('reveal'); Hub.go('yearfull'); };
-    const ad = document.getElementById('yfAd'); if (ad) ad.onclick = () => watchAd(p, () => Hub.go('yearfull'));
-    const by = document.getElementById('yfBuy'); if (by) by.onclick = () => openShop('newyear');
-    const b2 = document.getElementById('yfBuy2'); if (b2) b2.onclick = () => openShop('newyear');
+    const o = document.getElementById('yfOpen'); if (o) o.onclick = () => Karma.unlock('newyear', () => Hub.go('yearfull'));
   }
   function init() {
     Hub.register({ page: 'yearfull', title: '2027 종합 사주풀이', html: (p, a) => html(p, a), bind: (p, a) => bind(p, a) });

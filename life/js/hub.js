@@ -19,9 +19,9 @@ const Hub = (() => {
   /* 실제 사용자·궁합 상대 프로필은 오늘 이후 날짜 불가 (게임 속 가상 인물은 별도 허용) */
   const todayStr = () => Fortune.ymd(new Date());
   const futureMsg = d => d > todayStr() ? '오늘 이후 날짜는 입력할 수 없어요.' : '';
-  const TRIAL = () => Store.native ? '' : window.P8B_COMMERCIAL
-    ? '<div class="webtrial">🧪 상업용 테스트 페이지 · 실제 결제는 일어나지 않아요. 유료 상품을 누르면 구매 의향만 여쭤봐요.</div>'
-    : '<div class="webtrial">🌐 웹 체험판 · 결제 기능이 없어요. 가격은 앱 기준 안내이며 일부 상품은 무료로 열려 있어요.</div>';
+  const TRIAL = () => Store.native ? '' : (typeof Karma !== 'undefined' && Karma.testMode())
+    ? '<div class="webtrial">🧪 테스트 모드 · 광고와 결제가 실제 없이 가상으로 처리돼요. 카르마를 모아 유료 콘텐츠를 열어 보세요.</div>'
+    : '<div class="webtrial">🌐 웹 체험판 · 유료 콘텐츠는 카르마로 열어요. 카르마는 광고 체험·인생 게임으로 모을 수 있고, 구매는 앱에서 할 수 있어요.</div>';
   function analyzeP(p) { const b = birthOf(p); return b ? Saju.analyze(b, p.sex !== 'f') : null; }
   const keyOf = p => `${p.date}|${p.time || ''}|${p.sex}`;
 
@@ -209,10 +209,10 @@ const Hub = (() => {
       <button class="sso kakao" id="lgKakao" ${ok && !nat ? '' : 'disabled'}>${KAKAO_SVG}<span>카카오 로그인</span></button>
       <button class="sso google" id="lgGoogle" ${ok && !nat ? '' : 'disabled'}>${GOOGLE_SVG}<span>Google 계정으로 로그인</span></button>
       ${!ok ? '<p class="sjnote" style="text-align:center">로그인 서버 연결을 준비하고 있어요. 곧 열려요!</p>' : nat ? '<p class="sjnote" style="text-align:center">앱 로그인은 다음 업데이트에서 지원해요. 지금은 웹에서 로그인할 수 있어요.</p>' : ''}
-      ${nat ? '' : `<details class="tlog"><summary>🧪 테스트 계정으로 로그인</summary>
+      ${nat ? '' : `<details class="tlog"${window.P8B_COMMERCIAL ? ' open' : ''}><summary>🧪 테스트 계정으로 로그인</summary>
         <input id="tlId" autocomplete="username" placeholder="아이디" maxlength="30"><input id="tlPw" type="password" autocomplete="current-password" placeholder="비밀번호" maxlength="40">
         <div id="tlErr" class="cs-err"></div><button class="bigbtn wide" id="tlGo">테스트 계정 로그인</button>
-        <p class="sjnote">검수·시범 테스트 전용 계정이에요. 로그인하면 테스트 프로필과 모든 유료 콘텐츠가 열려요.</p></details>`}
+        <p class="sjnote">검수·시범 테스트 전용 계정이에요. 로그인하면 테스트 프로필과 모든 유료 콘텐츠가 열려요.${window.P8B_COMMERCIAL ? ' 이 테스트 페이지에서는 아이디 <b>1</b> · 비밀번호 <b>1</b>로도 로그인할 수 있어요.' : ''}</p></details>`}
       <p class="sjnote" style="text-align:center">생년월일 등 개인정보는 서버로 보내지 않고 이 기기에만 저장돼요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
     const tg = $('#tlGo'); if (tg) tg.onclick = async () => {
       const r = await Auth.loginTest($('#tlId').value, $('#tlPw').value);
@@ -276,6 +276,13 @@ const Hub = (() => {
     { k: 'daily', g: 'daily', c: 'butter', ic: 'gift', e: '🧧', n: '출석 · 데일리 미션', d: '매일 들러 복주머니 받고 보상으로 교환', need: 0, f: () => go('daily') },
     { k: 'game', g: 'game', c: 'sky', ic: 'globe', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
   ];
+  // 페이지 제목이 두 줄로 넘어가지 않게 글자 크기를 줄여 한 줄에 맞춤
+  function fitTitles(root) {
+    requestAnimationFrame(() => (root || document).querySelectorAll('.hhead h2').forEach(h => {
+      h.style.fontSize = ''; let fs = parseFloat(getComputedStyle(h).fontSize);
+      while (h.scrollWidth > h.clientWidth + 1 && fs > 17) { fs -= 1; h.style.fontSize = fs + 'px'; }
+    }));
+  }
   const itemName = it => typeof it.n === 'function' ? it.n() : it.n;
   /* 다른 모듈이 항목·페이지를 붙이는 통로 (예: AI 사주상담) */
   const PAGES = {};
@@ -612,7 +619,7 @@ const Hub = (() => {
   }
   function openTojeong() { if (!analyzeP(getMe())) { openItem('tojeong'); return; } go('tojeong'); }
   function passCard(pass) {
-    if (!Ads.native && !(window.WebAds && WebAds.on)) return '';   // 광고가 없는 웹에서는 광고 없애기 카드가 의미 없음
+    return '';   // 유료 모델 단순화: 기간제 행운패스 없음 (광고는 카르마 모으기로 통일)   // 광고가 없는 웹에서는 광고 없애기 카드가 의미 없음
     return `<div class="hcard hpass"><div><b>🍀 행운패스</b><small>${pass}</small></div>
         ${Ads.native ? `<button class="adbtn" id="hPassAd" ${Ads.canReward() ? '' : 'disabled'}>📺 광고 보고 2시간 무료${Ads.canReward() ? '' : '<small>(지금은 불가)</small>'}</button>` : '<small>📺 광고 보고 2시간 무료는 앱에서 이용할 수 있어요 · 복주머니 3개로도 교환 가능</small>'}
         ${Store.item('pass7') ? `<button class="ghost" id="hPassBuy">7일 ${Store.price('pass7')} · 30일 ${Store.price('pass30')}</button>` : ''}</div>`;
@@ -671,7 +678,8 @@ const Hub = (() => {
       <h4>🌟 한 해 총운 · ${n.ts.n}의 해</h4><p>${n.sx.총운}</p>
       ${n.yrel ? `<p>🐑 내 띠와 올해 양띠는 <b>${n.yrel.n}</b> — ${n.yrel.d.replace('날', '해')}</p>` : ''}
       <p>📈 좋은 달: <b>${n.best.map(mm).join(', ')}</b> · 조심할 달: <b>${mm(n.worst)}</b></p>
-      <p class="sjnote">※ 무료 요약이에요. 분야별·12개월·좋은 날까지 담은 상세 풀이는 아래 종합 사주풀이에서 볼 수 있어요.</p></div></div>
+      <h4>📅 12개월 흐름 (간략)</h4><table class="dytbl hmonth"><tr><th>달</th><th>점수</th><th>한마디</th></tr>${n.months.map(m => `<tr><td>${mm(m)}</td><td><b style="color:${gColor(m.v)}">${m.v}</b></td><td>${m.txt}</td></tr>`).join('')}</table>
+      <p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터). ※ 분야별 상세·달마다 좋은 날·궁합·MBTI 전략은 아래 종합 사주풀이에서 볼 수 있어요.</p></div></div>
       ${typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
   }
   function openNewYear() { go('newyear'); }
@@ -846,7 +854,7 @@ const Hub = (() => {
     else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
     else if (PAGES[tab]) { body.innerHTML = PAGES[tab].html(p, a); PAGES[tab].bind(p, a); }
     else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); body.innerHTML = newYearHTML(p, a); if (typeof YearFull !== 'undefined') YearFull.bind(p, a); }
-    body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav();
+    body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav(); fitTitles(body);
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
   }

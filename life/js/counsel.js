@@ -112,7 +112,7 @@ const Counsel = (() => {
       <label class="cs-l">선택지 B<input id="csB" maxlength="40" value="${esc(st.opts[1])}" placeholder="예: ${T.ex[1]}"></label>
       <label class="cs-l">선택지 C <small>(선택)</small><input id="csC" maxlength="40" value="${esc(st.opts[2] || '')}" placeholder="비워 두어도 돼요"></label>
       <div id="csErr" class="cs-err"></div>
-      <button class="bigbtn wide" id="csGo">🔮 상담 받기 <small>${freeLeft() ? '첫 상담 무료' : c > 0 ? `상담권 ${c}회 남음` : '상담권 필요'}</small></button>
+      <button class="bigbtn wide" id="csGo">🔮 상담 받기 <small>${freeLeft() ? '첫 상담 무료' : c > 0 ? `상담권 ${c}회 남음` : `카르마 ${KARMA}`}</small></button>
       <p class="sjnote">📍 이름·생년월일 같은 개인정보는 이 기기 안에서만 계산해요. 상담 기록도 이 기기에만 남아요.</p></div>
       <div class="hcard cs-what"><h3 class="ht">무엇을 받나요?</h3>
       <ul><li>🧭 선택지별 <b>적합도</b>와 종합 의견</li><li>🔮 지금 대운 · ${new Date().getFullYear()}년 세운 · 움직이기 좋은 달</li><li>🧠 MBTI로 본 나의 결정 스타일과 함정</li>
@@ -121,11 +121,10 @@ const Counsel = (() => {
       ${histHTML()}`;
   }
   function pricing() {
-    const it = Store.item('counsel');
-    return `<span>🎟️ 보유 상담권 <b>${credits()}회</b>${freeLeft() ? ' (첫 상담 무료 포함)' : ''}</span>
-      <div class="row2"><button class="ghost" id="csBuy">${it ? `${it.e} ${it.n} · ${Store.native || window.P8B_COMMERCIAL ? Store.price('counsel') : '앱에서 구매'}` : '상담권'}</button><button class="ghost" id="csKarma">✨ 카르마 ${KARMA}로 1회</button></div>`;
+    return `<span>${freeLeft() ? '🎁 첫 상담은 <b>무료</b>예요' : credits() > 0 ? `🎟️ 남은 상담권 <b>${credits()}회</b>` : `✨ 상담 1회 = 카르마 <b>${KARMA}</b>`} · 보유 카르마 ${typeof karma !== 'undefined' ? karma : 0}</span>
+      <div class="row2"><button class="ghost" id="csKarma">✨ 카르마 모으기 (광고 +${Karma.AD_K})</button></div>`;
   }
-  const KARMA = 40;
+  const KARMA = 20;   // 상담 1회 카르마
   function histHTML() {
     const h = store.get(HIST, []); if (!h.length) return '';
     return `<div class="hcard"><h3 class="ht">지난 상담 (이 기기)</h3>${h.slice(0, 5).map((x, i) => `<button class="cs-past" data-i="${i}"><b>${x.e} ${esc(x.q || x.opts.join(' vs '))}</b><small>${new Date(x.t).toLocaleDateString()} · 추천: ${esc(x.pick)}</small></button>`).join('')}</div>`;
@@ -137,11 +136,7 @@ const Counsel = (() => {
     const go = $('#csGo'); if (go) go.onclick = () => { keep(); start(p, r); };
     const n = $('#csNew'); if (n) n.onclick = () => { st.res = null; r(); };
     const by = $('#csBuy'); if (by) by.onclick = () => buy(r);
-    const k = $('#csKarma'); if (k) k.onclick = () => {
-      if (karma < KARMA) { Hub.toast(`카르마가 ${KARMA - karma} 부족해요 · 인생 게임으로 모을 수 있어요`); return; }
-      openOverlay('✨ 카르마로 상담권', `<p class="sjtxt" style="text-align:center">카르마 ${KARMA}를 써서 상담권 1회를 받을까요?<br><small>보유 카르마 ${karma}</small></p>`,
-        [{ t: '교환하기', pri: 1, f: () => { karma -= KARMA; saveMeta(); addCredits(1); Snd.sfx('coin'); Hub.toast('🎟️ 상담권 1회를 받았어요'); r(); } }, { t: '취소' }]);
-    };
+    const k = $('#csKarma'); if (k) k.onclick = () => Karma.openCharge(Math.max(0, KARMA - karma), 'AI 사주상담', () => r());
     document.querySelectorAll('.cs-past').forEach(b => b.onclick = () => { const x = store.get(HIST, [])[+b.dataset.i]; if (x) openOverlay(`${x.e} 지난 상담`, x.html, [{ t: '닫기' }]); });
     bindResult();
   }
@@ -156,10 +151,7 @@ const Counsel = (() => {
     if (opts.length < 2) return err('선택지를 두 개 이상 적어 주세요');
     if (new Set(opts).size !== opts.length) return err('선택지가 서로 같아요');
     if (st.busy) return;
-    if (credits() <= 0) {
-      openOverlay('🎟️ 상담권이 필요해요', `<p class="sjtxt" style="text-align:center">첫 무료 상담을 이미 쓰셨어요.<br>상담권을 구매하거나 카르마 ${KARMA}로 바꿔 상담할 수 있어요.</p>`,
-        [{ t: '🛍️ 상담권 보기', pri: 1, f: () => buy(r) }, { t: '닫기' }]); return;
-    }
+    if (credits() <= 0) { Karma.spend(KARMA, 'AI 사주상담 1회', () => { addCredits(1); start(p, r); }, () => r()); return; }
     const c = ctxOf(p); if (!c) return err('내 정보를 먼저 입력해 주세요');
     st.busy = true;
     openOverlay('🤖 AI 사주상담', `<div class="fk-load"><div class="fk-reel">🔮</div><p id="csStep">사주와 올해 흐름을 살피는 중…</p><div class="fk-bar"><i id="fkBar"></i></div></div>`, []);
