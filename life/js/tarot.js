@@ -118,6 +118,8 @@ window.Tarot = (() => {
   }
   // 섞기 → 멈춘 순간의 순서로 덱을 섞고, 사용자가 고른 자리의 카드로 리딩 묶음을 만든다
   function shuffled() { const a = [...Array(DECK.length).keys()]; for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  const cardAt = (order, i) => ({ c: DECK[order[i]], rev: rnd(100) < 30 });
+  const fromCards = (cards, topic, open) => ({ n: cards.length, cards, topic, opened: new Set(open ? cards.map((_, k) => k) : []) });
   function fromPicks(order, picks, topic) { return { n: picks.length, cards: picks.map(i => ({ c: DECK[order[i]], rev: rnd(100) < 30 })), topic, opened: new Set() }; }
   // 한 장 뒤집을 때 띄우는 설명 팝업 내용
   function cardHTML(D, k) {
@@ -131,5 +133,5 @@ window.Tarot = (() => {
         <h4>조언</h4><p>${advice(x)}</p>
         <h4>그림 읽기</h4><p>${C.pic}</p></div></div>`;
   }
-  return { draw, spreadHTML, readingHTML, cardHTML, shuffled, fromPicks, TBACK, SPREADS, TOPIC, DECK };
+  return { draw, spreadHTML, readingHTML, cardHTML, shuffled, cardAt, fromCards, img, fromPicks, TBACK, SPREADS, TOPIC, DECK };
 })();
