@@ -226,10 +226,11 @@ const Hub = (() => {
   const TEST_ME = { name: '양인석', date: '1974-03-19', cal: 's', time: '', sex: 'm' };
   function setupTestAccount(first) {
     store.set('p8b_me', { ...TEST_ME }); rememberProfile(TEST_ME);
+    { const l = people(); l.forEach(x => { if (x.name === '테스트 상대') x.name = '예시 상대(테스트용)'; }); store.set('p8b_people', l); }
     if (first) {
       if (typeof karma !== 'undefined') { karma += 500; saveMeta(); }
       if (typeof Counsel !== 'undefined') Counsel.addCredits(30);
-      const list = people(); if (!list.some(x => x.name === '테스트 상대')) { list.unshift({ name: '테스트 상대', date: '1978-08-15', cal: 's', time: '', sex: 'f' }); store.set('p8b_people', list.slice(0, 20)); }
+      const list = people(); if (!list.some(x => /테스트 상대|예시 상대/.test(x.name))) { list.unshift({ name: '예시 상대(테스트용)', date: '1978-08-15', cal: 's', time: '', sex: 'f', rel: 'love' }); store.set('p8b_people', list.slice(0, 20)); }
     }
     toast(first ? '🧪 테스트 계정 · 양인석 프로필, 유료 콘텐츠 전체, 카르마 500, 상담권 30회' : '🧪 테스트 계정으로 로그인했어요');
     topbarUI(); if ($('#hub').classList.contains('on')) render();
@@ -855,12 +856,21 @@ const Hub = (() => {
   function bindNav() { const b = $('#hnBack'); if (b) b.onclick = () => { editing = false; pending = null; back(); }; }
   function paintIcons(root = document) { root.querySelectorAll('i[data-ic]').forEach(i => { if (!i.firstChild) i.innerHTML = ICONS.ic(i.dataset.ic); }); }
   function init() {
+    { const l = people(); if (l.some(x => x.name === '테스트 상대')) { l.forEach(x => { if (x.name === '테스트 상대') x.name = '예시 상대(테스트용)'; }); store.set('p8b_people', l); } }
     // 예전 버전: 인생 게임 '랜덤 성별' 인물이 내 운세 프로필로 저장된 경우 → 게임 인물로 옮김 (운세 성별이 '남'으로 잘못 보이던 문제)
     { const me = getMe(); if (me && (me.sex === 'r' || !me.sex)) { if (!store.get('p8b_game_me', null)) store.set('p8b_game_me', me); store.set('p8b_me', null); } }
     paintIcons();
     // 기존 화면 전환에 하단 탭 표시와 미션 체크를 연결
     const base = show;
-    show = function (id) { base(id); if (id === 'end') { mission('game'); Auth.sync(); } syncTabs(); };
+    show = function (id) { base(id); if (id === 'end') { mission('game'); Auth.sync(); } syncTabs(); const h = $('#homeTop'); if (h) h.hidden = id === 'hub'; };
+    // 인생 게임의 어느 화면에서든 앱 홈으로: 진행 중인 인생은 저장하고 나가기 확인
+    $('#homeTop').onclick = () => {
+      Snd.sfx('tap');
+      const playing = typeof P !== 'undefined' && P && P.alive && $('#game').classList.contains('on');
+      if (playing && window.Save) { Save.askExit(); return; }
+      if ($('#mini') && $('#mini').classList.contains('on')) { toast('미니게임을 마친 뒤에 나갈 수 있어요'); return; }
+      go('home');
+    };
     document.querySelectorAll('#tabbar button').forEach(b => b.onclick = () => go(b.dataset.t));
     const th = store.get('p8b_theme', null); if (th != null) setTheme(th);
     window.addEventListener('themechange', () => { const t = store.get('p8b_theme', null); if (t != null) setTheme(t); });
