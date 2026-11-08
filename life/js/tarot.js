@@ -116,5 +116,8 @@ window.Tarot = (() => {
     return `<div class="hcard"><h3 class="ht">🔮 종합 리딩 · ${tn}</h3><p class="sjtxt" style="margin:0">${syn}</p>${link ? `<p class="sjtxt">☯️ 사주와 연결: ${link}</p>` : ''}</div>${per}
       <p class="sjnote">타로 원소는 불=화, 물=수, 바람=목, 흙=토로 사주 오행과 연결했어요. 예/아니오는 참고용 경향이에요. 카드 그림: 라이더-웨이트-스미스(1909, 퍼블릭 도메인).</p>`;
   }
-  return { draw, spreadHTML, readingHTML, SPREADS, TOPIC, DECK };
+  // 섞기 → 멈춘 순간의 순서로 덱을 섞고, 사용자가 고른 자리의 카드로 리딩 묶음을 만든다
+  function shuffled() { const a = [...Array(DECK.length).keys()]; for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
+  function fromPicks(order, picks, topic) { return { n: picks.length, cards: picks.map(i => ({ c: DECK[order[i]], rev: rnd(100) < 30 })), topic, opened: new Set() }; }
+  return { draw, spreadHTML, readingHTML, shuffled, fromPicks, TBACK, SPREADS, TOPIC, DECK };
 })();

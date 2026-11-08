@@ -312,27 +312,61 @@ const Hub = (() => {
       <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
   }
 
-  /* ---------- 타로카드 (독립 화면) ---------- */
-  let tarotD = null, tarotTopic = 'all', tarotN = 3;
+  /* ---------- 타로카드 (독립 화면) : 섞기(소리·애니메이션) → 멈춤 → 부채꼴에서 직접 고르기 → 뒤집기 → 리딩 ---------- */
+  let tarotD = null, tarotTopic = 'all', tarotN = 3, tPhase = 'idle', tOrder = null, tPicks = [], tTimer = null;
   const SPN = { 1: '1장 · 오늘의 카드', 3: '3장 · 과거·현재·미래', 5: '5장 · 고민 해결' };
+  const FAN = 15;                                     // 펼쳐 놓는 카드 수
+  function stopShuffleLoop() { if (tTimer) { clearInterval(tTimer); tTimer = null; } }
   function tarotHTML(p, a) {
     const D = tarotD, done = D && D.opened.size === D.n;
-    return `<div class="hhead"><small>마음속 질문을 떠올리고 카드를 뽑아 보세요</small><h2>타로카드</h2></div>
-      <div class="hcard"><h3 class="ht">주제</h3><div class="tsel" id="tTopic">${Object.entries(Tarot.TOPIC).map(([k, n]) => `<button data-v="${k}" class="${k === tarotTopic ? 'on' : ''}">${n}</button>`).join('')}</div>
+    const setup = `<div class="hcard"><h3 class="ht">주제</h3><div class="tsel" id="tTopic">${Object.entries(Tarot.TOPIC).map(([k, n]) => `<button data-v="${k}" class="${k === tarotTopic ? 'on' : ''}">${n}</button>`).join('')}</div>
         <h3 class="ht">펼칠 카드</h3><div class="tsel" id="tN">${[1, 3, 5].map(n => `<button data-v="${n}" class="${n === tarotN ? 'on' : ''}">${SPN[n]}</button>`).join('')}</div>
-        <button class="bigbtn wide" id="tDraw">🃏 ${D ? '다시 섞고 뽑기' : '카드 섞고 뽑기'}</button>
-        ${!a ? '<p class="sjnote" style="text-align:center;margin:8px 0 0">생년월일을 입력하면 카드 원소를 내 사주 오행과 연결해 풀어 드려요 · <a id="tIn">입력하기</a></p>' : ''}</div>
-      ${D ? `<div class="hcard">${done ? '' : '<p class="sjnote" style="text-align:center;margin:0">카드를 눌러 한 장씩 뒤집으세요</p>'}${Tarot.spreadHTML(D)}</div>` : ''}
-      ${done ? Tarot.readingHTML(D, a ? a.el : null) : ''}`;
+        <button class="bigbtn wide" id="tShuf">🃏 ${D ? '다시 섞기' : '카드 섞기'}</button>
+        ${!a ? '<p class="sjnote" style="text-align:center;margin:8px 0 0">생년월일을 입력하면 카드 원소를 내 사주 오행과 연결해 풀어 드려요 · <a id="tIn">입력하기</a></p>' : ''}</div>`;
+    let stage = '';
+    if (tPhase === 'shuffle') {
+      stage = `<div class="hcard tstage"><p class="tguide">마음속 질문을 떠올리세요.<br><b>원하는 순간에 멈춤</b>을 누르면 카드가 펼쳐져요.</p>
+        <div class="tshuf">${Array.from({ length: 10 }, (_, k) => `<span class="sc${k % 2 ? ' r' : ' l'}" style="--k:${k}">${Tarot.TBACK}</span>`).join('')}</div>
+        <button class="bigbtn wide" id="tStop">✋ 멈춤</button></div>`;
+    } else if (tPhase === 'pick') {
+      const left = tarotN - tPicks.length;
+      stage = `<div class="hcard tstage"><p class="tguide">${left ? `끌리는 카드를 <b>${left}장</b> 더 골라 주세요` : '다 골랐어요! 아래 버튼을 눌러 펼쳐 보세요'}</p>
+        <div class="tfan">${Array.from({ length: FAN }, (_, k) => { const pi = tPicks.indexOf(k), ang = (k - (FAN - 1) / 2) * 5;
+          return `<button class="fc${pi >= 0 ? ' on' : ''}" data-f="${k}" style="--a:${ang}deg;--i:${k}" aria-label="${k + 1}번째 카드">${Tarot.TBACK}${pi >= 0 ? `<em>${pi + 1}</em>` : ''}</button>`; }).join('')}</div>
+        <div class="tpicked">${Array.from({ length: tarotN }, (_, k) => `<span class="${k < tPicks.length ? 'on' : ''}">${Tarot.SPREADS[tarotN][k][0]}</span>`).join('')}</div>
+        <button class="bigbtn wide" id="tGo" ${left ? 'disabled' : ''}>${left ? `${left}장 남았어요` : '🔮 고른 카드 펼치기'}</button>
+        <button class="ghost wide" id="tReshuf">다시 섞기</button></div>`;
+    } else if (D) {
+      stage = `<div class="hcard">${done ? '' : '<p class="tguide" style="margin:0">카드를 눌러 한 장씩 뒤집으세요</p>'}${Tarot.spreadHTML(D)}</div>`;
+    }
+    return `<div class="hhead"><small>마음속 질문을 떠올리고 카드를 섞어 보세요</small><h2>타로카드</h2></div>
+      ${tPhase === 'shuffle' || tPhase === 'pick' ? '' : setup}${stage}
+      ${done && tPhase === 'reveal' ? Tarot.readingHTML(D, a ? a.el : null) : ''}`;
+  }
+  function startShuffle() {
+    tPhase = 'shuffle'; tarotD = null; tPicks = []; tOrder = null; stopShuffleLoop();
+    render(); Snd.sfx('riffle'); tTimer = setInterval(() => { if (tab !== 'tarot') { stopShuffleLoop(); return; } Snd.sfx('riffle'); }, 900);
   }
   function bindTarot(p, a) {
+    if (tPhase === 'shuffle' && !tTimer) tPhase = tarotD ? 'reveal' : 'idle';   // 다른 화면에 다녀오면 섞기 중단
     document.querySelectorAll('#tTopic button').forEach(b => b.onclick = () => { tarotTopic = b.dataset.v; if (tarotD) tarotD.topic = tarotTopic; Snd.sfx('tap'); keepRender(); });
     document.querySelectorAll('#tN button').forEach(b => b.onclick = () => { tarotN = +b.dataset.v; Snd.sfx('tap'); keepRender(); });
-    $('#tDraw').onclick = () => { tarotD = Tarot.draw(tarotN, tarotTopic); Snd.sfx('reveal'); render(); setTimeout(() => { const sp = document.querySelector('.tspread'); if (sp) sp.scrollIntoView({ behavior: 'smooth', block: 'center' }); }, 60); };
+    const sh = $('#tShuf'); if (sh) sh.onclick = startShuffle;
+    const st = $('#tStop'); if (st) st.onclick = () => {
+      stopShuffleLoop(); tOrder = Tarot.shuffled(); tPicks = []; tPhase = 'pick'; Snd.sfx('whoosh'); render();
+      setTimeout(() => { const f = document.querySelector('.tfan'); if (f) f.classList.add('open'); }, 30);
+    };
+    document.querySelectorAll('.tfan .fc').forEach(b => b.onclick = () => {
+      const k = +b.dataset.f, i = tPicks.indexOf(k);
+      if (i >= 0) tPicks.splice(i, 1); else if (tPicks.length < tarotN) tPicks.push(k); else return;
+      Snd.sfx('cardpick'); keepRender(); const f = document.querySelector('.tfan'); if (f) f.classList.add('open', 'still');
+    });
+    const go2 = $('#tGo'); if (go2) go2.onclick = () => { tarotD = Tarot.fromPicks(tOrder, tPicks, tarotTopic); tPhase = 'reveal'; Snd.sfx('reveal'); render(); };
+    const rs = $('#tReshuf'); if (rs) rs.onclick = startShuffle;
     const ti = $('#tIn'); if (ti) ti.onclick = () => { pending = 'tarot'; tab = 'input'; render(); };
     document.querySelectorAll('.tflip').forEach(b => b.onclick = () => {
       if (!tarotD || b.classList.contains('open')) return;
-      b.classList.add('open'); tarotD.opened.add(+b.dataset.k); Snd.sfx('tap');
+      b.classList.add('open'); tarotD.opened.add(+b.dataset.k); Snd.sfx('page');
       if (tarotD.opened.size === tarotD.n) setTimeout(() => { keepRender(); setTimeout(() => { const r = document.querySelector('.tspread'); if (r) r.parentElement.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }, 650);
     });
   }

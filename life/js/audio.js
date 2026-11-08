@@ -104,6 +104,9 @@ window.Snd = (() => {
     death: t => [45, 52, 57].forEach(n => { tone(sfxBus, t, mtof(n), 3, { type: 'sine', v: .2, a: .005 }); tone(sfxBus, t, mtof(n) * 2.4, 1.5, { type: 'sine', v: .05, a: .005 }); }),
     boing: t => tone(sfxBus, t, 220, .25, { type: 'sine', slide: 660, v: .2, a: .005 }),
     page: t => noise(sfxBus, t, .15, .09, 2500),
+    // 카드 섞기(리플 셔플): 카드가 촤라락 겹쳐 떨어지는 짧은 마찰음 26번 + 끝에 모으는 소리
+    riffle: t => { for (let i = 0; i < 26; i++) { const d = i * .022 + Math.sin(i * 1.7) * .004; noise(sfxBus, t + d, .014, .11 + (i % 3) * .02, 2200 + (i % 5) * 500); } noise(sfxBus, t + .64, .09, .14, 900); },
+    cardpick: t => { noise(sfxBus, t, .03, .16, 1500); tone(sfxBus, t + .01, 520, .09, { type: 'sine', v: .07, a: .002 }); },
     whoosh: t => { noise(sfxBus, t, .5, .12, 800); tone(sfxBus, t, 300, .5, { type: 'sine', slide: 900, v: .05 }); },
     pop: t => tone(sfxBus, t, 500, .08, { type: 'sine', slide: 1200, v: .2, a: .002 }),
     levelup: t => [N.C5, N.E5, N.G5, N.C6, N.E6].forEach((n, i) => tone(sfxBus, t + i * .05, mtof(n), .18, { type: 'square', v: .06 })),
