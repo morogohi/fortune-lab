@@ -119,5 +119,17 @@ window.Tarot = (() => {
   // 섞기 → 멈춘 순간의 순서로 덱을 섞고, 사용자가 고른 자리의 카드로 리딩 묶음을 만든다
   function shuffled() { const a = [...Array(DECK.length).keys()]; for (let i = a.length - 1; i > 0; i--) { const j = rnd(i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; }
   function fromPicks(order, picks, topic) { return { n: picks.length, cards: picks.map(i => ({ c: DECK[order[i]], rev: rnd(100) < 30 })), topic, opened: new Set() }; }
-  return { draw, spreadHTML, readingHTML, shuffled, fromPicks, TBACK, SPREADS, TOPIC, DECK };
+  // 한 장 뒤집을 때 띄우는 설명 팝업 내용
+  function cardHTML(D, k) {
+    const x = D.cards[k], C = x.c, pos = SPREADS[D.n][k], tk = D.topic === 'all' ? null : D.topic;
+    return `<div class="tpop"><div class="tpopimg"><img src="${img(C)}" class="${x.rev ? 'rev' : ''}" alt="${C.ko}"></div>
+      <p class="tpos" style="text-align:center;margin:8px 0 2px">${k + 1}번째 · ${pos[0]} — ${pos[1]}</p>
+      <h4 class="tpopn">${C.ko} <small>${C.en}</small></h4>
+      <div class="tpoptags"><span>${x.rev ? '역방향' : '정방향'}</span><span>${C.el}의 원소</span>${C.major ? '<span>메이저</span>' : ''}<span>${yesno(x)}</span></div>
+      <div class="sjtxt"><h4>${C.kw}</h4><p>${x.rev ? C.rev : C.up}</p>
+        ${tk ? `<h4>${TOPIC[D.topic]}</h4><p>${C[tk]}${x.rev ? ' 다만 역방향이라 이 흐름이 늦거나 약하게 나타나요.' : ''}</p>` : ''}
+        <h4>조언</h4><p>${advice(x)}</p>
+        <h4>그림 읽기</h4><p>${C.pic}</p></div></div>`;
+  }
+  return { draw, spreadHTML, readingHTML, cardHTML, shuffled, fromPicks, TBACK, SPREADS, TOPIC, DECK };
 })();

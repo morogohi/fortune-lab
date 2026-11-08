@@ -377,8 +377,19 @@ const Hub = (() => {
     const ti = $('#tIn'); if (ti) ti.onclick = () => { pending = 'tarot'; tab = 'input'; render(); };
     document.querySelectorAll('.tflip').forEach(b => b.onclick = () => {
       if (!tarotD || b.classList.contains('open')) return;
-      b.classList.add('open'); tarotD.opened.add(+b.dataset.k); Snd.sfx('page');
-      if (tarotD.opened.size === tarotD.n) setTimeout(() => { keepRender(); setTimeout(() => { const r = document.querySelector('.tspread'); if (r) r.parentElement.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }, 650);
+      const k = +b.dataset.k; b.classList.add('open'); tarotD.opened.add(k); Snd.sfx('page');
+      const D = tarotD, last = D.opened.size === D.n;
+      const showReading = () => { keepRender(); setTimeout(() => { const r = document.querySelector('.tspread'); if (r) r.parentElement.nextElementSibling.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); };
+      const nextFlip = () => { const nb = [...document.querySelectorAll('.tflip')].find(x => !x.classList.contains('open')); if (nb) setTimeout(() => nb.click(), 120); };
+      // 뒤집힌 뒤 그 카드 설명을 팝업으로
+      setTimeout(() => {
+        if (tarotD !== D || tab !== 'tarot') return;
+        Snd.sfx('reveal');
+        openOverlay(`🃏 ${Tarot.SPREADS[D.n][k][0]}의 카드`, Tarot.cardHTML(D, k),
+          last ? [{ t: '🔮 종합 리딩 보기', pri: 1, f: showReading }]
+               : [{ t: `다음 카드 뒤집기 (${D.n - D.opened.size}장 남음)`, pri: 1, f: nextFlip }, { t: '닫기' }]);
+        if (last) { const o = $('#overlay'); const once = () => { if (!o.classList.contains('on')) { if (!document.querySelector('.tcard')) showReading(); } else setTimeout(once, 300); }; setTimeout(once, 300); }
+      }, 600);
     });
   }
   function keepRender() { const body = $('#hubBody'), y = body.scrollTop; body.dataset.keep = 1; render(); body.scrollTop = y; delete body.dataset.keep; }
