@@ -347,6 +347,26 @@
   .compat{border-color:#ff9ecf66}.cmph{display:flex;justify-content:space-between;align-items:center;gap:6px;text-align:center}
   .cmph span{flex:1;font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:15px}.cmph small{display:block;font-family:'Noto Sans KR',system-ui,sans-serif;font-size:11px;color:var(--dim)}
   .cmph b{font-family:'Noto Sans KR',sans-serif;font-weight:600;font-size:26px;color:var(--bond)}.cmpw{text-align:center;font-family:'Noto Sans KR',sans-serif;font-weight:600;margin:6px 0;color:var(--hap)}.cmpn{font-size:13px;color:var(--ink2);line-height:1.6}
+  /* 날짜 휠 (연·월·일 굴려 고르기) */
+  .dw-in{cursor:pointer;caret-color:transparent}
+  .dw-back{position:fixed;inset:0;z-index:9800;background:#0008;display:flex;align-items:center;justify-content:center;padding:20px}
+  .dw-back[hidden]{display:none}
+  .dw{width:min(360px,100%);background:#fff;color:#1e1e1e;border-radius:10px;overflow:hidden;box-shadow:0 10px 40px #0006}
+  .dw-cols{position:relative;display:flex;gap:16px;padding:22px 26px}
+  .dw-col{flex:1;height:144px;overflow-y:auto;scroll-snap-type:y mandatory;scrollbar-width:none;outline:none;-webkit-overflow-scrolling:touch;overscroll-behavior:contain}
+  .dw-col::-webkit-scrollbar{display:none}
+  .dw-col:focus-visible{box-shadow:inset 0 0 0 2px #8a8fd6;border-radius:8px}
+  .dw-sp{height:48px}
+  .dw-it{height:48px;line-height:48px;text-align:center;font-size:21px;letter-spacing:.06em;color:#b0b0b0;scroll-snap-align:center;font-variant-numeric:tabular-nums;cursor:pointer;user-select:none;transition:color .12s}
+  .dw-it.on{color:#1e1e1e;font-size:23px}
+  .dw-line{position:absolute;left:26px;right:26px;height:2px;background:repeating-linear-gradient(90deg,#7c7c7c 0 calc((100% - 32px)/3),transparent calc((100% - 32px)/3) calc((100% - 32px)/3 + 16px));pointer-events:none}
+  .dw-line.t{top:calc(22px + 48px)}.dw-line.b{top:calc(22px + 96px)}
+  .dw-btns{display:flex;border-top:1px solid #d4d4d4}
+  .dw-btns button{flex:1;height:56px;border:0;background:none;font-size:18px;color:#6b6b6b;font-family:inherit}
+  .dw-btns button+button{border-left:1px solid #d4d4d4}
+  .dw-btns .dw-ok{color:#1e1e1e;font-weight:700}
+  .dw-btns button:active{background:#f0f0f0}
+  html.dw-lock body{overflow:hidden}
   #overlay{position:absolute;inset:0;background:#000c;display:none;align-items:flex-end;z-index:50}
   #overlay.on{display:flex}
   #osheet{width:100%;max-height:92%;overflow-y:auto;background:var(--card);border-radius:22px 22px 0 0;padding:18px 16px calc(env(safe-area-inset-bottom,0px) + 18px);animation:sheet .3s ease-out}
@@ -1012,6 +1032,7 @@
 </div>
 
 <script src="js/theme.js"></script>
+<script src="js/datewheel.js"></script>
 <script src="js/icons.js"></script>
 <script src="js/auth-config.js"></script>
 <script src="js/ad-config.js"></script>
