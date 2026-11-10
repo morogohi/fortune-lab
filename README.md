@@ -90,3 +90,10 @@ tools/                페르소나 통계 생성기
 - 타로 그림: 라이더-웨이트-스미스 타로(1909), 그림 파멜라 콜먼 스미스(1878–1951) · 퍼블릭 도메인.
   1909년 Pam-A 원판 스캔(Steve P. 복원, [steve-p.org](https://steve-p.org/cards/RWSa.html))을 웹용으로 축소했습니다.
 - 페르소나: NVIDIA Nemotron-Personas-Korea (CC BY 4.0), 집계 통계만 사용
+
+## 저작권 및 이용조건
+- **저작권자:** 양인석 (Inseok Yang, GitHub 계정 morogohi) · © 2026 · All rights reserved. 최초 공개 2026-10-24.
+- 기존 [LICENSE](LICENSE)(권리 유보, 시범 테스트·연구 목적 열람 허용)를 그대로 유지하며, 저작권자와 이용 조건을 [COPYRIGHT.md](COPYRIGHT.md)에서 보충합니다.
+- 자체 제작 코드·해설 문안·디자인의 복제·수정·재배포 및 별도 서비스로의 이용은 사전 서면 허락이 필요합니다. GitHub 이용약관에 따른 열람·포크는 가능합니다.
+- 제3자 구성요소: [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md)
+- 상세 안내: https://morogohi.github.io/fortune-lab/copyright.html · 프로젝트 80억: https://morogohi.github.io/fortune-lab/life/copyright.html
