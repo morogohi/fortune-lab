@@ -23,3 +23,15 @@ lunar-javascript, html2canvas, jsPDF 는 MIT 라이선스입니다. 각 라이�
 
 ## 타로 그림
 1909년 출간된 원판은 미국에서 퍼블릭 도메인이며, 그림 작가 사망(1951) 후 70년이 지나 저작자 사후 70년 보호 국가에서도 보호기간이 끝났습니다. 1971년 이후 미국 출판사의 재채색판(“© U.S. Games” 표기)은 사용하지 않습니다.
+
+## 추가 확인 항목 (2026-11-11 저작권 안내 정비 때 확인)
+
+아래는 저장소에서 확인했지만 위 표에 따로 적혀 있지 않던 항목입니다. 라이선스를 확인한 것만 적고, 확인하지 못한 것은 '확인 필요'로 남깁니다.
+
+| 구성요소 | 위치·용도 | 라이선스 | 근거 |
+|---|---|---|---|
+| Noto Sans KR (자체 호스팅 분할 글꼴) | `life/fonts/noto/` 프로젝트 80억 글꼴 | SIL Open Font License 1.1 | 같은 폴더 `LICENSE-OFL.txt` |
+| lunar-javascript (사본) | `life/lib/lunar.js` | MIT | 같은 폴더 `LICENSE-lunar.txt` |
+| supabase-js 2.119.0 (번들) | `life/lib/supabase.js` 로그인·저장 | 확인 필요 | 파일 안 문자열로 버전만 확인. 라이선스 고지 파일이 저장소에 없음 (공식 저장소는 MIT로 알려져 있으나 이번 작업에서 원문 대조는 못 함) |
+| Google AdSense / AdMob | `life/js/webads.js`, `life/js/ad-config.js` 광고 | Google 서비스 약관 | 광고 내용의 권리는 광고주에게 있으며 이 저장소의 권리 주장 대상이 아님 |
+| 타로 카드 그림 사본 | `life/img/tarot/` | 퍼블릭 도메인 (위 표의 라이더-웨이트-스미스 타로) | `cards/`의 78장과 바이트 단위로 같은 파일임을 확인 |

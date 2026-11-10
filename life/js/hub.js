@@ -823,8 +823,9 @@ const Hub = (() => {
       <div class="hcard"><h3 class="ht">🔔 매일 운세 알림</h3>
         <p class="hsub">${native ? '정한 시각에 그날의 총운 점수와 한 줄 운세를 보내 드려요.' : '알림은 앱에서만 받을 수 있어요.'}</p>
         <div class="row2"><label class="chk"><input type="checkbox" id="nOn" ${nt.on ? 'checked' : ''} ${native ? '' : 'disabled'}> 알림 받기</label><select id="nT" ${native ? '' : 'disabled'}>${times}</select></div></div>
-      <div class="hcard hlinks"><a href="privacy.html">개인정보 처리방침</a>${Ads.privacyRequired ? '<a id="mPriv">광고 개인정보 설정</a>' : ''}<a id="mWipe">내 정보·기록 지우기</a>
-        <p class="sjnote">사주 풀이·운세·궁합·인생 게임 결과는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요. 만세력 계산: lunar-javascript (MIT).</p></div>`;
+      <div class="hcard hlinks"><a href="privacy.html">개인정보 처리방침</a><a href="copyright.html">저작권 및 이용안내</a>${Ads.privacyRequired ? '<a id="mPriv">광고 개인정보 설정</a>' : ''}<a id="mWipe">내 정보·기록 지우기</a>
+        <p class="sjnote">사주 풀이·운세·궁합·인생 게임 결과는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요. 만세력 계산: lunar-javascript (MIT).</p>
+        <p class="sjnote crnote" style="word-break:keep-all;overflow-wrap:anywhere">© 2026 양인석. All rights reserved. 본 사이트의 자체 제작 소스코드·디자인·콘텐츠에 대한 저작권은 양인석에게 있습니다. 사전 서면 허락 없는 복제·수정·재배포 및 별도 서비스로의 이용을 금합니다. 제3자 자료는 해당 권리자의 이용조건을 따릅니다.</p></div>`;
   }
   function bindMore() {
     $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const ma = $('#mApp'); if (ma) ma.onclick = () => window.open('https://morogohi.github.io/project8b/', '_blank', 'noopener'); const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
