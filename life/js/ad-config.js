@@ -13,7 +13,7 @@ window.AD_CONFIG = {
   // 광고 빈도 (수익과 사용자 경험 사이에서 조절)
   interstitialEveryNEndings: 2,   // 사망 N번마다 전면 광고 1번
   interstitialMinGapSec: 120,     // 전면 광고 사이 최소 간격(초)
-  rewardKarma: 20,                // 보상형 광고 1회 시청 시 받는 카르마
+  rewardKarma: 5,                 // 보상형 광고 1회 시청 시 받는 카르마 (Karma.AD_K와 같게)
   rewardDailyLimit: 10,           // 보상형 광고 하루 최대 횟수
 
   android: {

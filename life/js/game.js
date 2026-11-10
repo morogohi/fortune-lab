@@ -795,10 +795,10 @@ sndUI();initSetup();Snd.mood('title');
 renderTitle();
 /* ===== 광고 UI ===== */
 function refreshAdUI(){
-  const ok=Ads.canReward(),txt=`📺 광고 보고 카르마 +${AD_CONFIG.rewardKarma}<small>오늘 ${Ads.rewardsLeft()}회 남음</small>`;
+  // 게임 화면의 광고 버튼도 카르마 충전과 같은 규칙(1회 +5 · 3분 간격 · 하루 10회 공유)으로
+  const ok=Ads.canReward(),txt=`📺 광고 보고 카르마 +${Karma.AD_K}<small>3분 간격 · 하루 10회</small>`;
   ['#adKarmaBtn','#adKarmaBtn2'].forEach(id=>{const b=$(id);if(!b)return;b.style.display=ok?'inline-block':'none';b.innerHTML=txt;
-    b.onclick=()=>Ads.showReward(g=>{if(!g)return;karma+=AD_CONFIG.rewardKarma;window.KREASON='광고 보상';saveMeta();renderTitle();
-      const kg=$('#karmaGain');if(kg)kg.textContent=`✨ 광고 보상 +${AD_CONFIG.rewardKarma} (보유 ${karma})`;buzz(30)})});
+    b.onclick=()=>Karma.adReward(()=>{renderTitle();const kg=$('#karmaGain');if(kg)kg.textContent=`✨ 광고 보상 +${Karma.AD_K} (보유 ${karma})`;buzz(30)})});
   const pb=$('#privBtn');if(pb){pb.style.display=Ads.privacyRequired?'inline':'none';pb.onclick=()=>Ads.privacyOptions()}
 }
 Ads.onChange(refreshAdUI);
