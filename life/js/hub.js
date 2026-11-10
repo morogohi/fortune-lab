@@ -814,6 +814,7 @@ const Hub = (() => {
         <button id="mShop"><span>🛍️</span><b>상점</b><small>${Store.item('pass7') ? '행운패스 · ' : ''}리포트 · 궁합 상세 · 신년운세</small></button>
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
         ${typeof Karma !== 'undefined' && Karma.testMode() ? '<button id="mMet"><span>📈</span><b>전환 기록 (테스트)</b><small>광고·결제·해제 횟수와 비율</small></button>' : ''}
+        <button id="mApp"><span>📱</span><b>${Store.native ? '도움말 · 지원' : '앱 소개 · 출시 소식'}</b><small>기능 안내 · 카르마 이용 안내 · 자주 묻는 질문</small></button>
         <button id="mRec"><span>📂</span><b>내 기록 보관함</b><small>운세 · 타로 · 검사 · 상담 · 궁합 · 게임</small></button>
       </div>
       <div class="hcard"><h3 class="ht">🎨 화면 테마</h3>
@@ -826,7 +827,7 @@ const Hub = (() => {
         <p class="sjnote">사주 풀이·운세·궁합·인생 게임 결과는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요. 만세력 계산: lunar-javascript (MIT).</p></div>`;
   }
   function bindMore() {
-    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
+    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const ma = $('#mApp'); if (ma) ma.onclick = () => window.open('https://morogohi.github.io/project8b/', '_blank', 'noopener'); const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
     document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.mode); Snd.sfx('tap'); render(); });
     $('#mWipe').onclick = openWipe;
