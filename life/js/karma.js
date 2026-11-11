@@ -98,7 +98,7 @@ const Karma = (() => {
   }
   function buyPack(k, after) {
     const it = Store.item(k); metric('pay_start');
-    if (Store.native) { Store.buy(k, (ok, err) => { if (ok) { metric('pay_done'); add(it.karma, it.n + ' 구매'); Snd.sfx('fanfare'); after && after(); } else { metric(/cancel/i.test(err || '') ? 'pay_cancel' : 'pay_fail'); if (err && !/cancel/i.test(err)) Hub.toast('결제하지 못했어요'); } }); return; }
+    if (Store.native) { Store.buy(k, (ok, err) => { if (ok) { metric('pay_done'); add(it.karma, it.n + ' 구매'); Snd.sfx('fanfare'); after && after(); } else { metric(/cancel/i.test(err || '') ? 'pay_cancel' : 'pay_fail'); if (err && !/cancel/i.test(err)) openOverlay('결제하지 못했어요', `<p class="sjtxt" style="text-align:center">${Store.errText(err)}</p>`, [{ t: '확인', f: () => after && after() }]); } }); return; }
     if (testMode()) {
       openOverlay('🧪 테스트 결제', `<p class="sjtxt" style="text-align:center">${it.e} <b>${it.n}</b> · ${it.price}<br>테스트 모드라 실제 결제 없이 카르마가 지급돼요.</p>`,
         [{ t: `🧪 ${it.price} 결제한 것으로 하기`, pri: 1, f: () => { metric('pay_done'); add(it.karma, `${it.n} (테스트 결제)`); Snd.sfx('fanfare'); after && after(); } },

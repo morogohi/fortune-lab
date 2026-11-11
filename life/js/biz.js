@@ -46,7 +46,7 @@ function doBuy(k, after) {
   Store.buy(k, (ok, err) => {
     if (ok) { Snd.sfx('fanfare'); if (k === 'noads') Ads.banner(false); refreshFateLock(); closeOverlay(); after ? after() : openShop(null, true); }
     else if (err === 'web') openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">결제는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
-    else if (err && !/cancel/i.test(err)) openOverlay('결제 실패', `<p style="text-align:center;color:var(--dim)">${err}</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
+    else if (err && !/cancel/i.test(err)) openOverlay('결제하지 못했어요', `<p class="sjtxt" style="text-align:center">${Store.errText(err)}</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
   });
 }
 function openShop(focus, full) {
@@ -63,7 +63,7 @@ function openShop(focus, full) {
     `<p class="sjnote" style="text-align:center;margin-top:0">유료 콘텐츠는 모두 <b>카르마</b>로 열어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요.</p>`
     + `<h4 class="kh">⭐ 대표 상품</h4>` + cont + `<h4 class="kh">✨ 카르마</h4>` + Karma.chargeHTML(0)
     + (noads ? `<h4 class="kh">🚫 광고 제거</h4><div class="shopitem"><span class="se">${noads.e}</span><div><b>${noads.n}</b><small>${noads.d}</small></div><button data-buy="noads" class="${nown ? 'own' : ''}">${nown ? '보유 중' : Store.native || Karma.testMode() ? noads.price : '앱 전용'}</button></div>` : ''),
-    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { await Store.restore(); openShop(null, true); } }] : []), { t: '닫기' }]);
+    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { const n = await Store.restore(); openShop(null, true); Hub.toast(n > 0 ? `구매 ${n}건을 복원했어요` : n === 0 ? '복원할 구매 내역이 없어요 (카르마는 로그인 계정으로 복원돼요)' : Store.errText(Store.lastErr())); } }] : []), { t: '닫기' }]);
   Karma.bindCharge(() => openShop(null, true));
   document.querySelectorAll('#osheet [data-c]').forEach(b => b.onclick = () => openProduct(b.dataset.c, () => openShop(null, true)));
   document.querySelectorAll('#osheet [data-go]').forEach(b => b.onclick = () => { closeOverlay(); Hub.go(b.dataset.go); });

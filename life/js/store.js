@@ -107,6 +107,7 @@ window.Store = (() => {
       await restore(true);
     } catch (e) { console.warn('[Store] init', e); }
   }
+  let lastErr = '';
   async function restore(silent) {
     if (!native || !NP) return 0;
     try {
@@ -117,7 +118,16 @@ window.Store = (() => {
         if (k && !CFG.products[k].consumable && (t.purchaseState === undefined || String(t.purchaseState) === '1')) { owned[k] = true; n++; }
       });
       save(); return n;
-    } catch (e) { if (!silent) console.warn('[Store] restore', e); return 0; }
+    } catch (e) { if (!silent) console.warn('[Store] restore', e); lastErr = String(e && (e.code || '') + ' ' + (e.message || '') || e); return -1; }
+  }
+  // 스토어 오류를 사람이 읽는 말로 (결제 실패 안내용)
+  function errText(e) {
+    const t = String(e || '');
+    if (/BILLING_SETUP|unavailable|not available|SERVICE_UNAVAILABLE|BILLING_UNAVAILABLE/i.test(t)) return '이 기기에서 Google Play 결제를 쓸 수 없어요. Play 스토어 앱에 Google 계정으로 로그인했는지 확인해 주세요.';
+    if (/ITEM_UNAVAILABLE|not found|no product|invalid product|productIdentifier/i.test(t)) return '이 상품은 아직 스토어에 준비되지 않았어요. 잠시 후 다시 시도해 주세요.';
+    if (/ALREADY_OWNED|already own/i.test(t)) return '이미 구매한 상품이에요. 상점 → 🔄 구매 복원을 눌러 주세요.';
+    if (/network|timeout|offline/i.test(t)) return '인터넷 연결을 확인한 뒤 다시 시도해 주세요.';
+    return '결제를 마치지 못했어요. 잠시 후 다시 시도해 주세요.';
   }
   /* 구매: 성공하면 onDone(true) */
   async function buy(k, onDone) {
@@ -129,7 +139,7 @@ window.Store = (() => {
       if (!p.consumable) { owned[k] = true; save(); }
       if (p.passDays) addPass(p.passDays * 864e5);
       fire(); onDone && onDone(true);
-    } catch (e) { onDone && onDone(false, String(e && e.message || e)); }
+    } catch (e) { onDone && onDone(false, String(e && (e.code || '') + ' ' + (e.message || '') || e)); }
   }
-  return { native, init, has, why, buy, restore, price, newYear, grant, unlock, isKarmaItem, notify: fire, packs: () => Object.keys(CFG.products).filter(k => CFG.products[k].karma), contents: () => Object.keys(CFG.products).filter(k => CFG.products[k].k), addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[al(k)], info: k => { k = al(k); return (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || []; } };
+  return { native, errText, lastErr: () => lastErr, init, has, why, buy, restore, price, newYear, grant, unlock, isKarmaItem, notify: fire, packs: () => Object.keys(CFG.products).filter(k => CFG.products[k].karma), contents: () => Object.keys(CFG.products).filter(k => CFG.products[k].k), addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[al(k)], info: k => { k = al(k); return (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || []; } };
 })();
