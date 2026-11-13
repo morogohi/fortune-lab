@@ -224,8 +224,8 @@ const Hub = (() => {
     const run = async p => { toast('로그인 화면으로 이동해요…'); const r = await Auth.login(p); if (r.error) toast(r.error === 'not-configured' ? '로그인 서버 준비 중이에요' : '로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요'); };
     $('#lgKakao').onclick = () => run('kakao'); $('#lgGoogle').onclick = () => run('google');
   }
-  /* 테스트 계정: 개인정보 양인석 · 유료 콘텐츠 전체 열람(Store) · 카르마/상담권 · 궁합 상대 예시 */
-  const TEST_ME = { name: '양인석', date: '1974-03-19', cal: 's', time: '', sex: 'm' };
+  /* 테스트 계정: 개인정보 운명연구소 · 유료 콘텐츠 전체 열람(Store) · 카르마/상담권 · 궁합 상대 예시 */
+  const TEST_ME = { name: '운명연구소', date: '1974-03-19', cal: 's', time: '', sex: 'm' };
   function setupTestAccount(first) {
     store.set('p8b_me', { ...TEST_ME }); rememberProfile(TEST_ME);
     { const l = people(); l.forEach(x => { if (x.name === '테스트 상대') x.name = '예시 상대(테스트용)'; }); store.set('p8b_people', l); }
@@ -234,7 +234,7 @@ const Hub = (() => {
       if (typeof Counsel !== 'undefined') Counsel.addCredits(30);
       const list = people(); if (!list.some(x => /테스트 상대|예시 상대/.test(x.name))) { list.unshift({ name: '예시 상대(테스트용)', date: '1978-08-15', cal: 's', time: '', sex: 'f', rel: 'love' }); store.set('p8b_people', list.slice(0, 20)); }
     }
-    toast(first ? '🧪 테스트 계정 · 양인석 프로필, 유료 콘텐츠 전체, 카르마 500, 상담권 30회' : '🧪 테스트 계정으로 로그인했어요');
+    toast(first ? '🧪 테스트 계정 · 운명연구소 프로필, 유료 콘텐츠 전체, 카르마 500, 상담권 30회' : '🧪 테스트 계정으로 로그인했어요');
     topbarUI(); if ($('#hub').classList.contains('on')) render();
   }
   function openAccount() {
@@ -244,7 +244,7 @@ const Hub = (() => {
       <p class="sjnote">서버에는 계정 정보와 게임 기록 요약만 있어요. 생년월일 등은 이 기기에만 있어요.</p>`,
       [{ t: '로그아웃', f: async () => { await Auth.logout(); toast('로그아웃했어요'); } },
        { t: '회원 탈퇴', f: () => openOverlay('회원 탈퇴', '<p class="sjtxt">서버에 저장된 계정과 게임 기록이 모두 삭제돼요. 이 기기의 정보는 그대로 남아요.</p>',
-           [{ t: '탈퇴하기', pri: 1, f: async () => toast(await Auth.deleteAccount() ? '탈퇴가 완료됐어요' : '탈퇴하지 못했어요. 문의: morogohi@gmail.com') }, { t: '취소' }]) },
+           [{ t: '탈퇴하기', pri: 1, f: async () => toast(await Auth.deleteAccount() ? '탈퇴가 완료됐어요' : '탈퇴하지 못했어요. 문의: support.um09@gmail.com') }, { t: '취소' }]) },
        { t: '닫기' }]);
     $('#acSync').onclick = async () => { await Auth.sync(); toast('저장했어요'); closeOverlay(true); openAccount(); };
   }
