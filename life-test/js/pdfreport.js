@@ -26,16 +26,17 @@ const PdfReport = (() => {
     const a = Hub.analyze(p); if (!a) return null;
     const S = window.SAJU, out = [];
     const now = new Date(), people = (Hub.people() || []).filter(q => q && q.date && Hub.analyze(q)).slice(0, 3);
-    const h = (n, e, t, sub) => `<div class="pdf-h"><b>${e} ${n}. ${t}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    const h = (n, e, t, sub) => `<div class="pdf-h"><i>${String(n).padStart(2, '0')}</i><b>${t}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
     // 주제별·월별로 다시 묶은 본문 (detail.js reportParts)
     const R = Detail.reportParts(p, a, people);
     const EMO = { '한 해 총평': '🧧', '분야별 풀이': '🗂️', '2027 월별 통합 풀이': '📅', '성격 유형 (사주 MBTI)': '🧩' };
     const toc = ['타고난 사주', ...R.map(x => x.t)];
-    out.push({ t: '표지', html: `<div class="pdf-cover"><div class="pdf-logo">🔮 운명 연구소</div><h1>${esc(p.name)}님의<br>종합 사주 리포트</h1>
-      <p>${p.date.replace(/-/g, '.')} ${p.cal === 'l' ? '음력' : '양력'} · ${p.time || '시간 모름'} · ${p.sex === 'f' ? '여' : '남'}</p>
-      <p class="pdf-gz">${S.ST[a.p.y.s]}${S.BR[a.p.y.b]}년 · ${S.ST[a.p.m.s]}${S.BR[a.p.m.b]}월 · ${S.ST[a.p.d.s]}${S.BR[a.p.d.b]}일${a.p.h ? ` · ${S.ST[a.p.h.s]}${S.BR[a.p.h.b]}시` : ''}</p>
-      <div class="pdf-toc"><b>차례</b>${toc.map((t, i) => `<p>${i + 1}. ${esc(t)}</p>`).join('')}</div>
-      <p class="pdf-date">만든 날 ${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} · 이 리포트는 기기 안에서 만들어졌어요</p></div>` });
+    const gz4 = `${S.ST[a.p.y.s]}${S.BR[a.p.y.b]}년 ${S.ST[a.p.m.s]}${S.BR[a.p.m.b]}월 ${S.ST[a.p.d.s]}${S.BR[a.p.d.b]}일${a.p.h ? ` ${S.ST[a.p.h.s]}${S.BR[a.p.h.b]}시` : ''}`;
+    out.push({ t: '표지', html: `<div class="pdf-cover"><div><span class="pdf-kicker">SAJU CONSULTATION REPORT</span>
+      <h1>${esc(p.name)} 님의<br>삶과 흐름</h1><span class="pdf-sub">2027 사주 상담 보고서</span>
+      <div class="pdf-info"><p><b>생년월일</b>${p.date.replace(/-/g, '.')} (${p.cal === 'l' ? '음력' : '양력'})</p><p><b>출생 시간</b>${p.time ? p.time : '확인되지 않음 — 시주를 제외한 세 기둥으로 해석'}</p><p><b>성별</b>${p.sex === 'f' ? '여성' : '남성'}</p><p><b>명식</b>${gz4}</p><p><b>작성일</b>${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일</p></div>
+      <div class="pdf-toc">${toc.map((t, i) => `<p><span>${String(i + 1).padStart(2, '0')}</span>${esc(t)}</p>`).join('')}</div></div>
+      <p class="pdf-foot">운명 연구소 · 이 보고서는 사용자의 기기 안에서 작성되었으며, 전통 명리 이론에 바탕을 둔 참고용 해석입니다.</p></div>` });
     // 1. 타고난 사주 — 연애·재물·건강 성향은 분야별 풀이로 옮겨 중복을 없앰
     const EL = ['🌳', '🔥', '⛰️', '⚔️', '💧'], LAB = ['년주', '월주', '일주', '시주'], P4 = [a.p.y, a.p.m, a.p.d, a.p.h];
     const pdfSaju = `<div class="pdf-saju"><table class="pdf-tbl"><tr>${LAB.map((l, i) => `<th>${l}${i === 2 ? ' (나)' : ''}</th>`).join('')}</tr>
@@ -44,10 +45,15 @@ const PdfReport = (() => {
       <p><b>${a.dm.nm}</b> 일간 · ${a.ddi}띠 — ${a.dm.key}</p>
       <p><b>오행 분포</b> ${a.el.map((n, i) => `${EL[i]} ${S.EK[i]} ${n}`).join(' · ')}</p>
       <p><b>강한 운</b> ${['독립·경쟁운', '재능·표현운', '재물운', '승진·명예운', '학업·귀인운'][a.dom] || ''} · <b>부족한 기운</b> ${S.EK[a.weak]}</p></div>`;
-    out.push({ t: '타고난 사주', html: h(1, '📜', '타고난 사주', '사주 표 · 일간 · 오행 · 성격 · 강점과 약점 · 타고난 흐름 · 개운법') + `<div class="hcard"><h3 class="ht">📜 사주 한눈에</h3>${pdfSaju}</div>
+    const zero = a.el.map((n, i) => n === 0 ? S.EK[i] : '').filter(Boolean);
+    const basis = `<div class="pdf-basis"><p><b>해석 범위와 계산 기준</b></p>
+      ${p.time ? '' : '<p>출생 시간이 확인되지 않아 <b>시주를 제외한 세 기둥(여섯 글자)</b>으로 해석했습니다. 출생 시각에 따라 달라지는 세부 해석과 대운이 시작되는 나이는 추가 확인이 필요합니다.</p>'}
+      <p>오행 분포는 천간·지지에 <b>겉으로 드러난 ${p.time ? '여덟' : '여섯'} 글자</b>만 센 값이며, 지지 속에 숨은 기운(지장간)은 포함하지 않았습니다.${zero.length ? ` 따라서 ${zero.join('·')}이(가) 0으로 표시되어도 그 기운이 전혀 없다는 뜻이 아니라, 겉으로 드러나지 않는다는 의미입니다.` : ''}</p>
+      <p>월별 풀이는 절기 기준 달(예: 2월은 입춘부터)을 양력 달로 표시했고, 토정비결 신수는 같은 월지(달의 지지)를 가진 음력 달과 짝지어 함께 적었습니다.</p></div>`;
+    out.push({ t: '타고난 사주', html: h(1, '', '타고난 사주', '명식 · 해석 기준 · 성격 · 강점과 약점 · 타고난 흐름 · 개운') + `<div class="hcard"><h3 class="ht">명식과 해석 범위</h3>${pdfSaju}${basis}</div>
       <div class="hcard"><h3 class="ht">🧭 타고난 성격</h3><div class="sjtxt"><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p></div></div>
       <div class="hcard"><h3 class="ht">✨ 타고난 흐름과 개운</h3><div class="sjtxt"><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>` });
-    R.forEach((x, i) => out.push({ t: x.t, html: h(i + 2, EMO[x.t] || '💞', x.t, x.sub) + x.html }));
+    R.forEach((x, i) => out.push({ t: x.t, html: h(i + 2, '', x.t, x.sub) + (x.t === '2027 월별 통합 풀이' ? `<div class="pdf-basis"><p>각 달은 절기 기준으로 바뀝니다. 표시한 양력 달은 대략 그 달 4~8일 무렵 절입일부터 다음 달 절입일 전까지이며, 함께 적은 토정 신수의 음력 달도 같은 월지(달의 지지)를 가집니다. 좋은 날은 양력 날짜입니다.</p></div>` : '') + x.html }));
     out.push({ t: '맺음말', html: `<div class="hcard"><h3 class="ht">🍀 맺음말</h3><div class="sjtxt"><p>사주는 정해진 운명이 아니라 타고난 기운의 지도예요. 좋은 시기는 준비한 사람에게 더 크게 오고, 조심할 시기는 미리 아는 것만으로 한결 가벼워져요.</p>
       <p>${esc(p.name)}님에게 부족한 기운은 <b>${S.EK[a.weak]}</b>이에요. ${a.dm.개운}</p></div>
       <p class="sjnote">※ 전통 명리 이론을 바탕으로 한 참고·재미용 리포트예요. 건강·법률·투자처럼 중요한 결정은 전문가와 상의하세요. · 운명 연구소</p></div>` });
@@ -84,61 +90,81 @@ const PdfReport = (() => {
       <button class="bigbtn wide" id="pdfMake">📥 PDF로 저장하기</button><div class="fk-bar pdf-prog" hidden><i id="pdfBar"></i></div><p class="sjnote" id="pdfMsg"></p></div>`
       + s.map(x => `<div class="pdf-sec">${x.html}</div>`).join('');
   }
-  // 📄 PDF 전용 문서 스타일 — 앱 화면 스타일(카드·칩·격자·작은 글씨)을 쓰지 않고 한 가지 문서 형식으로 통일
-  //   폭 600px 를 A4 본문 190mm 에 맞춤 → 본문 16px ≈ 14pt, 소제목 18px, 장 제목 26px, 메모 14px
-  const PDF_W = 600;
+  // 📄 PDF 보고서 템플릿 — 「프리미엄 상담형」: 아이보리 바탕 · 먹색 본문 · 남색 명조 제목 · 금색 가는 선 · 이모지 없음
+  //   폭 600px 를 A4 본문 186mm 에 맞춤 → 본문 16px ≈ 14pt, 소제목 17px, 꼭지 제목 20px(명조), 장 제목 26px(명조), 메모 14px
+  const PDF_W = 600, IVORY = '#F7F4EE', INK = '#292929', NAVY = '#24364B', GOLD = '#9B8457', LINE = '#D9CFBA', SOFT = '#EFE8DA';
+  const SERIF = `'Noto Serif KR','Nanum Myeongjo','AppleMyungjo','Batang',serif`, SANS = `'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif`;
   const PDF_CSS = `
-  .pdfdoc{position:fixed;left:-10000px;top:0;width:${PDF_W}px;background:#fff;color:#222;padding:0 2px;font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+  .pdfdoc{position:fixed;left:-10000px;top:0;width:${PDF_W}px;background:${IVORY};color:${INK};padding:0 2px;font-family:${SANS}}
   .pdfdoc *{animation:none!important;transition:none!important;box-shadow:none!important;text-shadow:none!important;background:transparent!important;border:0!important;border-radius:0!important;
-    font-size:16px!important;line-height:1.75!important;color:#222!important;font-weight:400;letter-spacing:0!important;font-style:normal!important;text-align:left!important;
-    max-width:none!important;width:auto!important;min-height:0!important;height:auto!important;position:static!important;transform:none!important;opacity:1!important;filter:none!important}
-  .pdfdoc div,.pdfdoc section,.pdfdoc ul,.pdfdoc ol,.pdfdoc label{display:block!important;margin:0!important;padding:0!important}
+    font-family:${SANS}!important;font-size:16px!important;line-height:1.7!important;color:${INK}!important;font-weight:400;letter-spacing:0!important;font-style:normal!important;text-align:left!important;
+    max-width:none!important;min-height:0!important;height:auto!important;position:static!important;transform:none!important;opacity:1!important;filter:none!important;word-break:keep-all!important}
+  .pdfdoc div,.pdfdoc section,.pdfdoc ul,.pdfdoc ol,.pdfdoc label{display:block!important;margin:0!important;padding:0!important;width:auto!important}
   .pdfdoc p{display:block!important;margin:0 0 10px!important;padding:0!important}
-  .pdfdoc b,.pdfdoc strong,.pdfdoc em.on{font-weight:700!important}
+  .pdfdoc b,.pdfdoc strong{font-weight:700!important}
   .pdfdoc i,.pdfdoc em,.pdfdoc span,.pdfdoc small,.pdfdoc a{display:inline!important;margin:0!important;padding:0!important}
   .pdfdoc ul,.pdfdoc ol{padding-left:22px!important;margin:0 0 10px!important}.pdfdoc li{display:list-item!important;margin:0 0 4px!important}
-  .pdfdoc input,.pdfdoc button,.pdfdoc svg,.pdfdoc canvas,.pdfdoc img,.pdfdoc .vbtn,.pdfdoc .vdet,.pdfdoc .vfreetag{display:none!important}
-  /* 묶음(카드) = 한 꼭지: 위아래 여백만 */
-  .pdfdoc .pdf-blk{padding:6px 0 16px!important}
-  /* 꼭지 제목 */
-  .pdfdoc h2,.pdfdoc h3,.pdfdoc .ht{display:block!important;font-size:20px!important;font-weight:700!important;margin:0 0 12px!important;padding:0 0 6px!important;border-bottom:2px solid #d9d2f2!important;color:#3d2f86!important}
-  .pdfdoc h3 small,.pdfdoc .ht small{font-size:15px!important;font-weight:400!important;color:#666!important}
+  .pdfdoc input,.pdfdoc button,.pdfdoc svg,.pdfdoc canvas,.pdfdoc img,.pdfdoc .vbtn,.pdfdoc .vdet,.pdfdoc .vfreetag,.pdfdoc .yf-kw,.pdfdoc [class*="bar"],.pdfdoc .yf-ar{display:none!important}
+  .pdfdoc .pdf-blk{padding:4px 0 18px!important}
+  /* 꼭지 제목: 명조 · 남색 · 금색 가는 선 */
+  .pdfdoc h2,.pdfdoc h3,.pdfdoc .ht{display:block!important;font-family:${SERIF}!important;font-size:20px!important;font-weight:700!important;margin:0 0 12px!important;padding:0 0 7px!important;border-bottom:1px solid ${GOLD}!important;color:${NAVY}!important}
+  .pdfdoc h3 *,.pdfdoc .ht *{font-family:${SERIF}!important;color:${NAVY}!important}
+  .pdfdoc h3 small,.pdfdoc .ht small{font-family:${SANS}!important;font-size:14px!important;font-weight:400!important;color:#6b6457!important;margin-left:8px!important}
   /* 소제목 */
-  .pdfdoc h4,.pdfdoc h5{display:block!important;font-size:18px!important;font-weight:700!important;margin:14px 0 6px!important;color:#222!important}
-  /* 격자·행(월별 행, 분야 칸, 비교 칸 등)은 한 줄씩 문단으로 */
-  .pdfdoc .tjm,.pdfdoc .cs-deep,.pdfdoc .yf-m,.pdfdoc .yf-q,.pdfdoc .dsec{margin:0 0 14px!important;padding:0 0 10px!important;border-bottom:1px solid #e6e3ee!important}
-  .pdfdoc .tjm-h b,.pdfdoc .yf-m>b:first-child{font-size:18px!important}
+  .pdfdoc h4,.pdfdoc h5{display:block!important;font-size:17px!important;font-weight:700!important;margin:14px 0 6px!important;color:${NAVY}!important}
+  .pdfdoc h4 *,.pdfdoc h5 *{color:${NAVY}!important;font-size:17px!important}
+  /* 월·항목 묶음: 가는 선으로 구분 */
+  .pdfdoc .tjm,.pdfdoc .cs-deep,.pdfdoc .yf-m,.pdfdoc .yf-q,.pdfdoc .dsec{margin:0 0 14px!important;padding:0 0 12px!important;border-bottom:1px solid ${LINE}!important}
   .pdfdoc .tjm-g>div,.pdfdoc .cm-row,.pdfdoc .tjbrief>div,.pdfdoc .hdt-g>div,.pdfdoc .cs-two>div,.pdfdoc .cs-plan>div,.pdfdoc .dtwo>div,.pdfdoc .dscore>div,.pdfdoc .tjm-l>span,.pdfdoc .yf-a>div{display:block!important;margin:0 0 6px!important}
-  .pdfdoc .tjm-g>div>b,.pdfdoc .cm-row>b,.pdfdoc .tjbrief>div>b,.pdfdoc .cs-plan>div>b,.pdfdoc .dtwo>div>b{display:inline!important;margin-right:8px!important}
+  .pdfdoc .tjm-g>div>b,.pdfdoc .cm-row>b,.pdfdoc .tjbrief>div>b,.pdfdoc .cs-plan>div>b,.pdfdoc .dtwo>div>b{display:inline!important;margin-right:8px!important;color:${NAVY}!important}
   .pdfdoc .cm-row>span+span,.pdfdoc .tjm-h>*+*{margin-left:8px!important}
-  .pdfdoc .tjm-h em,.pdfdoc .tjm-h small,.pdfdoc .cm-v{color:#555!important}
+  .pdfdoc .tjm-h em,.pdfdoc .tjm-h small,.pdfdoc .cm-v{color:#6b6457!important}
   .pdfdoc .tjm-s{font-weight:700!important}
-  /* 메모(작은 글씨)도 너무 작지 않게 */
-  .pdfdoc table.pdf-tbl{display:table!important;border-collapse:collapse!important;width:100%!important;margin:0 0 14px!important}.pdfdoc .pdf-tbl tr{display:table-row!important}
-  .pdfdoc .pdf-tbl th,.pdfdoc .pdf-tbl td{display:table-cell!important;border:1px solid #cfc8e6!important;padding:8px 6px!important;text-align:center!important;vertical-align:middle!important}
-  .pdfdoc .pdf-tbl th{background:#f1edfb!important;font-weight:700!important}.pdfdoc .pdf-tbl td b{font-size:24px!important}.pdfdoc .pdf-tbl small{font-size:14px!important;color:#666!important}
-  /* 오행·원소 막대 → 한 줄 숫자 (목 1 · 화 2 …), 궁합 점수 크게 */
-  .pdfdoc .dels{display:block!important;margin:0 0 10px!important}.pdfdoc .dels>div{display:inline!important;margin-right:16px!important}.pdfdoc .dels>div>i{display:none!important}.pdfdoc .dels>div>b{margin-left:4px!important}.pdfdoc .dels>div.on>span{font-weight:700!important}
-  .pdfdoc .dscore{margin:0 0 10px!important}.pdfdoc .dscore b{font-size:28px!important;font-weight:700!important;margin-right:10px!important;color:#3d2f86!important}.pdfdoc .dscore span{font-size:18px!important;font-weight:700!important}
-  .pdfdoc .yf-mh{margin:0 0 6px!important}.pdfdoc .yf-mh>b{font-size:19px!important;color:#3d2f86!important}.pdfdoc .yf-mh>span{margin-left:12px!important;color:#555!important}.pdfdoc .yf-mh>em{margin-left:12px!important;font-weight:700!important}.pdfdoc .yf-mh>em::after{content:'점'}
-  .pdfdoc .sjnote,.pdfdoc .hsub,.pdfdoc .pdf-note{display:block!important;font-size:14px!important;color:#666!important;margin:4px 0 10px!important}
-  .pdfdoc .sjnote *{font-size:14px!important;color:#666!important}
-  /* 점수 막대는 남김 */
-  .pdfdoc [class*="bar"]{display:block!important;height:10px!important;background:#eeeaf6!important;margin:4px 0 8px!important}
-  .pdfdoc [class*="bar"]>i,.pdfdoc [class*="bar"]>b,.pdfdoc [class*="bar"]>span{display:block!important;height:10px!important;background:#7a68d6!important}
+  .pdfdoc .yf-mh{margin:0 0 6px!important}.pdfdoc .yf-mh>b{font-family:${SERIF}!important;font-size:19px!important;color:${NAVY}!important}.pdfdoc .yf-mh>span{margin-left:12px!important;color:#6b6457!important}.pdfdoc .yf-mh>em{margin-left:12px!important;font-weight:700!important;color:${GOLD}!important}.pdfdoc .yf-mh>em::after{content:'점'}
+  /* 표: 왼쪽 칸은 한 줄로, 마지막 칸만 줄바꿈 */
+  .pdfdoc table{display:table!important;border-collapse:collapse!important;width:100%!important;margin:0 0 14px!important;table-layout:auto!important}
+  .pdfdoc tr{display:table-row!important}
+  .pdfdoc th,.pdfdoc td{display:table-cell!important;border:1px solid ${LINE}!important;padding:7px 9px!important;vertical-align:top!important;width:auto!important}
+  .pdfdoc th{background:${SOFT}!important;font-weight:700!important;color:${NAVY}!important;white-space:nowrap!important}
+  .pdfdoc td:not(:last-child){white-space:nowrap!important}
+  .pdfdoc td *{white-space:inherit!important}
+  .pdfdoc td small{display:block!important;font-size:14.5px!important;color:#4a4539!important;white-space:normal!important}
+  .pdfdoc tr.on td{background:#F1E9D6!important;font-weight:700!important}
+  .pdfdoc .pdf-tbl th,.pdfdoc .pdf-tbl td{text-align:center!important;vertical-align:middle!important}.pdfdoc .pdf-tbl td b{font-family:${SERIF}!important;font-size:24px!important;color:${NAVY}!important}.pdfdoc .pdf-tbl small{font-size:14px!important;color:#6b6457!important}
+  /* 오행·원소 막대 → 한 줄 숫자, 점수 */
+  .pdfdoc .dels{display:block!important;margin:0 0 10px!important}.pdfdoc .dels>div{display:inline!important;margin-right:16px!important}.pdfdoc .dels>div>i{display:none!important}.pdfdoc .dels>div>b{margin-left:4px!important}
+  .pdfdoc .dscore{margin:0 0 10px!important}.pdfdoc .dscore b{font-family:${SERIF}!important;font-size:26px!important;font-weight:700!important;margin-right:10px!important;color:${NAVY}!important}.pdfdoc .dscore span{font-size:17px!important;font-weight:700!important}
+  .pdfdoc .yf-top{display:block!important}.pdfdoc .yf-sc b{font-family:${SERIF}!important;font-size:26px!important;color:${NAVY}!important;margin-right:8px!important}
+  /* 안내·근거 상자 */
+  .pdfdoc .pdf-basis{border:1px solid ${LINE}!important;border-left:3px solid ${GOLD}!important;padding:12px 14px!important;margin:0 0 14px!important;background:#FBF8F2!important}
+  .pdfdoc .pdf-basis *{font-size:14.5px!important;color:#4a4539!important}.pdfdoc .pdf-basis b{color:${NAVY}!important}
+  .pdfdoc .sjnote,.pdfdoc .hsub,.pdfdoc .pdf-note{display:block!important;font-size:14px!important;color:#6b6457!important;margin:4px 0 10px!important}
+  .pdfdoc .sjnote *{font-size:14px!important;color:#6b6457!important}
   /* 장 제목 */
-  .pdfdoc .pdf-h{display:block!important;margin:0 0 18px!important;padding:0 0 10px!important;border-bottom:3px solid #3d2f86!important}
-  .pdfdoc .pdf-h b{display:block!important;font-size:26px!important;color:#3d2f86!important;line-height:1.4!important}
-  .pdfdoc .pdf-h small{display:block!important;font-size:15px!important;color:#666!important;margin-top:4px!important}
+  .pdfdoc .pdf-h{display:block!important;margin:0 0 20px!important;padding:6px 0 12px!important;border-bottom:2px solid ${NAVY}!important}
+  .pdfdoc .pdf-h i{display:block!important;font-family:${SERIF}!important;font-size:15px!important;color:${GOLD}!important;letter-spacing:2px!important;margin-bottom:2px!important}
+  .pdfdoc .pdf-h b{display:block!important;font-family:${SERIF}!important;font-size:27px!important;color:${NAVY}!important;line-height:1.4!important}
+  .pdfdoc .pdf-h small{display:block!important;font-size:14.5px!important;color:#6b6457!important;margin-top:6px!important}
   /* 표지 */
-  .pdfdoc .pdf-cover{display:flex!important;flex-direction:column;justify-content:center;height:${Math.round(PDF_W * 297 / 210)}px!important;padding:0 40px!important;background:#f7f4ff!important}
-  .pdfdoc .pdf-cover *{text-align:center!important}
-  .pdfdoc .pdf-cover .pdf-logo{font-size:20px!important;color:#6a5acd!important;font-weight:700!important;margin-bottom:24px!important}
-  .pdfdoc .pdf-cover h1{display:block!important;font-size:38px!important;line-height:1.35!important;font-weight:700!important;margin:0 0 20px!important;color:#2a2060!important}
-  .pdfdoc .pdf-cover .pdf-gz{font-size:22px!important;letter-spacing:2px!important;color:#5a4a1d!important}
-  .pdfdoc .pdf-cover .pdf-toc{margin:30px auto!important;padding:18px 28px!important;background:#fff!important;border:1px solid #ddd6f3!important}
-  .pdfdoc .pdf-cover .pdf-toc *{text-align:left!important;font-size:17px!important}.pdfdoc .pdf-cover .pdf-toc b{display:block!important;font-size:18px!important;margin-bottom:6px!important}
-  .pdfdoc .pdf-cover .pdf-date{font-size:14px!important;color:#888!important}`;
+  .pdfdoc .pdf-cover{display:flex!important;flex-direction:column;justify-content:space-between;height:${Math.round(PDF_W * 297 / 210)}px!important;padding:70px 44px 46px!important;border:1px solid ${GOLD}!important}
+  .pdfdoc .pdf-cover .pdf-kicker{display:block!important;font-family:${SERIF}!important;font-size:15px!important;letter-spacing:4px!important;color:${GOLD}!important}
+  .pdfdoc .pdf-cover h1{display:block!important;font-family:${SERIF}!important;font-size:36px!important;line-height:1.4!important;font-weight:700!important;margin:18px 0 10px!important;color:${NAVY}!important}
+  .pdfdoc .pdf-cover .pdf-sub{display:block!important;font-family:${SERIF}!important;font-size:20px!important;color:${NAVY}!important;padding-bottom:18px!important;border-bottom:1px solid ${GOLD}!important;margin-bottom:22px!important}
+  .pdfdoc .pdf-cover .pdf-info p{margin:0 0 4px!important;font-size:15px!important}.pdfdoc .pdf-cover .pdf-info b{color:${NAVY}!important;display:inline-block!important;min-width:84px!important}
+  .pdfdoc .pdf-cover .pdf-toc{padding:16px 0 0!important;border-top:1px solid ${LINE}!important;margin-top:20px!important}.pdfdoc .pdf-cover .pdf-toc p{margin:0 0 5px!important;font-size:15.5px!important}
+  .pdfdoc .pdf-cover .pdf-toc p span{display:inline-block!important;width:34px!important;font-family:${SERIF}!important;color:${GOLD}!important}
+  .pdfdoc .pdf-cover .pdf-foot{font-size:13px!important;color:#6b6457!important;border-top:1px solid ${LINE}!important;padding-top:12px!important}`;
+  // 이모지·장식 기호 제거 (PDF 에서만)
+  const EMOJI = /[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}\u{1F3FB}-\u{1F3FF}️‍⃣]/gu;
+  function stripEmoji(root) {
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) L.push(w.currentNode);
+    L.forEach(t => { const v = t.nodeValue.replace(EMOJI, '').replace(/^\s*[·•]\s*$/, ''); if (v !== t.nodeValue) t.nodeValue = v.replace(/^\s+(?=\S)/, t.previousSibling ? ' ' : ''); });
+  }
+  async function serifReady(text) {
+    if (!document.getElementById('pdfSerif')) { const l = document.createElement('link'); l.id = 'pdfSerif'; l.rel = 'stylesheet'; l.href = libBase() + 'noto-serif/serif-700.css'; document.head.appendChild(l); await new Promise(r => { l.onload = r; l.onerror = r; setTimeout(r, 4000); }); }
+    try { await Promise.race([document.fonts.load(`700 20px "Noto Serif KR"`, text.slice(0, 4000)), new Promise(r => setTimeout(r, 6000))]); } catch (e) { }
+  }
+
   async function make(p, done) {
     const s = sections(p); if (!s) return;
     const msg = t => { const m = $('#pdfMsg'); if (m) m.textContent = t; }, bar = v => { const b = $('#pdfBar'); if (b) { b.parentNode.hidden = false; b.style.width = Math.round(v * 100) + '%'; } };
@@ -150,22 +176,27 @@ const PdfReport = (() => {
       const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
       const PW = 210, PH = 297, M = 12, W = PW - M * 2, HMAX = PH - M * 2 - 6;
       let y = M, page = 1, first = true;
-      const foot = () => { doc.setFontSize(9); doc.setTextColor(140); doc.text(`- ${page} -`, PW / 2, PH - 5, { align: 'center' }); };
+      const paint = () => { doc.setFillColor(247, 244, 238); doc.rect(0, 0, PW, PH, 'F'); };
+      const foot = () => { if (page > 1) { doc.setDrawColor(155, 132, 87); doc.setLineWidth(0.2); doc.line(M, PH - 9, PW - M, PH - 9); doc.setFontSize(9); doc.setTextColor(120, 110, 90); doc.text(String(page), PW / 2, PH - 5, { align: 'center' }); } };
+      const newPage = () => { foot(); doc.addPage(); page++; paint(); y = M; };
+      paint();
       // 섹션마다 블록(제목·카드) 단위로 캡처해서 페이지에 쌓는다 (카드가 페이지보다 길면 잘라서 이어 붙임)
+      msg('보고서 글꼴을 준비하는 중…'); await serifReady(s.map(x => x.html.replace(/<[^>]+>/g, ' ')).join(' ').replace(/\s+/g, ' '));
       const blocks = []; s.forEach((x, i) => { const d = document.createElement('div'); d.innerHTML = x.html; d.querySelectorAll('.pdf-skip').forEach(e => e.remove()); [...d.children].forEach((c, k) => blocks.push({ el: c, sec: i, newPage: k === 0 && i > 0, cover: i === 0 })); });
       for (let i = 0; i < blocks.length; i++) {
         const B = blocks[i]; box.innerHTML = ''; B.el.classList.add('pdf-blk'); box.appendChild(B.el);
-        box.querySelectorAll('img').forEach(im => im.remove());
+        box.querySelectorAll('img').forEach(im => im.remove()); stripEmoji(box);
         // 줄 중간에서 자르지 않도록: 문단·행·제목의 아래 끝 위치를 미리 모아 둠 (CSS px)
         const top0 = box.getBoundingClientRect().top;
-        const cuts = [...new Set([...box.querySelectorAll('p,li,h2,h3,h4,h5,.cm-row,.tjm,.tjm-g>div,.tjm-l,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec,.pdf-h,div')].filter(e => e.children.length === 0 || /^(P|LI|H\d)$/.test(e.tagName) || e.matches('.cm-row,.tjm,.tjm-g>div,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec,.pdf-h'))
+        const HEAD = 'h2,h3,h4,h5,.ht,.pdf-h,.yf-mh,.tjm-h';
+        const cuts = [...new Set([...box.querySelectorAll('p,li,tr,.cm-row,.tjm,.tjm-g>div,.tjm-l,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec,div')].filter(e => !e.matches(HEAD) && (e.children.length === 0 || /^(P|LI|TR)$/.test(e.tagName) || e.matches('.cm-row,.tjm,.tjm-g>div,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec')))
           .map(e => Math.round(e.getBoundingClientRect().bottom - top0 + 4)))].sort((x, y) => x - y);
-        const cv = await html2canvas(box, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true });
+        const cv = await html2canvas(box, { scale: 2, backgroundColor: IVORY, logging: false, useCORS: true });
         const jpg = c => c.toDataURL('image/jpeg', 0.75), k = cv.width / box.getBoundingClientRect().width;   // canvas px / CSS px
         const hmm = cv.height * W / cv.width, pxPerMm = cv.width / W;
         if (B.cover) { doc.addImage(jpg(cv), 'JPEG', 0, 0, PW, Math.min(PH, cv.height * PW / cv.width)); first = false; bar((i + 1) / blocks.length); continue; }
-        if (B.newPage) { if (!first) { foot(); doc.addPage(); page++; } y = M; }
-        else if (!first && y + Math.min(hmm, 25) > M + HMAX) { foot(); doc.addPage(); page++; y = M; }
+        if (B.newPage) { if (!first) newPage(); y = M; }
+        else if (!first && y + Math.min(hmm, 25) > M + HMAX) newPage();
         first = false;
         if (hmm <= M + HMAX - y + 2) { doc.addImage(jpg(cv), 'JPEG', M, y, W, hmm); y += hmm + 3; }
         else {   // 페이지를 넘는 꼭지: 문단 경계에서 나눔
@@ -176,12 +207,12 @@ const PdfReport = (() => {
             if (cv.height - sy > room) {
               const lim = sy + room, ok = cuts.map(c => c * k).filter(c => c > sy + 40 && c <= lim);
               cut = ok.length ? ok[ok.length - 1] : lim;
-              if (!ok.length && y > M + 5) { foot(); doc.addPage(); page++; y = M; continue; }   // 남은 칸에 문단 하나도 안 들어가면 다음 쪽부터
+              if (!ok.length && y > M + 5) { newPage(); continue; }   // 남은 칸에 문단 하나도 안 들어가면 다음 쪽부터
             }
             const hpx = Math.max(1, Math.round(cut - sy));
-            const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = hpx; const g = c2.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c2.width, hpx); g.drawImage(cv, 0, sy, cv.width, hpx, 0, 0, cv.width, hpx);
+            const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = hpx; const g = c2.getContext('2d'); g.fillStyle = IVORY; g.fillRect(0, 0, c2.width, hpx); g.drawImage(cv, 0, sy, cv.width, hpx, 0, 0, cv.width, hpx);
             doc.addImage(jpg(c2), 'JPEG', M, y, W, hpx / pxPerMm); sy += hpx; y += hpx / pxPerMm + 3;
-            if (sy < cv.height - 2) { foot(); doc.addPage(); page++; y = M; }
+            if (sy < cv.height - 2) newPage();
           }
         }
         bar((i + 1) / blocks.length); msg(`페이지를 만드는 중… ${Math.round((i + 1) / blocks.length * 100)}%`);
