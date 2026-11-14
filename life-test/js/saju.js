@@ -115,19 +115,25 @@ window.Saju = (() => {
     const mx = Math.max(...a.el, 1);
     return `<div class="elbars">${a.el.map((n, i) => `<div><span>${ELE[i]} ${S.EK[i]}</span><i style="width:${n / mx * 100}%;background:${ELC[i]}"></i><b>${n}</b></div>`).join('')}</div>`;
   }
+  // 계산 기준 안내: 시간 미상 · 오행 0 · 나이 기준
+  function basisHTML(a) {
+    const zero = a.el.map((n, i) => n === 0 ? S.EK[i] : '').filter(Boolean);
+    return `<p class="sjnote sj-basis">${a.p.h ? '' : '출생 시간을 몰라 시주를 뺀 세 기둥(여섯 글자)으로 풀었어요. 대운이 시작되는 나이는 정오 출생으로 가정한 추정값이에요. '}오행 숫자는 겉으로 드러난 ${a.p.h ? '여덟' : '여섯'} 글자만 센 값이에요.${zero.length ? ` ${zero.join('·')} 기운이 0이어도 지지 속 숨은 기운이나 대운·세운으로 들어올 수 있어, 전혀 없다는 뜻은 아니에요.` : ''} 대운 나이는 세는나이(태어난 해 1살) 기준이에요.</p>`;
+  }
   function summaryHTML(a) {
     return `<div class="sajucard">
       ${pillarsHTML(a)}
       <div class="sjline"><b>${ELE[a.meEl]} ${a.dm.nm}</b> 일간 · ${a.ddi}띠<br><span>${a.dm.key}</span></div>
       ${elemHTML(a)}
       <div class="sjtags"><span>${GRPE[a.dom]} 강한 운: ${GRPN[a.dom]}</span><span>${ELE[a.weak]} 부족한 기운: ${S.EK[a.weak]}</span></div>
+      ${basisHTML(a)}
     </div>`;
   }
   function fullHTML(a, age) {
     const L = luckAt(a, age);
-    const dyRow = a.dy.slice(0, 8).map(d => `<div class="dy${L && L.start === d.age ? ' on' : ''}"><small>${d.age}세</small><b>${d.txt}</b><em>${GRPE[d.g]}</em></div>`).join('');
+    const dyRow = a.dy.slice(0, 8).map(d => `<div class="dy${L && L.start === d.age ? ' on' : ''}"><small>${d.age}세${d.yr ? `<br>${d.yr}~` : ''}</small><b>${d.txt}</b><em>${GRPE[d.g]}</em></div>`).join('');
     return `${summaryHTML(a)}
-      ${L ? `<div class="sjnow">${L.e} 지금 대운 (${L.start}세~) <b>${L.name}</b><br><span>${L.desc}</span></div>` : ''}
+      ${L ? `<div class="sjnow">${L.e} 지금 대운 (세는나이 ${L.start}세~) <b>${L.name}</b><br><span>${L.desc}</span></div>` : ''}
       <div class="dyrow">${dyRow}</div>
       <div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p>
       <h4>💕 연애</h4><p>${a.dm.연애}</p><h4>💰 재물</h4><p>${a.dm.재물}</p><h4>🩺 건강</h4><p>${a.dm.건강}</p>
@@ -140,14 +146,14 @@ window.Saju = (() => {
   function premiumHTML(a, age, year) {
     const yg = S.yearGz(year), ts = S.tg10(a.me, yg.s), tb = S.tg10(a.me, S.HID[yg.b]), sx = S.SEUN[ts.g], sb = S.SEUN[tb.g];
     const L = luckAt(a, age);
-    const dyRows = a.dy.slice(0, 8).map(d => `<tr class="${L && L.start === d.age ? 'on' : ''}"><td>${d.age}세~</td><td><b>${d.txt}</b></td><td>${GRPE[d.g]} ${GRPN[d.g]}</td><td>${descAt(d.g, d.age)}</td></tr>`).join('');
+    const dyRows = a.dy.slice(0, 8).map(d => `<tr class="${L && L.start === d.age ? 'on' : ''}"><td>${d.age}세~${d.yr ? ` (${d.yr}~${d.yr + 9})` : ''}</td><td><b>${d.txt}</b></td><td>${GRPE[d.g]} ${GRPN[d.g]}</td><td>${descAt(d.g, d.age)}</td></tr>`).join('');
     return `${summaryHTML(a)}
       <div class="sjnote" style="text-align:center;margin:6px 0">🔓 프리미엄 사주 리포트</div>
       <div class="sjtxt">
         <h4>🗓️ ${year}년 운세 · 세운 ${S.STK[yg.s]}${S.BRK[yg.b]}(${S.ST[yg.s]}${S.BR[yg.b]}) · ${ts.n}</h4>
         <p><b>총운</b> ${sx.총운}</p><p><b>일·직업</b> ${sx.직업}</p><p><b>재물</b> ${sx.재물}</p><p><b>연애</b> ${sx.연애}</p><p><b>건강</b> ${sx.건강}</p>
         <p><b>하반기(${S.BRK[yg.b]} · ${tb.n})</b> ${sb.총운}</p>
-        <h4>📅 이번 달 한마디</h4><p>${S.WOL[S.tg10(a.me, (yg.s + new Date().getMonth()) % 10).g]}</p>
+        <h4>📅 이번 달 한마디</h4><p>${S.WOL[S.tg10(a.me, (yg.s + KST.now().getMonth()) % 10).g]}</p>
         <h4>🔮 10년 대운 흐름</h4>
         <table class="dytbl"><tr><th>시기</th><th>대운</th><th>기운</th><th>풀이</th></tr>${dyRows}</table>
         <h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>

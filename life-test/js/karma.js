@@ -1,6 +1,6 @@
 /* =====================================================================
  *  karma.js — 카르마 하나로 단순화한 유료 모델
- *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · AI 사주상담(1회 20, 첫 회 무료)
+ *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · 사주 자동 상담(1회 20, 첫 회 무료)
  *   · 상세 풀이: 서비스별 5~15 · 타로 1/3/5장 5/10/15 · AI 상담 질문당 3 (views.js·detail.js·counsel.js) / 게임 아이템은 별도
  *   · 카르마 모으기: 📺 광고 1번 +5 (3분 간격 · 하루 6번) · 🎲 인생 게임 엔딩 5~15 · 게임 중간 광고 휴식 +3
  *   · 💳 카르마는 돈으로도 살 수 있다 (100 · 330 · 1,200)
@@ -11,7 +11,7 @@
  * ===================================================================== */
 const Karma = (() => {
   const AD_K = 5, AD_GAP = 3 * 60e3, AD_DAY = 6, BREAK_K = 3, BREAK_EVERY = 10, AKEY = 'p8b_adk';
-  const day = () => new Date().toISOString().slice(0, 10);
+  const day = () => KST.ymd();
   const testMode = () => !Store.native && (!!window.P8B_COMMERCIAL || !!(window.Auth && Auth.isTest && Auth.isTest()));
   const bal = () => (typeof karma !== 'undefined' ? karma : 0);
   // 전환 측정 (이 기기에만): 광고 시작·완료·실패, 부족분 안내, 결제 시작·취소·완료, 콘텐츠 해제·재열람
@@ -77,7 +77,7 @@ const Karma = (() => {
     return 'bonus';
   }
   const log = () => store.get('p8b_klog', []);
-  const dayOf = t => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const dayOf = t => KST.ymd(t);
   const localDay = () => dayOf(Date.now());
   // 기간별 합계: 모은 것(광고·게임·보너스) · 산 것 · 쓴 것
   function sum(from) {
@@ -85,22 +85,22 @@ const Karma = (() => {
     log().forEach(x => { if (from && x.t < from) return; const c = cat(x); r.n++; if (c === 'spend') r.spend -= x.d; else if (c === 'buy') r.buy += x.d; else if (x.d > 0) r.earn += x.d; });
     return r;
   }
-  function today() { const d0 = new Date(); d0.setHours(0, 0, 0, 0); return Object.assign(sum(+d0), { adLeft: adLeft(), adMax: AD_DAY }); }
+  function today() { return Object.assign(sum(KST.startOfDay()), { adLeft: adLeft(), adMax: AD_DAY }); }
   // 최근 사용·다시보기 n건 (영수증 카드용)
   function recentHTML(n) {
     const l = log().filter(x => ['spend', 'view'].includes(cat(x))).slice(0, n);
-    return l.map(x => `<div class="kledr sm"><span>${new Date(x.t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span><b>${esc(x.why)}</b><em class="${x.d < 0 ? 'm' : ''}">${x.d ? x.d : '0'}</em></div>`).join('');
+    return l.map(x => `<div class="kledr sm"><span>${new Date(x.t).toLocaleTimeString('ko-KR', { timeZone: 'Asia/Seoul', hour: '2-digit', minute: '2-digit' })}</span><b>${esc(x.why)}</b><em class="${x.d < 0 ? 'm' : ''}">${x.d ? x.d : '0'}</em></div>`).join('');
   }
   function rowHTML(x) {
     const c = cat(x), [e] = CATS[c];
-    return `<div class="kledr"><span>${new Date(x.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span><b>${e} ${esc(x.why)}</b><em class="${x.d > 0 ? 'p' : 'm'}">${x.d > 0 ? '+' : ''}${x.d}</em><small>${CATS[c][1]} · 잔액 ${x.bal}</small></div>`;
+    return `<div class="kledr"><span>${new Date(x.t).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span><b>${e} ${esc(x.why)}</b><em class="${x.d > 0 ? 'p' : 'm'}">${x.d > 0 ? '+' : ''}${x.d}</em><small>${CATS[c][1]} · 잔액 ${x.bal}</small></div>`;
   }
   function ledgerHTML() {
     const t = today();
     return `<button class="kopt" data-k="hist"><i>📒</i><span><b>카르마 사용 내역</b><small>오늘 모음 +${t.earn + t.buy} · 사용 −${t.spend} · 전체 ${log().length}건</small></span><em>›</em></button>`;
   }
   function openHistory(f = 'all', back) {
-    const l = log(), m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
+    const l = log(), m0 = KST.startOfMonth();
     const mon = sum(+m0), all = sum(0), td = today();
     const F = [['all', '전체'], ['earn', '모으기'], ['buy', '구매'], ['spend', '사용']];
     const pick = l.filter(x => { const c = cat(x); return f === 'all' || (f === 'spend' ? c === 'spend' || c === 'view' : f === 'buy' ? c === 'buy' : c !== 'spend' && c !== 'buy' && c !== 'view'); });
@@ -131,12 +131,12 @@ const Karma = (() => {
       <div class="kway"><i>🎁</i><span><b>복주머니 교환 +10</b><small>출석·미션으로 모은 복주머니 3개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>
       <h4 class="kh">어디에 쓰나요?</h4>
-      <div class="kway"><i>🔓</i><span><b>서비스별 상세 풀이 5~15</b><small>신년운세 15 · 토정비결 10 · 궁합 10 · 바람기 5 · 사주 MBTI 5 · 개요는 무료 · 결제한 날 자정까지 다시보기 ${(STORE_CONFIG.views || {}).free || 3}회 무료</small></span></div>
+      <div class="kway"><i>🔓</i><span><b>서비스별 상세 풀이 5~15</b><small>신년운세 15 · 토정비결 10 · 궁합 10 · 바람기 5 · 사주 MBTI 5 · 개요는 무료 · 결제한 날 자정까지 다시보기 ${(STORE_CONFIG.views || {}).free || 3}회 무료 · 신년운세·토정비결·종합 리포트는 같은 프로필·같은 연도 다시 보기 무료 (이 기기 보관)</small></span></div>
       <div class="kway"><i>🃏</i><span><b>타로 상세 리딩</b><small>1장 5 · 3장 10 · 5장 15 · 카드 뒤집기와 요약은 무료</small></span></div>
       <div class="kway"><i>📑</i><span><b>종합 사주 리포트 PDF ${Views.item('pdf').k}</b><small>모든 상세 풀이를 한 권으로 · PDF 저장 · 결제한 날 다시 만들기 무료</small></span></div>
       <div class="kway"><i>🃏</i><span><b>매일 타로 1장은 무료</b><small>오늘의 운세에서 하루 한 장</small></span></div>
       <div class="kway"><i>📜</i><span><b>사주풀이는 무료</b><small>타고난 성격·강점·약점·연애·재물·건강 성향·개운법</small></span></div>
-      <div class="kway"><i>🤖</i><span><b>AI 사주상담 질문 1개 ${(STORE_CONFIG.counsel || {}).perQ || 3}</b><small>대화 상담 · 선택 상담 · 처음 질문 1개 무료</small></span></div>
+      <div class="kway"><i>🧭</i><span><b>사주 자동 상담 ${CounselPrice.text()}</b><small>대화 상담 · 선택 상담 · 기기 안 규칙 기반 풀이</small></span></div>
       <div class="kway"><i>🎮</i><span><b>인생 게임 아이템</b><small>다시 태어나기 15 · 기적 40 · 운명 조작 팩 30 · 갈림길 미리 보기 3</small></span></div>
       <p class="sjnote">카르마는 쓰면 없어지는 소모성 재화예요. 이 기기에 저장되며, 앱을 지우면 남은 카르마도 사라질 수 있어요 (로그인하면 계정에 함께 저장돼요). 카르마는 현금으로 바꾸거나 환불할 수 없어요 — 구매 환불은 스토어 정책을 따라요.</p></div>`;
   }
@@ -148,14 +148,14 @@ const Karma = (() => {
   function nextGoal() {
     const it = typeof Views !== 'undefined' && Views.item('newyear');
     if (it) return { e: it.e, n: it.n, need: Math.max(0, it.k - bal()), k: it.k };
-    return { e: '🤖', n: 'AI 사주상담 1회', need: Math.max(0, 20 - bal()), k: 20 };
+    return { e: '🤖', n: '사주 자동 상담 질문 1개', need: Math.max(0, CounselPrice.per() - bal()), k: CounselPrice.per() };
   }
 
   // 테스트 모드: 전환 기록 보기
   function openMetrics() {
     const m = store.get(MKEY, {}), N = { ad_start: '광고 시작', ad_done: '광고 완료', ad_fail: '광고 중단·실패', lack_shown: '카르마 부족 안내', pay_start: '결제 시작', pay_cancel: '결제 취소', pay_done: '결제 완료', pay_fail: '결제 실패', spend: '카르마 사용', unlock_report: '상세 리포트 해제', unlock_fate: '운명 조작 해제', unlock_tarot: '타로 심층 (카르마)', tarot_free: '타로 심층 (무료)', report_view: '상세 리포트 열람', counsel_run: '상담 실행', counsel_q: 'AI 상담 질문', daily_tarot: '매일 타로 뒤집기', pdf_made: '종합 리포트 PDF 생성', event_newyear2027: '신년 이벤트 지급' };
     const rate = (a, b) => m[b] ? Math.round((m[a] || 0) / m[b] * 100) + '%' : '—';
-    openOverlay('📈 전환 기록 (이 기기)', `<p class="sjnote">${m._since ? new Date(m._since).toLocaleDateString('ko-KR') + '부터' : '아직 기록 없음'} · 서버로 보내지 않아요</p>
+    openOverlay('📈 전환 기록 (이 기기)', `<p class="sjnote">${m._since ? KST.fmt(m._since) + '부터' : '아직 기록 없음'} · 서버로 보내지 않아요</p>
       ${Object.keys(N).map(k => `<div class="kledr"><b>${N[k]}</b><em>${m[k] || 0}</em></div>`).join('')}
       <p class="sjtxt">광고 완료율 ${rate('ad_done', 'ad_start')} · 결제 완료율 ${rate('pay_done', 'pay_start')} · 부족 안내 → 해제 ${rate('unlock_report', 'lack_shown')}</p>`,
       [{ t: '초기화', f: () => { store.set(MKEY, {}); } }, { t: '닫기' }]);
@@ -170,7 +170,7 @@ const Karma = (() => {
       <h4 class="kh">카르마 구매</h4>
       ${Store.packs().map(k => { const it = Store.item(k); return `<button class="kopt" data-pack="${k}"><i>${it.e}</i><span><b>${it.n}</b><small>${it.d}</small></span><em>${testMode() ? `<s>${Store.price(k)}</s> 무료` : Store.native ? Store.price(k) : '앱'}</em></button>`; }).join('')}
       ${ledgerHTML()}
-      <p class="sjnote">카르마로 여는 것: 🔓 서비스별 상세 풀이 5~15 · 🃏 타로 상세 1장 5·3장 10·5장 15 · 🤖 AI 상담 질문 1개 10 (처음 1개 무료) · 🎮 게임 아이템 · 📜 사주풀이는 무료</p>`;
+      <p class="sjnote">카르마로 여는 것: 🔓 서비스별 상세 풀이 5~15 · 🃏 타로 상세 1장 5·3장 10·5장 15 · 🧭 사주 자동 상담 ${CounselPrice.text()} · 🎮 게임 아이템 · 📜 사주풀이는 무료</p>`;
   }
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function openCharge(need, label, back) {

@@ -34,7 +34,7 @@ window.Tojeong = (() => {
   const MSUM=["기운이 살아나는 달","평탄하게 지키는 달","조심하며 다지는 달"];
   const COST = 30;                                   // 카르마 30 = 인생 게임 2~4판
   // 11월부터는 다음 해 토정비결 (연말에 새해 신수를 보는 전통)
-  const year = () => { const d = new Date(); return d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getFullYear(); };
+  const year = () => KST.fortuneYear();
 
   // 생일 → 음력 생월·생일
   function lunarBirth(p) {

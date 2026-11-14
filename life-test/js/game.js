@@ -713,7 +713,7 @@ function initSetup(){
     const [y,m,d]=v.split('-').map(Number),t=$('#fTime').value,sx=document.querySelector('#fSex .on').dataset.v;
     const birth={cal:$('#fCal').value,y,m,d,hh:t?+t.split(':')[0]:12,mm:t?+t.split(':')[1]:0,unk:!t};
     if(Saju.ok()&&!Saju.analyze(birth,true)){$('#fErr').textContent='존재하지 않는 날짜예요 (음력이면 날짜를 확인해 주세요)';Snd.sfx('bad');return}
-    const today=Fortune.ymd(new Date());
+    const today=KST.ymd();
     const useMe=$('#fUseMe').checked;
     if(useMe&&v>today){$('#fErr').textContent='오늘 이후 날짜는 내 운세 정보로 쓸 수 없어요. ‘내 운세에도 사용’을 끄면 가상 인물로 플레이할 수 있어요';Snd.sfx('bad');return}
     if(useMe&&sx==='r'){$('#fErr').textContent='내 운세에도 쓰려면 성별을 골라 주세요 (랜덤은 게임 인물에만 쓸 수 있어요)';Snd.sfx('bad');return}

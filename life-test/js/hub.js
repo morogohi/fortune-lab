@@ -5,19 +5,20 @@
  * ===================================================================== */
 const Hub = (() => {
   const S = window.SAJU;
-  const day = () => Fortune.ymd(new Date());
+  const day = () => KST.ymd();
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   let tab = 'home', editing = false;
 
   /* ---------- 내 정보 ---------- */
   const getMe = () => store.get('p8b_me', null);
+  let draftNew = false;   // '새로운 사람 입력' 중 (저장 전에는 기존 프로필 유지)
   function birthOf(p) {
     if (!p || !p.date) return null;
     const [y, m, d] = p.date.split('-').map(Number), t = p.time;
     return { cal: p.cal || 's', y, m, d, hh: t ? +t.split(':')[0] : 12, mm: t ? +t.split(':')[1] : 0, unk: !t };
   }
   /* 실제 사용자·궁합 상대 프로필은 오늘 이후 날짜 불가 (게임 속 가상 인물은 별도 허용) */
-  const todayStr = () => Fortune.ymd(new Date());
+  const todayStr = () => KST.ymd();
   const futureMsg = d => d > todayStr() ? '오늘 이후 날짜는 입력할 수 없어요.' : '';
   const TRIAL = () => Store.native ? '' : (typeof Karma !== 'undefined' && Karma.testMode())
     ? '<div class="webtrial">🧪 테스트 모드 · 광고와 결제가 실제 없이 가상으로 처리돼요. 카르마를 모아 유료 콘텐츠를 열어 보세요.</div>'
@@ -35,8 +36,8 @@ const Hub = (() => {
     const mt = store.get('p8b_mbti_test', null), ch = store.get('p8b_counsel_hist', []), gh = store.get('p8b_hist', []), pp = people();
     const body = [
       sec('today', '🔮 오늘의 운세', 7), sec('tarot', '🃏 타로', 5),
-      mt ? `<h4 class="rech">📝 MBTI 성향 검사</h4><div class="recr" data-go="mbtitest"><b>${mt.type.replace(/X/g, '·')}</b><small>${new Date(mt.at).toLocaleDateString('ko-KR')} · 눌러서 자세히</small></div>` : '',
-      ch.length ? `<h4 class="rech">🤖 AI 사주상담</h4>${ch.slice(0, 5).map((x, i) => `<div class="recr" data-cs="${i}"><b>${esc(x.q || x.opts.join(' vs '))}</b><small>${new Date(x.t).toLocaleDateString('ko-KR')} · 추천: ${esc(x.pick)}</small></div>`).join('')}` : '',
+      mt ? `<h4 class="rech">📝 MBTI 성향 검사</h4><div class="recr" data-go="mbtitest"><b>${mt.type.replace(/X/g, '·')}</b><small>${KST.at(mt.at).toLocaleDateString('ko-KR')} · 눌러서 자세히</small></div>` : '',
+      ch.length ? `<h4 class="rech">🤖 사주 자동 상담</h4>${ch.slice(0, 5).map((x, i) => `<div class="recr" data-cs="${i}"><b>${esc(x.q || x.opts.join(' vs '))}</b><small>${new Date(x.t).toLocaleDateString('ko-KR')} · 추천: ${esc(x.pick)}</small></div>`).join('')}` : '',
       pp.length ? `<h4 class="rech">💞 궁합 관계도</h4><div class="recr" data-go="compat"><b>${pp.length}명 등록</b><small>${pp.slice(0, 4).map(x => esc(x.name)).join(', ')}${pp.length > 4 ? ' …' : ''}</small></div>` : '',
       (() => { const sv = store.get('p8b_saves', {}), ks = ['auto', 's1', 's2', 's3'].filter(k => sv[k] && sv[k].meta); return ks.length ? `<h4 class="rech">💾 저장한 인생 (이어 하기)</h4>${ks.map(k => { const m = sv[k].meta; return `<div class="recr" data-sv="${k}"><b>${m.f} ${esc(m.name)} · ${m.age}살 (${m.st})</b><small>${k === 'auto' ? '자동 저장' : '슬롯 ' + k.slice(1)} · ${m.year}년${m.job ? ' · ' + esc(m.job) : ''} · 눌러서 이어 하기</small></div>`; }).join('')}` : ''; })(),
       gh.length ? `<h4 class="rech">🎲 인생 게임 (끝난 인생)</h4>${gh.slice(0, 5).map(h => `<div class="recr"><b>${h.f} ${esc(h.name)} · ${h.grade}등급</b><small>「${esc(h.title)}」 · 향년 ${h.age}세</small></div>`).join('')}` : '',
@@ -74,8 +75,7 @@ const Hub = (() => {
     const d = daily(); if (d.att) return;
     d.att = true; store.set('p8b_daily', d);
     const st = store.get('p8b_streak', { last: '', n: 0 });
-    const y = new Date(Date.now() - 864e5);
-    st.n = st.last === Fortune.ymd(y) ? st.n + 1 : 1; st.last = day(); store.set('p8b_streak', st);
+    st.n = st.last === KST.ymd(KST.startOfDay() - 1) ? st.n + 1 : 1; st.last = day(); store.set('p8b_streak', st);
     addPouch(Store.passOn() ? 2 : 1, Store.passOn() ? '출석 (행운패스 2배)' : '출석 완료');
     if (st.n % 7 === 0) setTimeout(() => addPouch(5, `${st.n}일 연속 출석 보너스`, false), 1400);
   }
@@ -95,6 +95,7 @@ const Hub = (() => {
     clearTimeout(toast._t); toast._t = setTimeout(() => el.classList.remove('on'), 2400);
   }
   function go(t, fromPop) {
+    if (t !== 'input') draftNew = false;
     Snd.sfx('tap');
     if (t !== 'tarot') { stopShuffleLoop(); if (tPhase === 'shuffle') tPhase = tarotD ? 'reveal' : 'idle'; }   // 섞는 도중 다른 화면으로 가면 소리·섞기 즉시 중단
     if (!fromPop) {
@@ -158,7 +159,7 @@ const Hub = (() => {
     const rows = list.map((x, i) => `<div class="prow${me && pid(x) === pid(me) ? ' on' : ''}"><button data-pick="${i}"><b>${esc(x.name)}</b><small>${pLine(x)}</small></button>${me && pid(x) === pid(me) ? '<em>지금 보는 중</em>' : `<button class="pdel" data-pdel="${i}" aria-label="삭제">✕</button>`}</div>`).join('');
     openOverlay('🙂 내 정보 · 입력 기록', `<p class="sjnote">입력했던 정보는 이 기기에만 기록돼요 (최대 10명). 고르면 모든 운세가 그 정보로 바뀌어요.</p>
       <div class="plist">${rows || '<p class="sjnote">아직 기록이 없어요.</p>'}</div>`,
-      [{ t: '✏️ 지금 정보 수정', f: editProfile }, { t: '➕ 새로운 사람 입력', pri: 1, f: () => { pending = 'today'; store.set('p8b_me', null); tab = 'input'; editing = false; show('hub'); render(); } }, { t: '닫기' }]);
+      [{ t: '✏️ 지금 정보 수정', f: editProfile }, { t: '➕ 새로운 사람 입력', pri: 1, f: () => { pending = 'today'; draftNew = true; tab = 'input'; editing = false; show('hub'); render(); } }, { t: '닫기' }]);
     document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const x = profiles()[+b.dataset.pick]; store.set('p8b_me', { name: x.name, date: x.date, cal: x.cal, time: x.time, sex: x.sex }); rememberProfile(x); closeOverlay(); scheduleNoti(); toast(`${x.name}님 정보로 바꿨어요`); render(); });
     document.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => { const l = profiles(); l.splice(+b.dataset.pdel, 1); store.set(PKEY, l); closeOverlay(true); openProfiles(); });
   }
@@ -244,7 +245,7 @@ const Hub = (() => {
   function openAccount() {
     const t = store.get('p8b_synced', 0);
     openOverlay('👤 내 계정', `<div class="sets"><div class="setrow"><span>${Auth.provider() === 'kakao' ? '💬 카카오' : Auth.provider() === 'test' ? '🧪 테스트' : '🔵 구글'}</span><div><b>${esc(Auth.name())}</b></div></div>
-      <div class="setrow"><span>☁️ 동기화</span><div><small>카르마 ${karma} · ${t ? new Date(t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 저장' : '아직 저장 전'}</small></div><button id="acSync">지금 저장</button></div></div>
+      <div class="setrow"><span>☁️ 동기화</span><div><small>카르마 ${karma} · ${t ? new Date(t).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 저장' : '아직 저장 전'}</small></div><button id="acSync">지금 저장</button></div></div>
       <p class="sjnote">서버에는 계정 정보와 게임 기록 요약만 있어요. 생년월일 등은 이 기기에만 있어요.</p>`,
       [{ t: '로그아웃', f: async () => { await Auth.logout(); toast('로그아웃했어요'); } },
        { t: '회원 탈퇴', f: () => openOverlay('회원 탈퇴', '<p class="sjtxt">서버에 저장된 계정과 게임 기록이 모두 삭제돼요. 이 기기의 정보는 그대로 남아요.</p>',
@@ -275,10 +276,10 @@ const Hub = (() => {
     { k: 'newyear', g: 'saju', c: 'pink', ic: 'calendar', e: '🧧', n: '2027 신년운세', d: '정미년 총운 · 12달 흐름', need: 1, f: () => go('newyear') },
     { k: 'tojeong', g: 'saju', c: 'peach', ic: 'scroll', e: '🏮', n: () => `${Tojeong.year()} 토정비결`, d: '한 해 신수 · 월별 운세', need: 1, f: () => go('tojeong') },
     { k: 'compat', g: 'rel', c: 'pink', ic: 'heart', e: '💞', n: '궁합', d: '두 사람의 궁합 지수 · 관계도', need: 1, f: () => go('compat') },
-    { k: 'flirt', g: 'rel', c: 'butter', ic: 'spark', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
-    { k: 'mbti', g: 'rel', c: 'mint', ic: 'grid', e: '🧩', n: '사주로 보는 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
-    { k: 'tarot', g: 'rel', c: 'lav', ic: 'spark', e: '🃏', n: '타로카드', d: '78장 · 연애 · 일 · 재물', need: 0, f: () => go('tarot') },
-    { k: 'mbtitest', g: 'rel', c: 'sky', ic: 'grid', e: '📝', n: 'MBTI 성향 검사', d: '24문항 설문으로 알아보는 내 성향 · 사주 MBTI와 비교', need: 0, f: () => go('mbtitest') },
+    { k: 'flirt', g: 'play', c: 'butter', ic: 'spark', e: '💘', n: '바람기 테스트', d: '도화살 · 홍염살 연애 기질', need: 1, f: () => Fun.openFlirt(0) },
+    { k: 'mbti', g: 'play', c: 'mint', ic: 'grid', e: '🧩', n: '사주로 보는 MBTI', d: '오행 · 십성으로 본 성격 유형', need: 1, f: () => Fun.openMbti(0) },
+    { k: 'tarot', g: 'play', c: 'lav', ic: 'spark', e: '🃏', n: '타로카드', d: '78장 · 연애 · 일 · 재물', need: 0, f: () => go('tarot') },
+    { k: 'mbtitest', g: 'play', c: 'sky', ic: 'grid', e: '📝', n: 'MBTI 성향 검사', d: '24문항 설문으로 알아보는 내 성향 · 사주 MBTI와 비교', need: 0, f: () => go('mbtitest') },
     { k: 'daily', g: 'daily', c: 'butter', ic: 'gift', e: '🧧', n: '출석 · 데일리 미션', d: '매일 들러 복주머니 받고 보상으로 교환', need: 0, f: () => go('daily') },
     { k: 'game', g: 'game', c: 'sky', ic: 'globe', e: '🌏', n: '프로젝트 80억 : 인생 게임', d: '80억 명 중 한 명으로 태어나 끝까지 살아 보기', need: 0, f: () => go('game') },
   ];
@@ -290,7 +291,7 @@ const Hub = (() => {
     }));
   }
   const itemName = it => typeof it.n === 'function' ? it.n() : it.n;
-  /* 다른 모듈이 항목·페이지를 붙이는 통로 (예: AI 사주상담) */
+  /* 다른 모듈이 항목·페이지를 붙이는 통로 (예: 사주 자동 상담) */
   const PAGES = {};
   function register(o) {
     if (o.item && !ITEMS.some(x => x.k === o.item.k)) { const i = ITEMS.findIndex(x => x.k === o.after); ITEMS.splice(i >= 0 ? i + 1 : ITEMS.length, 0, o.item); }
@@ -349,7 +350,7 @@ const Hub = (() => {
     $('#shMore').onclick = () => go('more'); $('#shExch').onclick = openExchange;
   }
   function homeHTML(p, a) {
-    const now = new Date(), wd = '일월화수목금토'[now.getDay()];
+    const now = KST.now(), wd = '일월화수목금토'[now.getDay()];
     const g = Fortune.dayGz ? Fortune.dayGz(now) : null;
     const f = a ? Fortune.today(a, keyOf(p)) : null;
     const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${it.e}</i><span><b>${itemName(it)}</b><small>${it.d}</small></span></button>`;
@@ -359,10 +360,11 @@ const Hub = (() => {
       ${p && a
         ? `<button class="hme" id="hmMe"><span class="ddi" title="${a.ddi}띠">${DDI_E[a.p.y.b]}</span><div><b>${esc(p.name)}님 <em class="ddit">${a.ddi}띠</em></b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
-      ${karmaCardHTML()}
       <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>☀️</i></button>
       ${sec('사주 · 운세', 'saju')}
       ${sec('궁합 · 관계', 'rel')}
+      ${karmaCardHTML()}
+      <h3 class="hsec">놀이 · 테스트 <small>재미로 보는 콘텐츠</small></h3><div class="htiles">${ITEMS.filter(x => x.g === 'play').map(tile).join('')}</div>
       ${sec('인생 게임', 'game')}
       ${sec('매일 혜택', 'daily')}
       ${TRIAL()}
@@ -393,7 +395,7 @@ const Hub = (() => {
         <label>성별<div class="seg" id="hSex"><button data-v="m" class="${p.sex !== 'f' ? 'on' : ''}">👦 남자</button><button data-v="f" class="${p.sex === 'f' ? 'on' : ''}">👧 여자</button></div></label>
         <div id="hErr" class="herr"></div>
         <button class="bigbtn sm wide" id="hSave">${p.date ? '저장하기' : it ? `다음 → ${itemName(it)} 보기` : '저장하기'}</button>
-        ${p.date ? '<button class="ghost wide" id="hCancel">취소</button>' : ''}
+        ${p.date || getMe() ? `<button class="ghost wide" id="hCancel">${p.date ? '취소' : '취소 · 지금 정보로 돌아가기'}</button>` : ''}
       </div></div>`;
   }
   function bindForm() {
@@ -406,13 +408,14 @@ const Hub = (() => {
       const date = $('#hDate').value;
       if (!date) { $('#hErr').textContent = '생년월일을 입력해 주세요.'; return; }
       if (futureMsg(date)) { $('#hErr').textContent = futureMsg(date); return; }
-      const old = getMe() || {};
+      // 새 사람 입력은 빈 초안에서 시작 — 기존 프로필(getMe)은 저장에 성공할 때만 바뀜
+      const old = draftNew ? {} : (getMe() || {});
       const p = { ...old, name: $('#hName').value.trim() || '나', date, cal: $('#hCal').value, time: $('#hTime').value, sex: document.querySelector('#hSex .on').dataset.v };
       if (!analyzeP(p)) { $('#hErr').textContent = '날짜를 확인해 주세요. (존재하지 않는 음력 날짜일 수 있어요)'; return; }
-      store.set('p8b_me', p); rememberProfile(p); editing = false; Snd.sfx('reveal'); scheduleNoti();
+      store.set('p8b_me', p); rememberProfile(p); editing = false; draftNew = false; Snd.sfx('reveal'); scheduleNoti();
       if (pending) { const k = pending; pending = null; tab = 'home'; render(); openItem(k); } else { if (tab === 'input') tab = 'home'; render(); }
     };
-    const c = $('#hCancel'); if (c) c.onclick = () => { editing = false; if (tab === 'input') tab = 'home'; render(); };
+    const c = $('#hCancel'); if (c) c.onclick = () => { editing = false; draftNew = false; pending = null; if (tab === 'input') tab = 'home'; render(); };
 
   }
   function editProfile() { if (tab === 'more' || tab === 'game') tab = 'home'; editing = true; show('hub'); render(); }
@@ -420,7 +423,7 @@ const Hub = (() => {
   /* ---------- 오늘 ---------- */
   /* ---------- 🃏 매일 타로 1장 (무료) : 날짜·사람마다 같은 카드, 하루 한 번 뒤집기 ---------- */
   const DTK = 'p8b_dtarot';
-  const dtDay = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  const dtDay = () => { const d = KST.now(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
   let dtPhase = 'intro', dtQ = '';
   const dtSeed = p => { let h = 2166136261; for (const ch of dtDay() + '|' + p.date + '|' + (p.time || '') + '|' + p.name) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
   const DT_N = 7;   // 펼쳐 놓는 카드 수
@@ -478,7 +481,7 @@ const Hub = (() => {
     const ppl = people().slice(0, 3).map(q => { const qb = analyzeP(q); if (!qb) return ''; const d = qb.p.d.b;
       const t = HAP6[d] === b ? ['💗', '마음이 잘 통하는 날 — 먼저 연락해 보세요'] : SAM3.some(x => x.includes(d) && x.includes(b) && d !== b) ? ['🤝', '함께 일을 벌이면 힘이 모이는 날'] : (d + 6) % 12 === b ? ['⚡', '사소한 말로 부딪히기 쉬운 날 — 한 박자 쉬고 답하세요'] : ['🙂', '무난한 날 — 평소처럼 지내면 돼요'];
       return `<div class="cm-row"><b>${esc(q.name)}</b><span>${t[0]} ${t[1]}</span></div>`; }).join('');
-    const week = Array.from({ length: 7 }, (_, k) => { const d = new Date(); d.setDate(d.getDate() + k); const w = Fortune.today(a, keyOf(p), d);
+    const week = Array.from({ length: 7 }, (_, k) => { const d = KST.now(); d.setDate(d.getDate() + k); const w = Fortune.today(a, keyOf(p), d);
       return `<div class="cm-row ${w.sc[0] >= 72 ? 'hi' : w.sc[0] < 55 ? 'lo' : ''}"><b>${k ? `${d.getMonth() + 1}/${d.getDate()} ${'일월화수목금토'[d.getDay()]}` : '오늘'}</b><span class="cm-v">${w.sc[0]}점</span><span>${w.key} · ${w.gzTxt}일</span></div>`; }).join('');
     const G = GAEUN[a.weak];
     return `<div class="hcard"><h3 class="ht">✅ 오늘 하면 좋은 일 · ❌ 피할 일</h3><p class="hsub">${f.one}</p>
@@ -497,7 +500,7 @@ const Hub = (() => {
   }
   function todayHTML(p, a) {
     const f = Fortune.today(a, keyOf(p));
-    const now = new Date(), wd = '일월화수목금토'[now.getDay()];
+    const now = KST.now(), wd = '일월화수목금토'[now.getDay()];
     const areas = Fortune.AREAS.map((n, i) => i === 0 ? '' : `<div class="harea"><div><b>${Fortune.AREA_E[i]} ${n}</b><span style="color:${gColor(f.sc[i])}">${f.sc[i]}</span></div>${bar(f.sc[i], gColor(f.sc[i]))}<p>${f.lines[i]}</p></div>`).join('');
     const bands = f.bands.map(b => `<div class="hband"><small>${b.lab} · ${b.time}</small><b>${S.STK[b.gz.s]}${S.BRK[b.gz.b]}시</b><em style="color:${gColor(b.sc)}">${b.sc}</em><span>${b.txt}</span></div>`).join('');
     return `<div class="hhead"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd}) · 오늘은 <b>${f.gzTxt}일</b> ${f.gzHan}</small>
@@ -560,7 +563,7 @@ const Hub = (() => {
     try {
       const mt = store.get('p8b_mbti_test', null), mbti = (mt && MbtiTest.settled(mt)) || (store.get('p8b_mbti', {})[p.date + p.name]) || (Fun.mbti(a) || {}).type || '';
       const partners = people().filter(x => !x.rel || x.rel === 'love').map(x => ({ name: x.name, a: analyzeP(x) })).filter(x => x.a);
-      return { a, p, age: new Date().getFullYear() - +String(p.date).slice(0, 4), mbti: typeof mbti === 'string' ? mbti : '', partners };
+      return { a, p, age: KST.year() - +String(p.date).slice(0, 4), mbti: typeof mbti === 'string' ? mbti : '', partners };
     } catch (e) { return null; }
   }
   function tarotLockHTML(D, p, a) {
@@ -673,14 +676,14 @@ const Hub = (() => {
            <p class="sjtxt">${same === dec.length && dec.length >= 3 ? '타고난 기질과 지금의 모습이 비슷한 편으로 보여요. 다만 설문 한 번과 사주 해석은 모두 참고용이니, 맞는 부분만 가볍게 받아들이세요.'
              : same * 2 >= dec.length ? '타고난 기질과 살아오며 만든 모습이 섞여 있는 것으로 보여요. 어느 쪽이 더 나다운지는 스스로 느끼는 게 가장 정확해요.'
              : '사주로 본 기질과 지금의 모습이 꽤 달라 보여요. 환경과 경험이 성향을 많이 바꿨을 수 있어요. 어느 쪽도 틀린 것은 아니에요.'}</p>`;
-      return `<div class="hhead"><small>${new Date(res.at).toLocaleDateString('ko-KR')} 검사 결과 · 이 기기에만 저장돼요</small><h2>MBTI 성향 검사</h2></div>
+      return `<div class="hhead"><small>${KST.fmt(res.at)} 검사 결과 · 이 기기에만 저장돼요</small><h2>MBTI 성향 검사</h2></div>
         <div class="hcard">${head}</div>
         <div class="hcard"><h3 class="ht">성향 비율</h3>${res.ax.map(x => `<div class="maxr"><span class="${x.pick === x.x ? 'on' : ''}">${x.x} ${x.xn}<br>${x.p}%</span><div class="tjbar"><i style="width:${x.p}%"></i></div><span class="${x.pick === x.y ? 'on' : ''}">${x.y} ${x.yn}<br>${100 - x.p}%</span></div>`).join('')}
           <p class="sjnote">45~55%인 축은 한쪽으로 정하지 않고 ‘·’(균형)으로 표시해요. 이런 축은 상황에 따라 양쪽을 오가는 편이에요.</p></div>
         <div class="hcard"><h3 class="ht">🧩 사주로 본 MBTI와 비교</h3>${cmp}</div>
         <button class="bigbtn wide" id="mtAgain">📝 다시 검사하기</button>
         ${sm ? '<button class="ghost wide" id="mtSaju">🧩 사주로 보는 MBTI 자세히</button>' : '<button class="ghost wide" id="mtIn">🎂 생년월일 입력하고 비교하기</button>'}
-        <p class="sjnote">자체 제작한 24문항 성향 검사로, 공식 MBTI® 검사가 아니에요. 재미와 자기 이해를 위한 참고용이에요.${set ? '' : ' 결과가 뚜렷하지 않은 동안에는 AI 사주상담 등 다른 기능에서 이 결과를 근거로 쓰지 않아요.'}</p>`;
+        <p class="sjnote">자체 제작한 24문항 성향 검사로, 공식 MBTI® 검사가 아니에요. 재미와 자기 이해를 위한 참고용이에요.${set ? '' : ' 결과가 뚜렷하지 않은 동안에는 사주 자동 상담 등 다른 기능에서 이 결과를 근거로 쓰지 않아요.'}</p>`;
     }
     const A = mtAns || [], n = A.filter(v => v != null).length, N = MbtiTest.Q.length, PER = 6, pages = Math.ceil(N / PER);
     const pg = Math.min(mtPage, pages - 1), idx = MbtiTest.ORDER.slice(pg * PER, pg * PER + PER), pageDone = idx.every(i => A[i] != null);
@@ -794,7 +797,7 @@ const Hub = (() => {
 
   /* ---------- 내 사주 ---------- */
   function sajuHTML(p, a) {
-    const age = new Date().getFullYear() - +p.date.slice(0, 4);
+    const age = KST.year() - +p.date.slice(0, 4);
     const L = Saju.luckAt(a, age);
     return `<div class="hhead"><small>${p.date} (${p.cal === 'll' ? '음력 윤달' : p.cal === 'l' ? '음력' : '양력'}) · ${p.time ? SIJIN.find(x => x[0] === p.time)[1].split(' ')[0] : '태어난 시간 모름(시주 제외)'} · ${p.sex === 'f' ? '여' : '남'}</small><h2>${esc(p.name)}님의 사주</h2></div>
       ${Saju.summaryHTML(a)}

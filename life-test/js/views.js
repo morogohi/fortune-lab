@@ -7,13 +7,15 @@
  *   · 예전에 '상세 사주 리포트'를 카르마로 연 사용자는 무료 (이미 낸 값 존중)
  *   · 열람 뒤 돌아오면 「방금 쓴 카르마」 영수증 카드를 보여 줌 (Views.receiptHTML)
  *   · 다시보기(무료)도 내역에 0으로 남겨 언제 봤는지 확인 가능
+ *   · 보관형(신년운세 · 토정비결 · 종합 리포트): 한 번 결제하면 같은 프로필 · 같은 대상 연도는 기간 제한 없이 다시 열기·다시 내려받기 무료
+ *     (이 기기에 보관 · 다른 프로필 · 다른 연도는 따로 결제 · 결제 시점의 내용 버전을 함께 기록)
  * ===================================================================== */
 const Views = (() => {
   const CFG = () => (window.STORE_CONFIG || {}).views || { free: 3, items: {} };
   const FREE = () => CFG().free;
   const SKEY = 'p8b_views';
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const day = (t = Date.now()) => { const d = new Date(t); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };
+  const day = (t = KST.nowMs()) => KST.ymd(t);
   const item = k => CFG().items[k];
   const list = () => Object.keys(CFG().items);
   const subj = p => p ? `${p.date}|${p.cal || 's'}|${p.time || ''}|${p.sex || ''}` : '-';
@@ -23,9 +25,28 @@ const Views = (() => {
   // 예전 결제: 상세 사주 리포트를 실제로 연 경우(테스트 계정 전체 열람은 제외)
   const legacy = () => Store.ownedReal && Store.ownedReal('report');
 
+  /* ---------- 보관형 구매 (프로필 × 대상 연도) ---------- */
+  const KEEP = { newyear: 1, tojeong: 1, pdf: 1 }, OKEY = 'p8b_owned';
+  const keepId = (k, s) => KEEP[k] ? (/\|\d{4}$/.test(s) ? id(k, s) : id(k, s) + '|' + KST.fortuneYear()) : null;
+  const owned = () => { const o = store.get(OKEY, {}); return o && typeof o === 'object' ? o : {}; };
+  const ownOf = (k, s) => { const i = keepId(k, s); return i ? owned()[i] || null : null; };
+  function own(k, s, extra) { const i = keepId(k, s); if (!i) return; const o = owned(); o[i] = Object.assign(o[i] || { t: Date.now(), v: window.APP_VERSION || '', y: +i.slice(-4) }, extra || {}); store.set(OKEY, o); }
+  function disown(k, s) { const i = keepId(k, s); if (!i) return; const o = owned(); delete o[i]; store.set(OKEY, o); }
+  // 이전 방식(당일 열람권)으로 이미 결제한 보관형 서비스는 보관 구매로 옮김 (기존 권리 보존)
+  (function migrate() {
+    try {
+      if (store.get('p8b_owned_mig', 0)) return;
+      const m = store.get(SKEY, {}), o = owned();
+      Object.keys(m).forEach(x => { const [k, ...r] = x.split('#'); if (!KEEP[k]) return; const s = r.join('#'); const t = m[x].t || Date.now(); const d = KST.at(t); const y = d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getFullYear(); const i = /\|\d{4}$/.test(s) ? x : x + '|' + y; if (!o[i]) o[i] = { t, v: 'migrated', y: +i.slice(-4) }; });
+      store.set(OKEY, o); store.set('p8b_owned_mig', 1);
+    } catch (e) { }
+  })();
+  const ownedNote = '구매 기록은 이 기기에만 보관돼요. 앱 삭제 · 브라우저 데이터 삭제 · 기기 변경 시에는 다시 열 수 없어요 (로그인 동기화는 카르마 잔액만 옮겨요).';
+
   /* 오늘 상태: paid(오늘 결제했나) · used(오늘 본 횟수, 결제한 열람 포함) · freeLeft(남은 무료 다시보기) */
   function status(k, s, extraLegacy) {
     if (legacy() || extraLegacy) return { legacy: true, paid: true, used: 0, freeLeft: Infinity };
+    const ow = ownOf(k, s); if (ow) return { owned: ow, paid: true, used: 0, freeLeft: Infinity };
     const v = all()[id(k, s)];
     if (!v || v.day !== day()) return { paid: false, used: 0, freeLeft: 0 };
     return { paid: true, used: v.n, freeLeft: Math.max(0, FREE() - (v.n - 1)) };
@@ -51,20 +72,23 @@ const Views = (() => {
     const it = item(k); if (!it) return;
     const st = status(k, s, extraLegacy);
     const go = (paid) => {
-      const v = st.legacy ? null : bump(k, s, paid);
-      const left = st.legacy ? Infinity : Math.max(0, FREE() - (v.n - 1));
-      if (!paid && !st.legacy) Karma.note(`🔁 ${label} 다시보기 무료 (${v.n - 1}/${FREE()})`);
+      if (paid) own(k, s);
+      const keep = !!(st.owned || (paid && KEEP[k]));
+      const v = st.legacy || keep ? null : bump(k, s, paid);
+      const left = st.legacy || keep ? Infinity : Math.max(0, FREE() - (v.n - 1));
+      if (st.owned) Karma.note(`📂 ${label} 다시 열기 (보관된 구매 · 무료)`);
+      else if (!paid && !st.legacy) Karma.note(`🔁 ${label} 다시보기 무료 (${v.n - 1}/${FREE()})`);
       if (st.legacy) Karma.note(`📜 ${label} 열람 (이전 구매 · 무료)`);
       cur = { k, s, at: Date.now() }; ret = true;
-      receipt = { k, label, d: paid ? -it.k : 0, bal: Karma.bal(), freeLeft: left, at: Date.now(), legacy: !!st.legacy, again: !paid };
+      receipt = { k, label, d: paid ? -it.k : 0, bal: Karma.bal(), freeLeft: left, at: Date.now(), legacy: !!st.legacy, keep, again: !paid };
       try { Karma.metric(paid ? 'view_paid' : 'view_free'); } catch (e) { }
       show();
     };
-    if (st.legacy) return go(false);
+    if (st.legacy || st.owned) return go(false);
     if (st.paid && st.freeLeft > 0) return go(false);
     const why = st.paid ? `오늘 무료 다시보기 ${FREE()}회를 모두 썼어요. ` : '';
     Karma.spend(it.k, `${it.e} ${label.replace(/^\S+\s/, '')}`, () => go(true), back,
-      `${why}결제한 오늘은 자정까지 <b>다시보기 ${FREE()}회 무료</b>예요.`);
+      KEEP[k] ? `한 번 열면 <b>같은 프로필 · ${keepId(k, s).slice(-4)}년 기준</b>으로 다시 열기가 계속 무료예요 (이 기기 보관).` : `${why}결제한 오늘은 자정까지 <b>다시보기 ${FREE()}회 무료</b>예요.`);
   }
   function leave() { cur = null; }
   function takeReturn() { if (!ret || !receipt) return false; ret = false; return true; }
@@ -73,7 +97,7 @@ const Views = (() => {
   function receiptHTML() {
     if (!receipt || Date.now() - receipt.at > 30 * 60e3) return '';
     const r = receipt, it = item(r.k) || {};
-    const left = r.legacy ? '이전 구매로 계속 무료' : r.freeLeft > 0 ? `오늘 무료 다시보기 <b>${r.freeLeft}회</b> 남음 (자정까지)` : '오늘 무료 다시보기를 다 썼어요 · 다음 열람은 다시 차감';
+    const left = r.legacy ? '이전 구매로 계속 무료' : r.keep ? '보관된 구매 · 같은 프로필 · 같은 연도는 다시 열기 무료' : r.freeLeft > 0 ? `오늘 무료 다시보기 <b>${r.freeLeft}회</b> 남음 (자정까지)` : '오늘 무료 다시보기를 다 썼어요 · 다음 열람은 다시 차감';
     return `<div class="hcard vrec" id="vRec"><div class="vrh"><b>🧾 방금 본 상세</b><button class="vrx" id="vRecX" aria-label="닫기">✕</button></div>
       <div class="vrr"><span>${esc(r.label)}</span><em class="${r.d < 0 ? 'm' : 'z'}">${r.d < 0 ? `✨ −${-r.d}` : r.legacy ? '무료' : '다시보기 무료'}</em></div>
       <small>${left} · 남은 카르마 <b>✨ ${Karma.bal()}</b></small>
@@ -88,13 +112,14 @@ const Views = (() => {
   function chip(k, s, extraLegacy) {
     const it = item(k), st = status(k, s, extraLegacy);
     if (st.legacy) return '<em class="vch own">무료 (이전 구매)</em>';
+    if (st.owned) return '<em class="vch own">보관됨 · 다시 열기 무료</em>';
     if (st.paid && st.freeLeft > 0) return `<em class="vch on">오늘 열람 · 다시보기 ${st.freeLeft}회 무료</em>`;
     if (st.paid) return `<em class="vch">무료 소진 · ✨ ${it.k}</em>`;
     return `<em class="vch">✨ ${it.k}</em>`;
   }
   // 테스트 도구: 오늘 열람 기록을 어제로 돌려 '날짜가 바뀐 뒤' 동작을 확인
   function shiftDay() { const m = all(), y = day(Date.now() - 864e5); Object.keys(m).forEach(x => m[x].day = y); store.set(SKEY, m); }
-  function reset() { store.set(SKEY, {}); cur = null; receipt = null; }
+  function reset() { store.set(SKEY, {}); store.set(OKEY, {}); cur = null; receipt = null; }
 
   /* ---------- 상세 풀이 화면 (공통) ----------
    * openDetail(k, s, label, html, opt): 결제/무료 다시보기 → 'detail' 화면에 html() 결과를 보여 줌
@@ -107,16 +132,16 @@ const Views = (() => {
   // 상세 버튼: 가격 또는 오늘 다시보기 상태를 함께 표시
   function button(k, s, id, extraLegacy, label) {
     const it = item(k), st = status(k, s, extraLegacy);
-    const tail = st.legacy ? '무료 (이전 구매)' : st.paid && st.freeLeft > 0 ? `오늘 다시보기 ${st.freeLeft}회 무료` : `✨ ${it.k}`;
+    const tail = st.legacy ? '무료 (이전 구매)' : st.owned ? `보관됨 · 다시 열기 무료` : st.paid && st.freeLeft > 0 ? `오늘 다시보기 ${st.freeLeft}회 무료` : `✨ ${it.k}`;
     return `<button class="bigbtn wide vdet" id="${id}">🔓 ${label || '상세 풀이 보기'} <small>${tail}</small></button>`;
   }
   function detailHTML() {
     if (!page || !viewing(page.k, page.s)) return `<div class="hcard"><p class="sjtxt" style="margin:0">상세 풀이는 각 서비스 화면에서 「상세 풀이 보기」를 눌러 열 수 있어요.</p><button class="bigbtn wide" id="vHome">🏠 홈으로</button></div>`;
     const st = status(page.k, page.s), it = item(page.k);
-    const left = st.legacy ? '이전 구매 · 무료' : st.freeLeft > 0 ? `오늘 무료 다시보기 ${st.freeLeft}회 남음` : '오늘 무료 다시보기를 다 썼어요';
+    const left = st.legacy ? '이전 구매 · 무료' : st.owned ? `보관된 구매 · ${KST.fmt(st.owned.t)} 결제 · 내용 버전 ${st.owned.v === 'migrated' ? '이전' : st.owned.v || '-'} · 다시 열기 무료` : st.freeLeft > 0 ? `오늘 무료 다시보기 ${st.freeLeft}회 남음` : '오늘 무료 다시보기를 다 썼어요';
     let body = ''; try { body = page.html(); } catch (e) { console.warn(e); body = '<div class="hcard"><p class="hsub">풀이를 만들지 못했어요. 정보를 확인해 주세요.</p></div>'; }
     return `<div class="hhead"><small>${esc(page.label.replace(/^\S+\s/, ''))}</small><h2>${it.e} ${it.n}</h2></div>
-      <div class="vbar"><span>${left}</span><b>✨ ${Karma.bal()}</b></div>${body}
+      <div class="vbar"><span>${left}</span><b>✨ ${Karma.bal()}</b></div>${st.owned ? `<p class="sjnote">${ownedNote}</p>` : ''}${body}
       <button class="bigbtn wide" id="vBack">← 돌아가기 · 사용 내역 보기</button>`;
   }
   function bindDetail() {
@@ -126,5 +151,5 @@ const Views = (() => {
     document.querySelectorAll('#hubBody details.dfold').forEach(d => d.open = true);
   }
 
-  return { openDetail, button, takeReturn, item, list, subj, pair, status, open, leave, viewing, receiptHTML, bindReceipt, chip, FREE, shiftDay, reset, cur: () => cur, receipt: () => receipt, day };
+  return { own, disown, ownOf, keepId, ownedNote, KEEP, openDetail, button, takeReturn, item, list, subj, pair, status, open, leave, viewing, receiptHTML, bindReceipt, chip, FREE, shiftDay, reset, cur: () => cur, receipt: () => receipt, day };
 })();

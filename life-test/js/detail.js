@@ -66,18 +66,36 @@ const Detail = (() => {
     ['미뤄 둔 자격·학위에 올해 지원하세요.', '하루 30분, 같은 시간에 공부하는 리듬을 만드세요.', '새 공부를 벌이기보다 하던 것 하나를 끝내는 해로 삼으세요.'],
   ];
   function newyear(p, a) {
-    const P = YearFull.parts(p, a), B = P.B, AR = YearFull.AREAS, GN = YearFull.GN, gA = B.gA != null ? B.gA : B.n.ts.g, gB = B.gB != null ? B.gB : B.n.tb.g;
-    const deep = AR.map((x, i) => {
+    const P = YearFull.parts(p, a, { fold: true }), B = P.B, n = B.n, AR = YearFull.AREAS, GN = YearFull.GN, gA = B.gA != null ? B.gA : n.ts.g, gB = B.gB != null ? B.gB : n.tb.g;
+    const Y = KST.fortuneYear(), mm = m => `${m.yr !== Y ? '이듬해 ' : ''}${m.solarM}월`;
+    const hi = B.area.indexOf(Math.max(...B.area)), lo = B.area.indexOf(Math.min(...B.area));
+    const BAND = ['흐름이 받쳐 주는 편', '평소 수준', '신경 써서 관리할 편'];
+    // 3줄 요약
+    const sum = `<div class="hcard ny-sum" id="nyTop"><h3 class="ht">${Y}년 세 줄 요약</h3><ol class="ny-3">
+      <li>한 해의 중심 주제는 <b>${B.kw[0]}</b> — 상반기 <b>${GN[gA]}</b>, 하반기 <b>${GN[gB]}</b>의 흐름이에요.</li>
+      <li>상대적으로 강한 분야는 <b>${AR[hi][1]}</b>, 관리가 필요한 분야는 <b>${AR[lo][1]}</b>이에요.</li>
+      <li>움직이기 좋은 달은 <b>${n.best.map(mm).join('·')}</b>, 점검에 쓰면 좋은 달은 <b>${mm(n.worst)}</b>이에요.</li></ol>
+      <p class="sjnote">점수는 명리 요소를 정해진 규칙으로 합산한 참고 지표(100 기준)예요. 한 해 총점은 세운 전체의 흐름, 분야 점수는 그 흐름이 각 분야에 미치는 정도로, 서로 계산 기준이 달라 평균과 같지 않아요.</p></div>`;
+    const TOC = [['nyTop', '세 줄 요약'], ['nyTotal', '한 해 흐름'], ['nyArea', '분야별 상담'], ['nyMonth', '12개월'], ['nyLuck', '대운'], ['nyGuide', '분기 전략'], ...(P.y_rel ? [['nyRel', '관계']] : [])];
+    const toc = `<nav class="ny-toc">${TOC.map(x => `<a href="#${x[0]}" onclick="event.preventDefault();var e=document.getElementById('${x[0]}');if(e)e.scrollIntoView({behavior:'smooth',block:'start'})">${x[1]}</a>`).join('')}</nav>`;
+    const top = `<p class="ny-top"><a href="#nyTop" onclick="event.preventDefault();var e=document.getElementById('nyTop');if(e)e.scrollIntoView({behavior:'smooth',block:'start'})">↑ 맨 위로</a></p>`;
+    const sec = (id, html) => `<section id="${id}" class="ny-sec">${html}${top}</section>`;
+    // 분야별: 요약 → 근거 → 기회 → 주의 → 실천
+    const areas = AR.map((x, i) => {
       const v = B.area[i], band = v >= 75 ? 0 : v >= 60 ? 1 : 2, d1 = AREA_DEEP[gA][i], d2 = AREA_DEEP[gB][i];
-      return `<div class="dsec"><h4>${x[0]} ${x[1]}운 <small class="yf-s">${v}점 · ${['좋음', '보통', '조심'][band]}</small></h4>
-        <p><b>🌱 상반기 기회</b> ${d1[0]}</p>${gB !== gA ? `<p><b>🍂 하반기 기회</b> ${d2[0]}</p>` : ''}
-        <p><b>⚠️ 주의</b> ${d1[1]}${gB !== gA ? ' ' + d2[1] : ''}</p>
-        <p><b>✅ 올해 실천</b> ${AREA_ACT[i][band]}</p></div>`;
+      return `<details class="dsec nyfold"${i === hi || i === lo ? ' open' : ''}><summary><b>${x[1]}운</b> <small class="yf-s">${v} · ${BAND[band]}</small></summary>
+        <p><b>요약</b> ${x[1]} 분야는 올해 ${BAND[band]}이에요.${i === hi ? ' 여섯 분야 중 가장 높아요.' : i === lo ? ' 여섯 분야 중 가장 낮아 관리가 필요해요.' : ''}</p>
+        <p><b>근거</b> 상반기 ${GN[gA]}${gB !== gA ? `, 하반기 ${GN[gB]}` : ''}의 기운이 ${x[1]} 분야에 미치는 영향을 기준으로 해석했어요.</p>
+        <p><b>기회</b> ${d1[0]}${gB !== gA ? ` 하반기에는 ${d2[0]}` : ''}</p>
+        <p><b>주의</b> ${d1[1]}${gB !== gA ? ' ' + d2[1] : ''}</p>
+        <p><b>실천</b> ${AREA_ACT[i][band]}</p></details>`;
     }).join('');
-    return P.y_total
-      + card('🗂️ 분야별 깊이 보기 · 기회 · 주의 · 실천', `<p class="sjnote">상반기는 <b>${GN[gA]}</b>, 하반기는 <b>${GN[gB]}</b>의 기운이 들어와요. 점수는 한 해 흐름과 분야별 영향을 함께 계산했어요.</p>${AR.map((x, i) => P.area(i).replace('<div class="hcard">', '<div class="dsub">')).join('')}<div class="sjtxt">${deep}</div>`)
-      + P.y_month + P.y_luck + P.y_guide + (P.y_rel || '')
-      + `<p class="sjnote" style="text-align:center">※ 전통 명리 이론을 바탕으로 한 참고·재미용 풀이예요.</p>`;
+    return sum + toc
+      + sec('nyTotal', P.y_total)
+      + sec('nyArea', card('분야별 상담', `<p class="sjnote">분야를 누르면 요약 · 근거 · 기회 · 주의 · 실천 순서로 펼쳐져요. 건강·재물 내용은 생활 관리를 위한 참고이며 진단이나 투자 판단이 아니에요.</p>${areas}`))
+      + sec('nyMonth', /<details open/.test(P.y_month) ? P.y_month.replace('</h3>', ' <small>· 이번 달은 펼쳐 두었어요</small></h3>') : P.y_month.replace('<details class="yf-m', '<details open class="yf-m').replace('</h3>', ' <small>· 달을 누르면 펼쳐져요</small></h3>'))
+      + sec('nyLuck', P.y_luck) + sec('nyGuide', P.y_guide) + (P.y_rel ? sec('nyRel', P.y_rel) : '')
+      + `<p class="sjnote" style="text-align:center">전통 명리 이론을 바탕으로 한 참고용 풀이예요.</p>`;
   }
 
   /* ================= 2) 토정비결 상세 ================= */
@@ -404,13 +422,13 @@ const Detail = (() => {
   function flirt(q, a, f, opt) {
     opt = opt || {};
     const male = q.sex !== 'f', who = q.self ? '나' : esc(q.name), D = FLIRT_DEEP[f.t.n] || FLIRT_DEEP['밀당의 고수'];
-    const lover = male ? 2 : 3, ln = male ? '재성(남성에게 이성 인연)' : '관성(여성에게 이성 인연)', age = new Date().getFullYear() - +String(q.date).slice(0, 4);
+    const lover = male ? 2 : 3, ln = male ? '재성(남성에게 이성 인연)' : '관성(여성에게 이성 인연)', age = KST.year() - +String(q.date).slice(0, 4);
     const dy = a.dy.slice(0, 9).map(d => {
       const on = d.g === lover, now = age >= d.age && age < d.age + 10;
       return `<tr class="${now ? 'on' : ''}"><td>${d.age}~${d.age + 9}세</td><td><b>${d.txt}</b></td><td>${on ? '💞 이성 인연이 활발한 10년' : d.g === 1 ? '🎤 매력·표현이 빛나는 10년' : d.g === 4 ? '🤝 소개·인연이 이어지는 10년' : d.g === 0 ? '🔥 자존심·경쟁이 커지는 10년' : '📌 일·책임이 먼저인 10년'}</td></tr>`;
     }).join('');
     let yr = '';
-    try { const y = new Date().getFullYear() + (new Date().getMonth() >= 10 ? 1 : 0), sx = S.SEUN[S.tg10(a.me, S.yearGz(y).s).g]; yr = `<p><b>${y}년 연애운</b> — ${sx.연애}</p>`; } catch (e) { }
+    try { const y = KST.fortuneYear(), sx = S.SEUN[S.tg10(a.me, S.yearGz(y).s).g]; yr = `<p><b>${y}년 연애운</b> — ${sx.연애}</p>`; } catch (e) { }
     const cb = v => v >= 70 ? '아주 높음' : v >= 55 ? '높음' : v >= 40 ? '보통' : '낮음';
     return card(`💘 ${who}의 연애 기질 · ${f.t.e} ${f.t.n}`, `<div class="sjtxt"><p>${f.t.d}</p>
         <p>💐 <b>인기 ${f.charm} (${cb(f.charm)})</b> — ${f.charm >= 55 ? '가만히 있어도 사람들이 먼저 다가오는 편이에요. 첫인상에서 호감을 사기 쉬워요.' : '천천히 알아 갈수록 매력이 드러나는 편이에요. 오래 본 사람에게 인기가 많아요.'}</p>
