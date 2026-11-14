@@ -62,7 +62,7 @@ window.Saju = (() => {
     const me = p.d.s, grp = [0, 0, 0, 0, 0];
     cols.forEach(c => { if (c !== p.d) grp[S.tg10(me, c.s).g]++; grp[S.tg10(me, S.HID[c.b]).g]++; });
     const dom = grp.indexOf(Math.max(...grp)), weak = el.indexOf(Math.min(...el)), strong = el.indexOf(Math.max(...el));
-    const dy = (p.dy || []).map(x => ({ age: x.age, gz: x.gz, g: S.tg10(me, x.gz.s).g, txt: S.STK[x.gz.s] + S.BRK[x.gz.b] }));
+    const dy = (p.dy || []).map(x => ({ age: x.age, yr: x.yr, gz: x.gz, g: S.tg10(me, x.gz.s).g, txt: S.STK[x.gz.s] + S.BRK[x.gz.b] }));
     const pre = S.tg10(me, p.m.s).g; // 첫 대운 전
     const dm = S.DMX[me];
     return {
@@ -87,7 +87,8 @@ window.Saju = (() => {
   function luckAt(a, age) {
     if (!a) return null;
     let g = a.pre, txt = '초년', start = 0;
-    a.dy.forEach(d => { if (age >= d.age) { g = d.g; txt = d.txt; start = d.age; } });
+    // 대운 시작 나이(d.age)는 세는나이 기준(만세력 라이브러리). 넘겨받는 age 는 '해당 연도 − 출생 연도'라서 +1 해서 비교
+    a.dy.forEach(d => { if (age + 1 >= d.age) { g = d.g; txt = d.txt; start = d.age; } });
     return { g, txt, start, name: GRPN[g], e: GRPE[g], desc: descAt(g, age) };
   }
 

@@ -2,7 +2,7 @@
  *  pdfreport.js — 📑 종합 사주 리포트 (PDF)
  *   상점의 '프리미엄 사주 리포트'를 대신하는 종합 리포트. 한 사람의 모든 풀이를 한 권으로 묶어 PDF로 만든다.
  *   구성(중복 없이 주제별·월별로 다시 묶음): 표지 · 타고난 사주 · 한 해 총평 · 분야별 풀이(연애 성향 포함)
- *         · 2027 월별 통합 풀이(월운+토정 신수+연애운+함께하는 사람) · 사주 MBTI · 궁합(등록한 사람 최대 3명)
+ *         → 상담 보고서 구성: 상담 요약 · 명식과 해석 기준 · 큰 흐름 · 분야별 · 월별 상담(같은 표 형식) · 사주 MBTI(압축) · 궁합 · 상담 정리
  *   - 만들기 조건: 토정비결 · 2027 신년운세 · 궁합 · 사주 MBTI를 먼저 봐야 함 (p8b_done 기록, 개요만 봐도 완료)
  *   - 요금: 만들 때 카르마 (views.js 'pdf' 항목) · 결제한 날 다시 만들기 3회 무료 · 예전 상세 리포트 보유자 무료
  *   - 모두 기기 안에서 만든다 (html2canvas → jsPDF, 필요할 때만 불러옴). 개인정보를 어디로도 보내지 않음
@@ -27,36 +27,36 @@ const PdfReport = (() => {
     const S = window.SAJU, out = [];
     const now = new Date(), people = (Hub.people() || []).filter(q => q && q.date && Hub.analyze(q)).slice(0, 3);
     const h = (n, e, t, sub) => `<div class="pdf-h"><i>${String(n).padStart(2, '0')}</i><b>${t}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
-    // 주제별·월별로 다시 묶은 본문 (detail.js reportParts)
+    // 상담 보고서 구성 (detail.js reportParts): 요약 → 명식 → 큰 흐름 → 분야별 → 월별 → 성격 유형 → 궁합 → 상담 정리
     const R = Detail.reportParts(p, a, people);
-    const EMO = { '한 해 총평': '🧧', '분야별 풀이': '🗂️', '2027 월별 통합 풀이': '📅', '성격 유형 (사주 MBTI)': '🧩' };
-    const toc = ['타고난 사주', ...R.map(x => x.t)];
+    const toc = ['상담 요약', '명식과 타고난 성향', ...R.chapters.map(x => x.t), '상담 정리'];
     const gz4 = `${S.ST[a.p.y.s]}${S.BR[a.p.y.b]}년 ${S.ST[a.p.m.s]}${S.BR[a.p.m.b]}월 ${S.ST[a.p.d.s]}${S.BR[a.p.d.b]}일${a.p.h ? ` ${S.ST[a.p.h.s]}${S.BR[a.p.h.b]}시` : ''}`;
     out.push({ t: '표지', html: `<div class="pdf-cover"><div><span class="pdf-kicker">SAJU CONSULTATION REPORT</span>
       <h1>${esc(p.name)} 님의<br>삶과 흐름</h1><span class="pdf-sub">2027 사주 상담 보고서</span>
       <div class="pdf-info"><p><b>생년월일</b>${p.date.replace(/-/g, '.')} (${p.cal === 'l' ? '음력' : '양력'})</p><p><b>출생 시간</b>${p.time ? p.time : '확인되지 않음 — 시주를 제외한 세 기둥으로 해석'}</p><p><b>성별</b>${p.sex === 'f' ? '여성' : '남성'}</p><p><b>명식</b>${gz4}</p><p><b>작성일</b>${now.getFullYear()}년 ${now.getMonth() + 1}월 ${now.getDate()}일</p></div>
       <div class="pdf-toc">${toc.map((t, i) => `<p><span>${String(i + 1).padStart(2, '0')}</span>${esc(t)}</p>`).join('')}</div></div>
       <p class="pdf-foot">운명 연구소 · 이 보고서는 사용자의 기기 안에서 작성되었으며, 전통 명리 이론에 바탕을 둔 참고용 해석입니다.</p></div>` });
-    // 1. 타고난 사주 — 연애·재물·건강 성향은 분야별 풀이로 옮겨 중복을 없앰
-    const EL = ['🌳', '🔥', '⛰️', '⚔️', '💧'], LAB = ['년주', '월주', '일주', '시주'], P4 = [a.p.y, a.p.m, a.p.d, a.p.h];
-    const pdfSaju = `<div class="pdf-saju"><table class="pdf-tbl"><tr>${LAB.map((l, i) => `<th>${l}${i === 2 ? ' (나)' : ''}</th>`).join('')}</tr>
-      <tr>${P4.map(c => `<td>${c ? `<b>${S.ST[c.s]}</b> ${S.STK[c.s]}<br><small>${S.EK[S.SE[c.s]]}</small>` : '?'}</td>`).join('')}</tr>
-      <tr>${P4.map(c => `<td>${c ? `<b>${S.BR[c.b]}</b> ${S.BRK[c.b]}<br><small>${S.EK[S.BE[c.b]]}</small>` : '?'}</td>`).join('')}</tr></table>
-      <p><b>${a.dm.nm}</b> 일간 · ${a.ddi}띠 — ${a.dm.key}</p>
-      <p><b>오행 분포</b> ${a.el.map((n, i) => `${EL[i]} ${S.EK[i]} ${n}`).join(' · ')}</p>
-      <p><b>강한 운</b> ${['독립·경쟁운', '재능·표현운', '재물운', '승진·명예운', '학업·귀인운'][a.dom] || ''} · <b>부족한 기운</b> ${S.EK[a.weak]}</p></div>`;
-    const zero = a.el.map((n, i) => n === 0 ? S.EK[i] : '').filter(Boolean);
+    out.push({ t: '상담 요약', html: h(1, '', '상담 요약', '타고난 바탕 · 2027년의 주제 · 우선 실천 세 가지') + R.summary });
+    // 명식과 해석 범위
+    const EL = ['목', '화', '토', '금', '수'], LAB = ['년주', '월주', '일주', '시주'], P4 = [a.p.y, a.p.m, a.p.d, a.p.h];
+    const pdfSaju = `<table class="pdf-tbl"><tr>${LAB.map((l, i) => `<th>${l}${i === 2 ? ' (나)' : ''}</th>`).join('')}</tr>
+      <tr>${P4.map(c => `<td>${c ? `<b>${S.ST[c.s]}</b> ${S.STK[c.s]}<br><small>${S.EK[S.SE[c.s]]}</small>` : '-'}</td>`).join('')}</tr>
+      <tr>${P4.map(c => `<td>${c ? `<b>${S.BR[c.b]}</b> ${S.BRK[c.b]}<br><small>${S.EK[S.BE[c.b]]}</small>` : '-'}</td>`).join('')}</tr></table>
+      <table class="pdf-mt"><tr><th>일간</th><td>${a.dm.nm} — ${a.dm.key}</td></tr><tr><th>띠</th><td>${a.ddi}띠</td></tr>
+      <tr><th>오행 분포</th><td>${a.el.map((n, i) => `${EL[i]} ${n}`).join(' · ')}</td></tr><tr><th>두드러진 흐름</th><td>${['독립·경쟁', '재능·표현', '재물', '직장·명예', '학업·귀인'][a.dom] || ''} · 겉으로 드러나지 않는 기운: ${S.EK[a.weak]}</td></tr></table>`;
+    const zero = a.el.map((n, i) => n === 0 ? S.EK[i] : '').filter(Boolean), by = +p.date.slice(0, 4);
     const basis = `<div class="pdf-basis"><p><b>해석 범위와 계산 기준</b></p>
-      ${p.time ? '' : '<p>출생 시간이 확인되지 않아 <b>시주를 제외한 세 기둥(여섯 글자)</b>으로 해석했습니다. 출생 시각에 따라 달라지는 세부 해석과 대운이 시작되는 나이는 추가 확인이 필요합니다.</p>'}
-      <p>오행 분포는 천간·지지에 <b>겉으로 드러난 ${p.time ? '여덟' : '여섯'} 글자</b>만 센 값이며, 지지 속에 숨은 기운(지장간)은 포함하지 않았습니다.${zero.length ? ` 따라서 ${zero.join('·')}이(가) 0으로 표시되어도 그 기운이 전혀 없다는 뜻이 아니라, 겉으로 드러나지 않는다는 의미입니다.` : ''}</p>
-      <p>월별 풀이는 절기 기준 달(예: 2월은 입춘부터)을 양력 달로 표시했고, 토정비결 신수는 같은 월지(달의 지지)를 가진 음력 달과 짝지어 함께 적었습니다.</p></div>`;
-    out.push({ t: '타고난 사주', html: h(1, '', '타고난 사주', '명식 · 해석 기준 · 성격 · 강점과 약점 · 타고난 흐름 · 개운') + `<div class="hcard"><h3 class="ht">명식과 해석 범위</h3>${pdfSaju}${basis}</div>
-      <div class="hcard"><h3 class="ht">🧭 타고난 성격</h3><div class="sjtxt"><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p></div></div>
-      <div class="hcard"><h3 class="ht">✨ 타고난 흐름과 개운</h3><div class="sjtxt"><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>` });
-    R.forEach((x, i) => out.push({ t: x.t, html: h(i + 2, '', x.t, x.sub) + (x.t === '2027 월별 통합 풀이' ? `<div class="pdf-basis"><p>각 달은 절기 기준으로 바뀝니다. 표시한 양력 달은 대략 그 달 4~8일 무렵 절입일부터 다음 달 절입일 전까지이며, 함께 적은 토정 신수의 음력 달도 같은 월지(달의 지지)를 가집니다. 좋은 날은 양력 날짜입니다.</p></div>` : '') + x.html }));
-    out.push({ t: '맺음말', html: `<div class="hcard"><h3 class="ht">🍀 맺음말</h3><div class="sjtxt"><p>사주는 정해진 운명이 아니라 타고난 기운의 지도예요. 좋은 시기는 준비한 사람에게 더 크게 오고, 조심할 시기는 미리 아는 것만으로 한결 가벼워져요.</p>
-      <p>${esc(p.name)}님에게 부족한 기운은 <b>${S.EK[a.weak]}</b>이에요. ${a.dm.개운}</p></div>
-      <p class="sjnote">※ 전통 명리 이론을 바탕으로 한 참고·재미용 리포트예요. 건강·법률·투자처럼 중요한 결정은 전문가와 상의하세요. · 운명 연구소</p></div>` });
+      ${p.time ? '' : '<p>출생 시간이 확인되지 않아 <b>시주를 제외한 세 기둥(여섯 글자)</b>으로 해석했어요. 대운이 시작되는 나이는 정오 출생으로 가정해 계산한 추정값이며, 출생 시각에 따라 달라질 수 있어요.</p>'}
+      <p>오행 분포는 천간·지지에 <b>겉으로 드러난 ${p.time ? '여덟' : '여섯'} 글자</b>만 센 값이며, 지지 속에 숨은 기운(지장간)은 포함하지 않았어요.${zero.length ? ` ${zero.join('·')}이(가) 0이어도 그 기운이 전혀 없다는 뜻이 아니라, 겉으로 드러나지 않는다는 의미예요.` : ''}</p>
+      <p>나이는 <b>세는나이</b>(태어난 해를 1살로 셈) 기준이에요. 2027년에 ${2027 - by + 1}세이며, 대운 표에는 해당 연도를 함께 적었어요.</p>
+      <p>월별 상담의 달은 절기 기준(예: 2월은 입춘부터)이며, 토정비결 신수는 같은 월지를 가진 음력 달과 짝지었어요.</p>
+      <p>본문의 지표(100 기준)는 명리 요소를 정해진 규칙으로 합산한 <b>상대적 참고값</b>으로, 측정 결과가 아니에요. 사주 궁합 지표와 성향(MBTI) 궁합 지표는 서로 다른 기준이에요.</p></div>`;
+    out.push({ t: '명식과 타고난 성향', html: h(2, '', '명식과 타고난 성향', '명식 · 해석 범위와 계산 기준 · 성격 · 강점과 약점 · 타고난 흐름') + `<div class="hcard"><h3 class="ht">명식과 해석 범위</h3>${pdfSaju}${basis}</div>
+      <div class="hcard"><h3 class="ht">타고난 성격</h3><div class="sjtxt"><p>${a.dm.성격}</p><h4>강점으로 해석되는 부분</h4><p>${a.dm.강점}</p><h4>부담이 될 수 있는 부분</h4><p>${a.dm.약점}</p></div></div>
+      <div class="hcard"><h3 class="ht">타고난 흐름과 보완</h3><div class="sjtxt"><p>${S.GDOM[a.dom]}</p><h4>보완할 점</h4><p>${S.GLACK[a.dom]}</p></div></div>` });
+    R.chapters.forEach((x, i) => out.push({ t: x.t, html: h(i + 3, '', x.t, x.sub) + x.html }));
+    out.push({ t: '상담 정리', html: h(R.chapters.length + 3, '', '상담 정리', '첫 90일 실천 계획 · 돌아볼 질문 · 맺음말') + R.closing + `<div class="hcard"><h3 class="ht">맺음말</h3><div class="sjtxt"><p>사주는 정해진 결과를 알려 주기보다, 타고난 기운의 지도를 보며 나에게 맞는 속도와 방향을 찾는 도구예요. 이 보고서의 해석은 명리 이론에 따른 경향이며, 건강·법률·투자처럼 중요한 결정은 전문가와 상의해 주세요.</p></div>
+      <p class="pdf-note">운명 연구소 「인생 게임」에서 내 생년월일로 태어난 가상 인물의 한평생을 미리 살아 볼 수 있어요.</p></div>` });
     return out;
   }
 
@@ -138,6 +138,8 @@ const PdfReport = (() => {
   /* 안내·근거 상자 */
   .pdfdoc .pdf-basis{border:1px solid ${LINE}!important;border-left:3px solid ${GOLD}!important;padding:12px 14px!important;margin:0 0 14px!important;background:#FBF8F2!important}
   .pdfdoc .pdf-basis *{font-size:14.5px!important;color:#4a4539!important}.pdfdoc .pdf-basis b{color:${NAVY}!important}
+  .pdfdoc .pdf-mt th{width:104px!important;text-align:left!important}.pdfdoc .yf-m .pdf-mt th,.pdfdoc .yf-m .pdf-mt td{padding:5px 8px!important}.pdfdoc .pdf-gd{color:#6b6457!important}.pdfdoc .pdf-mt td{white-space:normal!important}
+  .pdfdoc .dscore::before{content:'사주 궁합 지표';display:block;font-family:${SANS};font-size:14px;color:#6b6457;margin-bottom:2px}.pdfdoc .dscore.mb::before{content:'성향(MBTI) 궁합 지표'}
   .pdfdoc .sjnote,.pdfdoc .hsub,.pdfdoc .pdf-note{display:block!important;font-size:14px!important;color:#6b6457!important;margin:4px 0 10px!important}
   .pdfdoc .sjnote *{font-size:14px!important;color:#6b6457!important}
   /* 장 제목 */
@@ -159,6 +161,46 @@ const PdfReport = (() => {
   function stripEmoji(root) {
     const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) L.push(w.currentNode);
     L.forEach(t => { const v = t.nodeValue.replace(EMOJI, '').replace(/^\s*[·•]\s*$/, ''); if (v !== t.nodeValue) t.nodeValue = v.replace(/^\s+(?=\S)/, t.previousSibling ? ' ' : ''); });
+  }
+  /* ---------- 상담 문체: 해요체 → 합니다·하십시오체 (PDF 에서만, 따옴표 속 대화 예시는 그대로) ---------- */
+  const HB = 0xAC00, jong = c => (c.charCodeAt(0) - HB) % 28, isH = c => c && c.charCodeAt(0) >= HB && c.charCodeAt(0) <= 0xD7A3;
+  const setJ = (c, j) => String.fromCharCode(c.charCodeAt(0) - jong(c) + j);              // 받침 바꾸기 (0 없음 · 8 ㄹ · 17 ㅂ)
+  const setV = (c, v) => { const k = c.charCodeAt(0) - HB; return String.fromCharCode(HB + Math.floor(k / 588) * 588 + v * 28 + k % 28); };
+  const vow = c => Math.floor(((c.charCodeAt(0) - HB) % 588) / 28);                    // 0 ㅏ 1 ㅐ 4 ㅓ 5 ㅔ 6 ㅕ 8 ㅗ 9 ㅘ 10 ㅙ 11 ㅚ 13 ㅜ 14 ㅝ 18 ㅡ 20 ㅣ
+  const SP = { 커: '크', 써: '쓰', 떠: '뜨', 꺼: '끄', 터: '트', 퍼: '프', 뻐: '쁘', 파: '프', 빠: '쁘' };
+  function formalWord(w) {
+    const end = (t, r) => w.endsWith(t) ? w.slice(0, -t.length) + r : null;
+    let r = end('아니에요', '아닙니다') || end('거예요', '것입니다') || end('이에요', '입니다') || end('예요', '입니다') || end('세요', '십시오') || end('해요', '합니다') || end('돼요', '됩니다');
+    if (r) return r;
+    if (!w.endsWith('요') || w.length < 2) return w;
+    const b = w.slice(0, -1);                                   // '요' 앞
+    if ((b.endsWith('어') || b.endsWith('아')) && b.length >= 2) {   // 있어요·좋아요·쉬어요·늘어요
+      const st = b.slice(0, -1), c = st.slice(-1); if (!isH(c)) return w;
+      if (jong(c) === 8) return st.slice(0, -1) + setJ(c, 17) + '니다';            // ㄹ 받침: 늘어요 → 늡니다
+      if (jong(c) > 0) return st + '습니다';
+      return st.slice(0, -1) + setJ(c, 17) + '니다';
+    }
+    const c = b.slice(-1); if (!isH(c) || jong(c) !== 0) return w;
+    const pre = b.slice(0, -1);
+    if (c === '워') { const q = pre.slice(-1); if (!isH(q) || jong(q) !== 0) return w;
+      if ('세키배채비지싸피깨메데외띄'.includes(q)) return pre + '웁니다';                         // 세워요 → 세웁니다 (-우다 동사)
+      return pre.slice(0, -1) + setJ(q, 17) + '습니다'; }                                       // 어려워요 → 어렵습니다 (ㅂ 불규칙)
+    if ((c === '러' || c === '라') && isH(pre.slice(-1)) && jong(pre.slice(-1)) === 8) return pre.slice(0, -1) + setJ(pre.slice(-1), 0) + '릅니다';   // 르 불규칙: 흘러요 → 흐릅니다
+    if (SP[c]) return pre + setJ(SP[c], 17) + '니다';
+    const v = vow(c), nv = { 9: 8, 14: 13, 10: 11, 6: 20 }[v];     // ㅘ→ㅗ ㅝ→ㅜ ㅙ→ㅚ ㅕ→ㅣ
+    const base = nv != null ? setV(c, nv) : c;
+    if ([0, 1, 4, 5, 8, 9, 10, 11, 13, 14, 6, 20, 18].includes(v)) return pre + setJ(base, 17) + '니다';
+    return w;
+  }
+  function toFormal(t) {
+    // 따옴표(“ ” " ") 안은 대화 예시라 그대로 둠
+    return t.split(/(“[^”]*”|"[^"]*")/).map((seg, i) => i % 2 ? seg : seg.replace(/([가-힣]+요)(?=$|[\s.!,)·—\]】」』…])/g, (m, w) => formalWord(w))).join('');
+  }
+  // 점수·지표 이름을 상담 보고서 표현으로
+  const LABELS = [[/바람기 지수/g, '관계 표현 지표'], [/바람기 테스트/g, '연애 성향 풀이'], [/바람기/g, '연애 성향'], [/인기(?=\s*\d)/g, '매력이 드러나는 정도'], [/흔들림(?=\s*\d)/g, '변화에 대한 선호'], [/한 해 총점/g, '한 해 종합 지표'], [/총점/g, '종합 지표']];
+  function polishText(root) {
+    const w = document.createTreeWalker(root, NodeFilter.SHOW_TEXT), L = []; while (w.nextNode()) L.push(w.currentNode);
+    L.forEach(n => { let v = n.nodeValue; LABELS.forEach(([re, to]) => { v = v.replace(re, to); }); v = toFormal(v); if (v !== n.nodeValue) n.nodeValue = v; });
   }
   async function serifReady(text) {
     if (!document.getElementById('pdfSerif')) { const l = document.createElement('link'); l.id = 'pdfSerif'; l.rel = 'stylesheet'; l.href = libBase() + 'noto-serif/serif-700.css'; document.head.appendChild(l); await new Promise(r => { l.onload = r; l.onerror = r; setTimeout(r, 4000); }); }
@@ -182,14 +224,17 @@ const PdfReport = (() => {
       paint();
       // 섹션마다 블록(제목·카드) 단위로 캡처해서 페이지에 쌓는다 (카드가 페이지보다 길면 잘라서 이어 붙임)
       msg('보고서 글꼴을 준비하는 중…'); await serifReady(s.map(x => x.html.replace(/<[^>]+>/g, ' ')).join(' ').replace(/\s+/g, ' '));
-      const blocks = []; s.forEach((x, i) => { const d = document.createElement('div'); d.innerHTML = x.html; d.querySelectorAll('.pdf-skip').forEach(e => e.remove()); [...d.children].forEach((c, k) => blocks.push({ el: c, sec: i, newPage: k === 0 && i > 0, cover: i === 0 })); });
+      const blocks = []; s.forEach((x, i) => { const d = document.createElement('div'); d.innerHTML = x.html; d.querySelectorAll('.pdf-skip').forEach(e => e.remove()); [...d.children].forEach(e => { if (e.matches('p.sjnote') && /^\s*※/.test(e.textContent)) e.remove(); }); [...d.children].forEach((c, k) => blocks.push({ el: c, sec: i, newPage: k === 0 && i > 0, cover: i === 0 })); });
       for (let i = 0; i < blocks.length; i++) {
         const B = blocks[i]; box.innerHTML = ''; B.el.classList.add('pdf-blk'); box.appendChild(B.el);
-        box.querySelectorAll('img').forEach(im => im.remove()); stripEmoji(box);
+        box.querySelectorAll('img').forEach(im => im.remove()); stripEmoji(box); polishText(box);
         // 줄 중간에서 자르지 않도록: 문단·행·제목의 아래 끝 위치를 미리 모아 둠 (CSS px)
         const top0 = box.getBoundingClientRect().top;
         const HEAD = 'h2,h3,h4,h5,.ht,.pdf-h,.yf-mh,.tjm-h';
-        const cuts = [...new Set([...box.querySelectorAll('p,li,tr,.cm-row,.tjm,.tjm-g>div,.tjm-l,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec,div')].filter(e => !e.matches(HEAD) && (e.children.length === 0 || /^(P|LI|TR)$/.test(e.tagName) || e.matches('.cm-row,.tjm,.tjm-g>div,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec')))
+        // 쪼개지 않는 단위: 한 달 · 목록 · 표 · 근거 상자 · 점수 묶음 (단위 안에서는 끊지 않고, 단위가 끝나는 곳에서만 끊음)
+        const ATOM = '.yf-m,.dsec,.tjm,.cs-deep,ul,ol,.pdf-basis,.dscore,.tjm-g,table.pdf-mt,table.pdf-tbl,.cm,.yf-q,.dtwo,.dels';
+        const inAtom = e => { let x = e.parentElement; while (x && x !== box) { if (x.matches(ATOM)) return true; x = x.parentElement; } return false; };
+        const cuts = [...new Set([...box.querySelectorAll('p,li,tr,div,ul,ol,table')].filter(e => !e.matches(HEAD) && !inAtom(e) && (e.matches(ATOM) || /^(P|TR)$/.test(e.tagName) || (e.tagName === 'DIV' && e.children.length === 0)))
           .map(e => Math.round(e.getBoundingClientRect().bottom - top0 + 4)))].sort((x, y) => x - y);
         const cv = await html2canvas(box, { scale: 2, backgroundColor: IVORY, logging: false, useCORS: true });
         const jpg = c => c.toDataURL('image/jpeg', 0.75), k = cv.width / box.getBoundingClientRect().width;   // canvas px / CSS px
@@ -198,6 +243,7 @@ const PdfReport = (() => {
         if (B.newPage) { if (!first) newPage(); y = M; }
         else if (!first && y + Math.min(hmm, 25) > M + HMAX) newPage();
         first = false;
+        if (hmm > M + HMAX - y + 2 && hmm <= HMAX * 0.55 && y > M + 5) newPage();   // 짧은 꼭지는 통째로 다음 쪽으로
         if (hmm <= M + HMAX - y + 2) { doc.addImage(jpg(cv), 'JPEG', M, y, W, hmm); y += hmm + 3; }
         else {   // 페이지를 넘는 꼭지: 문단 경계에서 나눔
           let sy = 0;
@@ -246,5 +292,5 @@ const PdfReport = (() => {
     if (!ready()) { askMissing(); return; }
     Views.openDetail('pdf', subj(p), `📑 종합 사주 리포트 · ${p.name}`, () => previewHTML(p), { legacy: Store.ownedReal('report'), title: '종합 사주 리포트 (PDF)', bind: () => { const b = $('#pdfMake'); if (b) b.onclick = () => make(p); } });
   }
-  return { open, make, sections, mark, missing, ready, noteHTML };
+  return { open, make, sections, mark, missing, ready, noteHTML, toFormal };
 })();
