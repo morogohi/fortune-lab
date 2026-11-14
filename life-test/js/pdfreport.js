@@ -1,8 +1,9 @@
 /* =====================================================================
  *  pdfreport.js — 📑 종합 사주 리포트 (PDF)
  *   상점의 '프리미엄 사주 리포트'를 대신하는 종합 리포트. 한 사람의 모든 풀이를 한 권으로 묶어 PDF로 만든다.
- *   구성: 표지 · 사주풀이(무료 내용 전체) · 신년운세 상세 · 토정비결 상세(월별) · 사주 MBTI 상세 · 바람기 상세
- *         · 등록한 사람들과의 궁합 상세(최대 3명) · 오늘의 운세 요약
+ *   구성(중복 없이 주제별·월별로 다시 묶음): 표지 · 타고난 사주 · 한 해 총평 · 분야별 풀이(연애 성향 포함)
+ *         · 2027 월별 통합 풀이(월운+토정 신수+연애운+함께하는 사람) · 사주 MBTI · 궁합(등록한 사람 최대 3명)
+ *   - 만들기 조건: 토정비결 · 2027 신년운세 · 궁합 · 사주 MBTI를 먼저 봐야 함 (p8b_done 기록, 개요만 봐도 완료)
  *   - 요금: 만들 때 카르마 (views.js 'pdf' 항목) · 결제한 날 다시 만들기 3회 무료 · 예전 상세 리포트 보유자 무료
  *   - 모두 기기 안에서 만든다 (html2canvas → jsPDF, 필요할 때만 불러옴). 개인정보를 어디로도 보내지 않음
  *   - 저장: 앱은 파일 저장 후 공유 시트(Filesystem+Share), 웹은 내려받기
@@ -23,15 +24,19 @@ const PdfReport = (() => {
   /* ---------- 리포트 본문 (섹션 = 카드 묶음) ---------- */
   function sections(p) {
     const a = Hub.analyze(p); if (!a) return null;
-    const S = window.SAJU, age = Y() - +p.date.slice(0, 4), out = [];
+    const S = window.SAJU, out = [];
     const now = new Date(), people = (Hub.people() || []).filter(q => q && q.date && Hub.analyze(q)).slice(0, 3);
-    const h = (e, t, sub) => `<div class="pdf-h"><b>${e} ${t}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    const h = (n, e, t, sub) => `<div class="pdf-h"><b>${e} ${n}. ${t}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
+    // 주제별·월별로 다시 묶은 본문 (detail.js reportParts)
+    const R = Detail.reportParts(p, a, people);
+    const EMO = { '한 해 총평': '🧧', '분야별 풀이': '🗂️', '2027 월별 통합 풀이': '📅', '성격 유형 (사주 MBTI)': '🧩' };
+    const toc = ['타고난 사주', ...R.map(x => x.t)];
     out.push({ t: '표지', html: `<div class="pdf-cover"><div class="pdf-logo">🔮 운명 연구소</div><h1>${esc(p.name)}님의<br>종합 사주 리포트</h1>
       <p>${p.date.replace(/-/g, '.')} ${p.cal === 'l' ? '음력' : '양력'} · ${p.time || '시간 모름'} · ${p.sex === 'f' ? '여' : '남'}</p>
       <p class="pdf-gz">${S.ST[a.p.y.s]}${S.BR[a.p.y.b]}년 · ${S.ST[a.p.m.s]}${S.BR[a.p.m.b]}월 · ${S.ST[a.p.d.s]}${S.BR[a.p.d.b]}일${a.p.h ? ` · ${S.ST[a.p.h.s]}${S.BR[a.p.h.b]}시` : ''}</p>
-      <div class="pdf-toc"><b>차례</b>${['타고난 사주풀이', `${Y()} 신년운세 상세`, `${Y()} 토정비결 · 월별 상세`, '사주 MBTI 상세', '연애 성향(바람기) 상세', ...(people.length ? [`궁합 상세 · ${people.map(q => esc(q.name)).join(', ')}`] : [])].map((t, i) => `<p>${i + 1}. ${t}</p>`).join('')}</div>
+      <div class="pdf-toc"><b>차례</b>${toc.map((t, i) => `<p>${i + 1}. ${esc(t)}</p>`).join('')}</div>
       <p class="pdf-date">만든 날 ${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} · 이 리포트는 기기 안에서 만들어졌어요</p></div>` });
-    // 앱 화면용 사주 카드(색 칸·막대)는 PDF 표로 바꿔 넣음
+    // 1. 타고난 사주 — 연애·재물·건강 성향은 분야별 풀이로 옮겨 중복을 없앰
     const EL = ['🌳', '🔥', '⛰️', '⚔️', '💧'], LAB = ['년주', '월주', '일주', '시주'], P4 = [a.p.y, a.p.m, a.p.d, a.p.h];
     const pdfSaju = `<div class="pdf-saju"><table class="pdf-tbl"><tr>${LAB.map((l, i) => `<th>${l}${i === 2 ? ' (나)' : ''}</th>`).join('')}</tr>
       <tr>${P4.map(c => `<td>${c ? `<b>${S.ST[c.s]}</b> ${S.STK[c.s]}<br><small>${S.EK[S.SE[c.s]]}</small>` : '?'}</td>`).join('')}</tr>
@@ -39,17 +44,37 @@ const PdfReport = (() => {
       <p><b>${a.dm.nm}</b> 일간 · ${a.ddi}띠 — ${a.dm.key}</p>
       <p><b>오행 분포</b> ${a.el.map((n, i) => `${EL[i]} ${S.EK[i]} ${n}`).join(' · ')}</p>
       <p><b>강한 운</b> ${['독립·경쟁운', '재능·표현운', '재물운', '승진·명예운', '학업·귀인운'][a.dom] || ''} · <b>부족한 기운</b> ${S.EK[a.weak]}</p></div>`;
-    out.push({ t: '사주풀이', html: h('📜', '1. 타고난 사주풀이', '일간·오행·성격·강점·연애·재물·건강·개운') + `<div class="hcard">${reportHTML(esc(p.name), a, age).replace(Saju.summaryHTML(a), pdfSaju)}</div>` });
-    try { out.push({ t: '신년운세', html: h('🧧', `2. ${Y()} 신년운세 상세`, '한 해 총운 · 분야별 · 12개월 · 대운 · 분기 전략') + Detail.newyear(p, a) }); } catch (e) { console.warn('pdf newyear', e); }
-    try { const t = Tojeong.calc(p, Y()); if (t) out.push({ t: '토정비결', html: h('🏮', `3. ${Y()} 토정비결 상세`, '괘 풀이 · 계절 흐름 · 월별 상세') + Detail.tojeong(p, a, t) }); } catch (e) { console.warn('pdf tojeong', e); }
-    const me = Object.assign({}, p, { self: true });
-    try { out.push({ t: 'MBTI', html: h('🧩', '4. 사주 MBTI 상세', '축별 근거 · 일·관계·연애 · 잘 맞는 유형') + Detail.mbti(me, a, Fun.mbti(a), null) }); } catch (e) { console.warn('pdf mbti', e); }
-    try { out.push({ t: '바람기', html: h('💘', '5. 연애 성향(바람기) 상세', '사주 근거 · 연애 패턴 · 대운별 연애 흐름') + Detail.flirt(me, a, Fun.flirt(a, p.sex !== 'f')) }); } catch (e) { console.warn('pdf flirt', e); }
-    people.forEach((q, i) => { try { out.push({ t: '궁합 ' + q.name, html: h('💞', `6-${i + 1}. 궁합 상세 · ${esc(p.name)} × ${esc(q.name)}`, `오행·띠 · MBTI 관계 궁합${(q.rel || 'love') === 'love' ? ' · 연애 성향(바람기)' : ''} · 관계 유지법 · 함께 좋은 달`) + Detail.compat(p, a, q, Hub.analyze(q), q.rel) }); } catch (e) { console.warn('pdf compat', e); } });
+    out.push({ t: '타고난 사주', html: h(1, '📜', '타고난 사주', '사주 표 · 일간 · 오행 · 성격 · 강점과 약점 · 타고난 흐름 · 개운법') + `<div class="hcard"><h3 class="ht">📜 사주 한눈에</h3>${pdfSaju}</div>
+      <div class="hcard"><h3 class="ht">🧭 타고난 성격</h3><div class="sjtxt"><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p></div></div>
+      <div class="hcard"><h3 class="ht">✨ 타고난 흐름과 개운</h3><div class="sjtxt"><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>` });
+    R.forEach((x, i) => out.push({ t: x.t, html: h(i + 2, EMO[x.t] || '💞', x.t, x.sub) + x.html }));
     out.push({ t: '맺음말', html: `<div class="hcard"><h3 class="ht">🍀 맺음말</h3><div class="sjtxt"><p>사주는 정해진 운명이 아니라 타고난 기운의 지도예요. 좋은 시기는 준비한 사람에게 더 크게 오고, 조심할 시기는 미리 아는 것만으로 한결 가벼워져요.</p>
       <p>${esc(p.name)}님에게 부족한 기운은 <b>${S.EK[a.weak]}</b>이에요. ${a.dm.개운}</p></div>
       <p class="sjnote">※ 전통 명리 이론을 바탕으로 한 참고·재미용 리포트예요. 건강·법률·투자처럼 중요한 결정은 전문가와 상의하세요. · 운명 연구소</p></div>` });
     return out;
+  }
+
+  /* ---------- 만들기 조건: 토정비결 · 2027 신년운세 · 궁합 · 사주 MBTI를 먼저 본 뒤 ---------- */
+  const DONE = 'p8b_done';
+  const REQ = [['tojeong', '🏮', '토정비결', '토정비결 화면을 열어 올해 괘를 확인해요', () => Hub.go('tojeong')],
+    ['newyear', '🧧', '2027 신년운세', '신년운세 화면에서 올해 흐름을 확인해요', () => Hub.go('newyear')],
+    ['compat', '💞', '궁합', '궁합에 한 명 이상 등록하고 결과를 확인해요', () => Hub.go('compat')],
+    ['mbti', '🧩', '사주 MBTI', '사주 MBTI 결과를 확인해요', () => Fun.openMbti(0)]];
+  const doneMap = () => { const m = store.get(DONE, {}); return m && typeof m === 'object' ? m : {}; };
+  function mark(k) { const m = doneMap(); if (!m[k]) { m[k] = Date.now(); store.set(DONE, m); } }
+  const missing = () => { const m = doneMap(); return REQ.filter(r => !m[r[0]] || (r[0] === 'compat' && !(Hub.people() || []).length)); };
+  const ready = () => !missing().length;
+  // 버튼 아래 안내글
+  function noteHTML() {
+    const miss = missing(), n = REQ.length - miss.length;
+    return `<p class="pdf-req ${miss.length ? '' : 'ok'}">${miss.length ? `📋 <b>토정비결 · 2027 신년운세 · 궁합 · 사주 MBTI</b>를 먼저 보면 만들 수 있어요 (${n}/${REQ.length} 완료${miss.length ? ` · 남은 것: ${miss.map(r => r[2]).join(', ')}` : ''})` : '✅ 필요한 서비스를 모두 봤어요. 지금 만들 수 있어요'}</p>`;
+  }
+  function askMissing() {
+    const miss = missing();
+    openOverlay('📑 종합 사주 리포트 준비', `<div class="sjtxt"><p>종합 사주 리포트는 아래 서비스의 결과를 모아 만들어요. <b>아직 보지 않은 서비스</b>를 먼저 진행해 주세요.</p></div>
+      <div class="pdf-reqlist">${REQ.map(r => `<div class="${miss.includes(r) ? '' : 'ok'}"><b>${miss.includes(r) ? '⬜' : '✅'} ${r[1]} ${r[2]}</b><small>${r[3]}</small></div>`).join('')}</div>
+      <p class="sjnote">각 서비스의 개요(무료)만 봐도 완료돼요. 다 보고 나면 이 버튼으로 리포트를 만들 수 있어요.</p>`,
+      [...miss.map((r, i) => ({ t: `${r[1]} ${r[2]} 보러 가기`, pri: i === 0 ? 1 : 0, f: () => { closeOverlay(true); r[4](); } })), { t: '닫기' }]);
   }
 
   /* ---------- 미리보기 + PDF 만들기 ---------- */
@@ -95,6 +120,7 @@ const PdfReport = (() => {
   /* 오행·원소 막대 → 한 줄 숫자 (목 1 · 화 2 …), 궁합 점수 크게 */
   .pdfdoc .dels{display:block!important;margin:0 0 10px!important}.pdfdoc .dels>div{display:inline!important;margin-right:16px!important}.pdfdoc .dels>div>i{display:none!important}.pdfdoc .dels>div>b{margin-left:4px!important}.pdfdoc .dels>div.on>span{font-weight:700!important}
   .pdfdoc .dscore{margin:0 0 10px!important}.pdfdoc .dscore b{font-size:28px!important;font-weight:700!important;margin-right:10px!important;color:#3d2f86!important}.pdfdoc .dscore span{font-size:18px!important;font-weight:700!important}
+  .pdfdoc .yf-mh{margin:0 0 6px!important}.pdfdoc .yf-mh>b{font-size:19px!important;color:#3d2f86!important}.pdfdoc .yf-mh>span{margin-left:12px!important;color:#555!important}.pdfdoc .yf-mh>em{margin-left:12px!important;font-weight:700!important}.pdfdoc .yf-mh>em::after{content:'점'}
   .pdfdoc .sjnote,.pdfdoc .hsub,.pdfdoc .pdf-note{display:block!important;font-size:14px!important;color:#666!important;margin:4px 0 10px!important}
   .pdfdoc .sjnote *{font-size:14px!important;color:#666!important}
   /* 점수 막대는 남김 */
@@ -186,7 +212,8 @@ const PdfReport = (() => {
   /* ---------- 열기: 카르마 결제(views.js) → 미리보기 화면 → PDF 저장 ---------- */
   function open(p) {
     p = p || Hub.me(); if (!p || !Hub.analyze(p)) { Hub.toast('내 정보를 먼저 입력해 주세요'); return; }
+    if (!ready()) { askMissing(); return; }
     Views.openDetail('pdf', subj(p), `📑 종합 사주 리포트 · ${p.name}`, () => previewHTML(p), { legacy: Store.ownedReal('report'), title: '종합 사주 리포트 (PDF)', bind: () => { const b = $('#pdfMake'); if (b) b.onclick = () => make(p); } });
   }
-  return { open, make, sections };
+  return { open, make, sections, mark, missing, ready, noteHTML };
 })();

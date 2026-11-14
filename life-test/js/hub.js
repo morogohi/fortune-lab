@@ -421,27 +421,79 @@ const Hub = (() => {
   /* ---------- 🃏 매일 타로 1장 (무료) : 날짜·사람마다 같은 카드, 하루 한 번 뒤집기 ---------- */
   const DTK = 'p8b_dtarot';
   const dtDay = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
-  function dailyCard(p) {
-    let h = 2166136261; for (const ch of dtDay() + '|' + p.date + '|' + (p.time || '') + '|' + p.name) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
-    const D = Tarot.DECK; return { c: D[h % D.length], rev: (h >>> 8) % 100 < 25 };
+  let dtPhase = 'intro', dtQ = '';
+  const dtSeed = p => { let h = 2166136261; for (const ch of dtDay() + '|' + p.date + '|' + (p.time || '') + '|' + p.name) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+  const DT_N = 7;   // 펼쳐 놓는 카드 수
+  function dailyCard(p, i) {
+    const h = dtSeed(p), D = Tarot.DECK, k = (h + (i + 1) * 2654435761) >>> 0;
+    return { c: D[k % D.length], rev: (k >>> 9) % 100 < 25 };
   }
   const DT_EL = { 불: ['🔥', '열정과 행동', '오늘은 생각보다 몸이 먼저 움직일 때 일이 풀려요. 미뤄 둔 일 하나를 지금 시작해 보세요.'], 물: ['💧', '감정과 관계', '오늘은 마음을 나누는 데서 운이 열려요. 고마운 사람에게 짧은 안부를 전해 보세요.'],
     바람: ['🌬️', '생각과 말', '오늘은 말과 글이 운을 좌우해요. 중요한 말은 한 번 정리한 뒤 전하세요.'], 흙: ['🌱', '현실과 재물', '오늘은 손에 잡히는 결과를 챙길 때예요. 지출 하나를 점검하거나 할 일 목록을 끝내 보세요.'] };
+  // 마이너 카드: 분야 × 기운(밝음·균형·점검)별 오늘의 구체 조언
+  const DT_AREA = [['마음을 표현하면 좋은 반응이 와요. 먼저 연락하거나 작은 선물을 건네 보세요.', '서두르지 말고 상대의 속도를 지켜보세요. 가벼운 대화가 가장 좋아요.', '오해가 생기기 쉬운 날이에요. 중요한 이야기는 얼굴을 보고 차분히 하세요.'],
+    ['밀어붙이던 일이 진척을 보여요. 제안·발표는 오늘 하면 좋아요.', '하던 일을 꾸준히 이어 가는 날이에요. 새 일보다 마무리에 집중하세요.', '실수가 나오기 쉬워요. 보내기 전에 한 번 더 확인하고, 결정은 내일로 미뤄도 돼요.'],
+    ['작은 이익이 생기는 흐름이에요. 미뤄 둔 정산·환급을 챙겨 보세요.', '들어오고 나가는 돈이 비슷한 날이에요. 계획한 지출만 하세요.', '충동구매·분실을 조심하세요. 결제 전에 장바구니에서 하루 묵혀 보세요.']];
   function dailyTarotHTML(p) {
-    const st = store.get(DTK, {}), open = st.d === dtDay() && st.k === p.date, x = dailyCard(p), C = x.c;
-    if (!open) return `<div class="hcard hdt"><span class="vfreetag">매일 무료</span><h3 class="ht">🃏 오늘의 타로 한 장</h3>
-      <button class="hdt-back" id="hDTflip" aria-label="오늘의 카드 뒤집기"><span class="hdt-card">${Tarot.TBACK}</span><span><b>오늘의 카드를 뒤집어 보세요</b><small>하루 한 장 · 날마다 새 카드 · 무료</small></span></button></div>`;
-    const E = DT_EL[C.el] || DT_EL['바람'], pol = Tarot.pol(x);
-    const msg = (x.rev ? C.rev : C.up);
-    return `<div class="hcard hdt"><span class="vfreetag">매일 무료</span><h3 class="ht">🃏 오늘의 타로 한 장</h3>
+    const st = store.get(DTK, {}), done = st.d === dtDay() && st.k === p.date && st.i != null;
+    const head = `<span class="vfreetag">매일 무료</span><h3 class="ht">🃏 오늘의 타로 한 장</h3>`;
+    if (!done && dtPhase === 'shuffle') return `<div class="hcard hdt">${head}<p class="tguide">${dtQ ? `「${esc(dtQ)}」<br>` : ''}질문을 마음에 담고 카드를 섞고 있어요…</p>
+      <div class="tshuf hdt-shuf">${Array.from({ length: 8 }, (_, k) => `<span class="sc${k % 2 ? ' r' : ' l'}" style="--k:${k}">${Tarot.TBACK}</span>`).join('')}</div></div>`;
+    if (!done && dtPhase === 'pick') return `<div class="hcard hdt">${head}<p class="tguide">${dtQ ? `「${esc(dtQ)}」<br>` : ''}끌리는 카드 <b>한 장</b>을 골라 주세요</p>
+      <div class="hdt-row" id="hDTrow">${Array.from({ length: DT_N }, (_, i) => `<button class="hdt-pc" data-i="${i}" aria-label="${i + 1}번째 카드">${Tarot.TBACK}</button>`).join('')}</div></div>`;
+    if (!done) return `<div class="hcard hdt">${head}
+      <div class="hdt-intro"><span class="hdt-card">${Tarot.TBACK}</span><div><b>카드를 고르기 전에, 오늘 마음에 걸리는 질문 하나를 떠올려 보세요.</b>
+        <small>예: 오늘 그 사람에게 연락해도 될까? · 오늘 회의는 어떻게 풀릴까? 질문이 분명할수록 카드의 메시지가 또렷해져요.</small></div></div>
+      <input id="hDTq" maxlength="40" placeholder="질문을 적어도 되고, 마음속으로만 떠올려도 돼요 (선택)" value="${esc(dtQ)}">
+      <button class="bigbtn wide" id="hDTshuf">🔀 질문을 떠올렸어요 · 카드 섞기</button>
+      <p class="sjnote">하루 한 장 · 무료 · 질문은 이 기기에만 남아요</p></div>`;
+    const x = dailyCard(p, st.i), C = x.c, E = DT_EL[C.el] || DT_EL['바람'], pol = Tarot.pol(x), msg = x.rev ? C.rev : C.up;
+    const ans = pol > 0 ? '흐름은 <b>긍정적</b>이에요. 망설이던 일이라면 작게라도 움직여 보세요.' : pol < 0 ? '지금은 <b>점검이 먼저</b>예요. 서두르기보다 한 번 더 확인하고 움직이세요.' : '<b>균형</b>이 답이에요. 한쪽으로 치우치지 말고 상황을 조금 더 지켜보세요.';
+    return `<div class="hcard hdt">${head}${st.q ? `<p class="hdt-qq">❓ ${esc(st.q)}</p>` : ''}
       <div class="hdt-open"><img src="${Tarot.img(C)}" class="${x.rev ? 'rev' : ''}" alt="${C.ko}"><div>
         <b class="hdt-n">${C.ko} <small>${C.en}</small></b>
         <div class="tpoptags"><span>${x.rev ? '역방향' : '정방향'}</span><span>${E[0]} ${C.el}</span><span>${pol > 0 ? '😊 밝은 기운' : pol < 0 ? '🧐 점검의 기운' : '⚖️ 균형의 기운'}</span></div>
         <p class="hdt-k">「${C.kw}」</p></div></div>
       <p class="sjtxt">${msg}</p>
-      <div class="hdt-g">${[['💞 사랑', C.love], ['💼 일', C.work], ['💰 돈', C.money]].map(([t, v]) => `<div><b>${t}</b><span>${C.major ? v : String(v).split('. ')[0] + '.'}${x.rev ? ' 다만 오늘은 서두르지 말고 한 번 더 확인하세요.' : ''}</span></div>`).join('')}</div>
+      ${st.q ? `<p class="sjtxt">💬 <b>질문에 대한 답</b> — ${ans}</p>` : ''}
+      <div class="hdt-g">${[['💞 사랑', C.love, 0], ['💼 일', C.work, 1], ['💰 돈', C.money, 2]].map(([t, v, k]) => `<div><b>${t}</b><span>${C.major ? v : `「${C.kw}」 — ${DT_AREA[k][pol > 0 ? 0 : pol < 0 ? 2 : 1]}`}</span></div>`).join('')}</div>
       <p class="sjtxt">🧭 <b>오늘의 조언 · ${E[1]}</b> — ${E[2]}${x.rev ? ' 역방향이 나왔으니 서두르지 말고 한 번 더 확인하는 하루로 쓰세요.' : ''}</p>
-      <button class="ghost wide" id="hDTmore">🔮 질문을 정해 타로 더 보기</button></div>`;
+      <p class="sjnote">오늘의 카드는 내일 다시 고를 수 있어요.</p>
+      <button class="ghost wide" id="hDTmore">🔮 질문을 정해 타로 더 보기 (1·3·5장)</button></div>`;
+  }
+  /* ---------- 오늘의 운세 보강: 할 일·피할 일 · 사람운 · 이번 주 흐름 · 개운 습관 ---------- */
+  const DODONT = [
+    [['내 이름을 걸고 하는 일 마무리하기', '운동으로 넘치는 기운 쓰기', '동료와 역할 먼저 나누기'], ['돈 빌려주기·보증', '자존심 싸움', '혼자 다 떠안기']],
+    [['아이디어 적어 두기·발표·글쓰기', '맛있는 음식으로 나를 챙기기', '칭찬을 먼저 건네기'], ['윗사람 앞에서 날 선 말', '충동구매', '말을 너무 많이 하기']],
+    [['미뤄 둔 정산·견적·돈 정리', '거래·협상', '목표를 숫자로 적기'], ['욕심 내는 투자', '무리한 일정', '확인 안 한 계약']],
+    [['맡은 일 기한 지키기', '서류·규칙 꼼꼼히 확인', '윗사람께 중간 보고'], ['지각·과속·규칙 어기기', '감정적인 퇴사·이별 결정', '무리한 약속']],
+    [['책 읽기·강의 듣기·자격증 공부', '선배·부모님께 조언 구하기', '계획 세우기'], ['생각만 하고 미루기', '게으른 하루', '남과 비교하기']]];
+  const ANI = ['쥐', '소', '호랑이', '토끼', '용', '뱀', '말', '양', '원숭이', '닭', '개', '돼지'];
+  const HAP6 = { 0: 1, 1: 0, 2: 11, 11: 2, 3: 10, 10: 3, 4: 9, 9: 4, 5: 8, 8: 5, 6: 7, 7: 6 };
+  const SAM3 = [[8, 0, 4], [2, 6, 10], [5, 9, 1], [11, 3, 7]];
+  const GAEUN = [['🌳', '초록 채소·나물 비빔밥', '아침 산책·공원 걷기'], ['🔥', '따뜻한 국물·매콤한 음식', '햇볕 쬐기·밝은 옷 입기'], ['⛰️', '고구마·잡곡밥·단호박', '정리 정돈·규칙적인 식사'], ['⚔️', '무·배·흰살 생선', '책상 정리·불필요한 물건 버리기'], ['💧', '미역국·해산물·물 충분히', '반신욕·일찍 잠들기']];
+  function todayMoreHTML(p, a, f) {
+    const g = f.ts.g, b = f.gz.b, D = DODONT[g];
+    const good = [ANI[HAP6[b]], ...SAM3.find(x => x.includes(b)).filter(x => x !== b).map(x => ANI[x])], bad = ANI[(b + 6) % 12];
+    const ppl = people().slice(0, 3).map(q => { const qb = analyzeP(q); if (!qb) return ''; const d = qb.p.d.b;
+      const t = HAP6[d] === b ? ['💗', '마음이 잘 통하는 날 — 먼저 연락해 보세요'] : SAM3.some(x => x.includes(d) && x.includes(b) && d !== b) ? ['🤝', '함께 일을 벌이면 힘이 모이는 날'] : (d + 6) % 12 === b ? ['⚡', '사소한 말로 부딪히기 쉬운 날 — 한 박자 쉬고 답하세요'] : ['🙂', '무난한 날 — 평소처럼 지내면 돼요'];
+      return `<div class="cm-row"><b>${esc(q.name)}</b><span>${t[0]} ${t[1]}</span></div>`; }).join('');
+    const week = Array.from({ length: 7 }, (_, k) => { const d = new Date(); d.setDate(d.getDate() + k); const w = Fortune.today(a, keyOf(p), d);
+      return `<div class="cm-row ${w.sc[0] >= 72 ? 'hi' : w.sc[0] < 55 ? 'lo' : ''}"><b>${k ? `${d.getMonth() + 1}/${d.getDate()} ${'일월화수목금토'[d.getDay()]}` : '오늘'}</b><span class="cm-v">${w.sc[0]}점</span><span>${w.key} · ${w.gzTxt}일</span></div>`; }).join('');
+    const G = GAEUN[a.weak];
+    return `<div class="hcard"><h3 class="ht">✅ 오늘 하면 좋은 일 · ❌ 피할 일</h3><p class="hsub">${f.one}</p>
+        <div class="cs-two"><div><b>✅ 하면 좋은 일</b><ul>${D[0].map(x => `<li>${x}</li>`).join('')}</ul></div><div><b>❌ 피할 일</b><ul>${D[1].map(x => `<li>${x}</li>`).join('')}</ul></div></div></div>
+      <div class="hcard"><h3 class="ht">👥 오늘의 사람운</h3><div class="cm one"><div class="cm-row hi"><b>잘 맞는 띠</b><span>${good.join(' · ')}띠 — 도움을 주고받기 좋아요</span></div><div class="cm-row lo"><b>조심할 띠</b><span>${bad}띠 — 의견이 부딪히기 쉬워요. 말은 부드럽게</span></div>${ppl}</div>
+        ${ppl ? '' : '<p class="sjnote">궁합에 사람을 등록하면 그 사람과의 오늘 기운도 보여 드려요.</p>'}</div>
+      <div class="hcard"><h3 class="ht">📅 이번 주 흐름</h3><div class="cm">${week}</div><p class="sjnote">점수가 높은 날에 중요한 약속·결정을 맞춰 보세요.</p></div>
+      <div class="hcard"><h3 class="ht">${G[0]} 오늘의 개운 습관</h3><p class="sjtxt">부족한 <b>${S.EK[a.weak]}</b> 기운을 채우는 하루 — 🍽️ <b>${G[1]}</b> · 🚶 <b>${G[2]}</b></p></div>`;
+  }
+  function bindDailyTarot(p) {
+    const box = $('#hDTbox'); if (!box) return;
+    const re = () => { box.innerHTML = dailyTarotHTML(p); bindDailyTarot(p); };
+    const sh = $('#hDTshuf'); if (sh) sh.onclick = () => { const q = $('#hDTq'); dtQ = q ? q.value.trim() : ''; dtPhase = 'shuffle'; Snd.sfx('tap'); re(); setTimeout(() => { if (dtPhase === 'shuffle') { dtPhase = 'pick'; re(); } }, window.__fastTarot ? 50 : 1600); };
+    document.querySelectorAll('#hDTrow .hdt-pc').forEach(b => b.onclick = () => { store.set(DTK, { d: dtDay(), k: p.date, i: +b.dataset.i, q: dtQ }); dtPhase = 'intro'; Snd.sfx('reveal'); try { Karma.metric('daily_tarot'); } catch (e) { } re(); box.scrollIntoView({ block: 'start' }); });
+    const dm = $('#hDTmore'); if (dm) dm.onclick = () => go('tarot');
   }
   function todayHTML(p, a) {
     const f = Fortune.today(a, keyOf(p));
@@ -456,11 +508,12 @@ const Hub = (() => {
           ${f.rel ? `<p class="hrel">🔗 내 ${f.rel.who}와 오늘 일진이 <b>${f.rel.n}</b> — ${f.rel.d}</p>` : ''}
           <button class="hwhy" id="hWhy">🤔 왜 이런 운세가 나왔나요?</button></div>
       </div>
-      ${dailyTarotHTML(p)}
       <div class="hcard">${areas}</div>
       <div class="hcard"><h3 class="ht">⏰ 시간대별 흐름</h3><div class="hbands">${bands}</div></div>
       <div class="hcard"><h3 class="ht">🍀 오늘의 행운 아이템</h3><p class="hsub">부족한 ${S.EK[f.lucky.el]} 기운을 채워 주는 것들이에요</p>
         <div class="hluck"><div><small>색</small><b>${f.lucky.color}</b></div><div><small>숫자</small><b>${f.lucky.num}</b></div><div><small>방향</small><b>${f.lucky.dir}</b></div><div><small>소품</small><b>${f.lucky.item}</b></div></div></div>
+      ${todayMoreHTML(p, a, f)}
+      <div id="hDTbox">${dailyTarotHTML(p)}</div>
       <button class="ghost wide" id="hShare">📤 오늘의 운세 공유하기</button>
       <p class="sjnote" style="text-align:center">※ 운세는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요.</p>`;
   }
@@ -715,8 +768,7 @@ const Hub = (() => {
   }
   function bindToday(p, a) {
     $('#hWhy').onclick = () => whyFortune(p, a);
-    const fl = $('#hDTflip'); if (fl) fl.onclick = () => { store.set(DTK, { d: dtDay(), k: p.date }); Snd.sfx('reveal'); try { Karma.metric('daily_tarot'); } catch (e) { } render(); };
-    const dm = $('#hDTmore'); if (dm) dm.onclick = () => go('tarot');
+    bindDailyTarot(p);
     const sh = $('#hShare'); if (sh) sh.onclick = async () => {
       const f = Fortune.today(a, keyOf(p));
       try {
@@ -752,7 +804,8 @@ const Hub = (() => {
         <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>
       <div class="hmenu">
         <button id="hRep"><span>🧧</span><b>2027 신년운세</b><small>올해의 흐름 개요는 무료 · 분야별·12개월·대운 상세 풀이</small></button>
-        <button id="hPdf"><span>📑</span><b>종합 사주 리포트 PDF</b><small>모든 풀이를 한 권으로 저장 · ${Views.button ? '✨ ' + Views.item('pdf').k : ''}</small></button>
+        <button id="hPdf" class="${PdfReport.ready() ? '' : 'pdf-off'}"><span>📑</span><b>종합 사주 리포트 PDF</b><small>모든 풀이를 주제별·월별로 묶어 한 권으로 · ✨ ${Views.item('pdf').k}</small></button>
+        ${PdfReport.noteHTML()}
       </div>`;
   }
   function bindSaju(p, a) {
@@ -825,6 +878,7 @@ const Hub = (() => {
       tip: ['손발이 잘 맞는 동료예요. 한 사람은 기획, 한 사람은 실행으로 나누면 성과가 커요.', '일하는 속도와 방식이 조금 달라요. 중간 점검을 자주 하면 시너지가 나요.', '의견이 자주 갈릴 수 있어요. 결정 기준을 미리 합의하면 오히려 꼼꼼한 팀이 돼요.'] },
   };
   function showCompat(p, a, q, b) {
+    try { PdfReport.mark('compat'); } catch (e) { }
     Snd.sfx('love');
     const R = REL[q.rel] || REL.love;
     const pk = Views.pair(p, q), cst = Views.status('compat', pk, Store.ownedReal('compat')), cv = Views.item('compat');
@@ -938,9 +992,9 @@ const Hub = (() => {
     else if (tab === 'daily') { attend(); body.innerHTML = dailyHTML(); bindDaily(); }
     else if (tab === 'tarot') { body.innerHTML = tarotHTML(p, a); bindTarot(p, a); }
     else if (tab === 'mbtitest') { body.innerHTML = mbtiTestHTML(p, a); bindMbtiTest(p, a); }
-    else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
+    else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); if (p && p.date) PdfReport.mark('tojeong'); }
     else if (PAGES[tab]) { body.innerHTML = PAGES[tab].html(p, a); PAGES[tab].bind(p, a); }
-    else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); body.innerHTML = newYearHTML(p, a); { const d = $('#hNYD'); if (d) d.onclick = () => Detail.openNewyear(p); } }
+    else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); if (p && a) PdfReport.mark('newyear'); body.innerHTML = newYearHTML(p, a); { const d = $('#hNYD'); if (d) d.onclick = () => Detail.openNewyear(p); } }
     body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav(); fitTitles(body);
     if (typeof Views !== 'undefined') {
       if (tab !== 'detail') Views.leave();

@@ -173,7 +173,7 @@ const YearFull = (() => {
   // 그룹 g의 n번째 등장 → 분야별 문장 4개 (변형을 차례로)
   const monthAreas = (g, n) => MA[g].map((v, i) => [AREA_N[i], v[(n + i) % v.length]]);
   const areaGrid = (g, n) => `<div class="tjm-g">${monthAreas(g, n).map(([t, x]) => `<div><b>${t}</b><span>${x}</span></div>`).join('')}</div>`;
-  function parts(p, a) {
+  function parts(p, a, opt) {
     const B = build(p, a), n = B.n, dm = a.dm, L = LUCK[a.weak];
     const mm = m => `${m.yr !== Y ? '이듬해 ' : ''}${m.solarM}월`;
     const bar = (lab, v) => `<div class="yf-ar"><span>${lab}</span><div class="yf-b"><i style="width:${v}%"></i></div><b>${v}</b></div>`;
@@ -206,8 +206,8 @@ const YearFull = (() => {
         <p>${(() => { const k = m.txt, c = seenT[k] = (seenT[k] || 0) + 1; return c === 1 ? k : WOL_ALT[g][(c - 2) % 2]; })()}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</p>
         <p class="yf-mf">🎯 이달의 초점: <b>${GN[g]}</b> — ${tip}</p>
         ${areaGrid(g, (occA[g] = (occA[g] || 0) + 1) - 1)}
-        ${tj ? `<p class="yf-mt">📜 토정 신수 · 음력 ${m.n + 1}월 (${tj.s || ['기운 좋음', '보통', '조심'][tj.q]}): ${tj.a}. 실천 — ${tj.b}.</p>` : ''}
-        ${gd.length ? `<p class="yf-md">📌 좋은 날: ${gd.map(d => `${m.solarM}/${d}`).join(', ')}</p>` : ''}</div>`;
+        ${tj ? `<p class="yf-mt">📜 토정 신수 · 음력 ${m.n + 1}월 (${tj.s || ['기운 좋음', '보통', '조심'][tj.q]}): ${tj.a}. 실천 — ${tj.b}.</p>` : ''}${tj && opt && opt.tjNote ? opt.tjNote(tj) : ''}
+        ${gd.length ? `<p class="yf-md">📌 좋은 날: ${gd.map(d => `${m.solarM}/${d}`).join(', ')}</p>` : ''}${opt && opt.monthExtra ? opt.monthExtra(m, tj) : ''}</div>`;
     }).join('');
     const cautions = [
       `${mm(n.worst)}은 한 해 중 기운이 가장 약한 달이에요. 큰 계약·이사·투자는 피하고 점검과 휴식에 쓰세요.`,
