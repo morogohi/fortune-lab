@@ -50,9 +50,9 @@ const Karma = (() => {
 
   /* ---------- 쓰기 · 충전 ---------- */
   // n 카르마를 써서 onOk 실행 (부족하면 충전 화면)
-  function spend(n, label, onOk, back) {
+  function spend(n, label, onOk, back, extra) {
     if (bal() < n) { metric('lack_shown'); openCharge(n - bal(), label, back); return; }
-    openOverlay(`✨ ${label}`, `<p class="sjtxt" style="text-align:center">카르마 <b>${n}</b>를 써서 열까요?<br><small>보유 ${bal()} → ${bal() - n}</small></p>`,
+    openOverlay(`✨ ${label}`, `<p class="sjtxt" style="text-align:center">카르마 <b>${n}</b>를 써서 열까요?<br><small>보유 ${bal()} → ${bal() - n}</small></p>${extra ? `<p class="sjnote" style="text-align:center">${extra}</p>` : ''}`,
       [{ t: `✨ 카르마 ${n} 쓰고 열기`, pri: 1, f: () => { window.KREASON = label.replace(/^\S+\s/, ''); window.KCAT = 'spend'; karma -= n; saveMeta(); metric('spend'); try { Auth.sync(); } catch (e) { } Snd.sfx('fanfare'); onOk(); Store.notify(); } }, { t: '취소', f: () => back && back() }]);
   }
   function unlock(k, after) {
@@ -64,7 +64,9 @@ const Karma = (() => {
   let tick = null;
   /* ---------- 📒 사용 내역 ---------- */
   // 분류: ad 광고 · game 인생 게임 · bonus 이벤트·교환 · buy 구매 · spend 사용 (예전 기록은 이유 문구로 추정)
-  const CATS = { ad: ['📺', '광고'], game: ['🎲', '인생 게임'], bonus: ['🎁', '보너스'], buy: ['💳', '구매'], spend: ['✨', '사용'] };
+  const CATS = { ad: ['📺', '광고'], game: ['🎲', '인생 게임'], bonus: ['🎁', '보너스'], buy: ['💳', '구매'], spend: ['✨', '사용'], view: ['🔁', '다시보기'] };
+  // 카르마 변화 없는 기록 (무료 다시보기 등) — 언제 무엇을 봤는지 내역에 남김
+  function note(why) { const l = store.get('p8b_klog', []); l.unshift({ t: Date.now(), d: 0, why, bal: bal(), c: 'view' }); store.set('p8b_klog', l.slice(0, 200)); }
   function cat(x) {
     if (x.c && CATS[x.c]) return x.c;
     const w = x.why || '';
@@ -84,6 +86,11 @@ const Karma = (() => {
     return r;
   }
   function today() { const d0 = new Date(); d0.setHours(0, 0, 0, 0); return Object.assign(sum(+d0), { adLeft: adLeft(), adMax: AD_DAY }); }
+  // 최근 사용·다시보기 n건 (영수증 카드용)
+  function recentHTML(n) {
+    const l = log().filter(x => ['spend', 'view'].includes(cat(x))).slice(0, n);
+    return l.map(x => `<div class="kledr sm"><span>${new Date(x.t).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' })}</span><b>${esc(x.why)}</b><em class="${x.d < 0 ? 'm' : ''}">${x.d ? x.d : '0'}</em></div>`).join('');
+  }
   function rowHTML(x) {
     const c = cat(x), [e] = CATS[c];
     return `<div class="kledr"><span>${new Date(x.t).toLocaleString('ko-KR', { month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' })}</span><b>${e} ${esc(x.why)}</b><em class="${x.d > 0 ? 'p' : 'm'}">${x.d > 0 ? '+' : ''}${x.d}</em><small>${CATS[c][1]} · 잔액 ${x.bal}</small></div>`;
@@ -96,7 +103,7 @@ const Karma = (() => {
     const l = log(), m0 = new Date(); m0.setDate(1); m0.setHours(0, 0, 0, 0);
     const mon = sum(+m0), all = sum(0), td = today();
     const F = [['all', '전체'], ['earn', '모으기'], ['buy', '구매'], ['spend', '사용']];
-    const pick = l.filter(x => { const c = cat(x); return f === 'all' || (f === 'spend' ? c === 'spend' : f === 'buy' ? c === 'buy' : c !== 'spend' && c !== 'buy'); });
+    const pick = l.filter(x => { const c = cat(x); return f === 'all' || (f === 'spend' ? c === 'spend' || c === 'view' : f === 'buy' ? c === 'buy' : c !== 'spend' && c !== 'buy' && c !== 'view'); });
     // 날짜별로 묶어서 보여 줌
     let lastD = '', rows = '';
     pick.slice(0, 120).forEach(x => { const d = dayOf(x.t); if (d !== lastD) { lastD = d; rows += `<h4 class="kday">${d === localDay() ? '오늘' : d.slice(5).replace('-', '월 ') + '일'}</h4>`; } rows += rowHTML(x); });
@@ -104,9 +111,11 @@ const Karma = (() => {
       <div class="ksum"><div><small>이번 달 모음</small><b class="p">+${mon.earn}</b></div><div><small>이번 달 구매</small><b class="p">+${mon.buy}</b></div><div><small>이번 달 사용</small><b class="m">−${mon.spend}</b></div></div>
       <div class="modeseg kflt">${F.map(([k, n]) => `<button data-kf="${k}" class="${k === f ? 'on' : ''}">${n}</button>`).join('')}</div>
       ${rows || '<p class="sjnote" style="text-align:center">아직 내역이 없어요.<br>광고를 보거나 인생 게임을 한 판 하면 여기에 쌓여요.</p>'}
+      ${toolsHTML()}
       <p class="sjnote">누적: 모음 +${all.earn} · 구매 +${all.buy} · 사용 −${all.spend} · 최근 200건까지 이 기기에 저장돼요${pick.length > 120 ? ' (화면에는 120건)' : ''}.</p>`,
       [{ t: '✨ 카르마 모으기 · 상점', f: () => Hub.go('shop') }, { t: '닫기', f: () => back && back() }]);
     document.querySelectorAll('#osheet [data-kf]').forEach(b => b.onclick = () => { closeOverlay(true); openHistory(b.dataset.kf, back); });
+    bindTools(document.getElementById('osheet'), () => { closeOverlay(true); openHistory(f, back); });
   }
 
   /* ---------- ❓ 카르마 안내 ---------- */
@@ -117,12 +126,13 @@ const Karma = (() => {
       <div class="kway"><i>📺</i><span><b>광고 보기 +${AD_K}</b><small>3분 간격 · 하루 ${AD_DAY}번 (최대 ${AD_K * AD_DAY})</small></span></div>
       <div class="kway"><i>🎲</i><span><b>인생 게임 엔딩 +5~15</b><small>한 판을 끝까지 살면 점수에 따라 지급 · 10살마다 광고 휴식 +${BREAK_K}</small></span></div>
       <div class="kway"><i>✨</i><span><b>처음 시작 +${START()}</b><small>처음 앱을 열면 기본으로 드려요</small></span></div>
-      ${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 생년월일 등 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
+      ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 생년월일 등 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
       ${events().map(g => `<div class="kway"><i>${g.e}</i><span><b>${esc(g.n)} +${g.karma}</b><small>${fmtD(g.until)}까지 앱을 열면 1회 · ${gotEvent(g.id) ? '받았어요 ✅' : '곧 지급돼요'}</small></span></div>`).join('')}
       <div class="kway"><i>🎁</i><span><b>복주머니 교환 +20</b><small>출석·미션으로 모은 복주머니 2개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>
       <h4 class="kh">어디에 쓰나요?</h4>
-      <div class="kway"><i>📜</i><span><b>상세 사주 리포트 ${(Store.item('report') || {}).k || 50}</b><small>한 번 열면 계속 · 궁합 상세·토정비결 전체 포함</small></span></div>
+      <div class="kway"><i>🔎</i><span><b>목적별 상세 보기 1회 5~10</b><small>재물·연애·직업·건강·12개월·대운·궁합 상세·토정비결 등 · 결제한 날 자정까지 다시보기 ${(STORE_CONFIG.views || {}).free || 3}회 무료</small></span></div>
+      <div class="kway"><i>📜</i><span><b>사주풀이는 무료</b><small>타고난 성격·강점·약점·연애·재물·건강 성향·개운법</small></span></div>
       <div class="kway"><i>🤖</i><span><b>AI 사주상담 1회 20</b><small>첫 회 무료</small></span></div>
       <div class="kway"><i>🔮</i><span><b>타로 사주 심층 풀이 1회 10</b><small>매일 1회 무료</small></span></div>
       <div class="kway"><i>🎮</i><span><b>인생 게임 아이템</b><small>다시 태어나기 15 · 기적 40 · 운명 조작 팩 30 · 갈림길 미리 보기 3</small></span></div>
@@ -134,8 +144,8 @@ const Karma = (() => {
   }
   // 다음 목표: 아직 안 연 대표 상품까지 남은 카르마 (홈 카드용)
   function nextGoal() {
-    const it = Store.item('report');
-    if (it && !Store.has('report')) return { e: it.e, n: it.n, need: Math.max(0, it.k - bal()), k: it.k };
+    const it = typeof Views !== 'undefined' && Views.item('y_total');
+    if (it) return { e: it.e, n: it.n + ' 상세', need: Math.max(0, it.k - bal()), k: it.k };
     return { e: '🤖', n: 'AI 사주상담 1회', need: Math.max(0, 20 - bal()), k: 20 };
   }
 
@@ -156,7 +166,7 @@ const Karma = (() => {
       <button class="kopt" data-k="ad"><i>📺</i><span><b>광고 보고 +${AD_K}</b><small class="kAdT">${adLabel()}</small></span></button>
       <button class="kopt" data-k="game"><i>🎲</i><span><b>인생 게임 한 판</b><small>엔딩마다 5~15 · 10살마다 광고 휴식 +${BREAK_K}</small></span></button>
       <h4 class="kh">카르마 구매</h4>
-      ${Store.packs().map(k => { const it = Store.item(k); return `<button class="kopt" data-pack="${k}"><i>${it.e}</i><span><b>${it.n}</b><small>${it.d}</small></span><em>${Store.native || testMode() ? Store.price(k) : '앱'}</em></button>`; }).join('')}
+      ${Store.packs().map(k => { const it = Store.item(k); return `<button class="kopt" data-pack="${k}"><i>${it.e}</i><span><b>${it.n}</b><small>${it.d}</small></span><em>${testMode() ? `<s>${Store.price(k)}</s> 무료` : Store.native ? Store.price(k) : '앱'}</em></button>`; }).join('')}
       ${ledgerHTML()}
       <p class="sjnote">카르마로 여는 것: 📜 상세 사주 리포트 50 · 🤖 AI 사주상담 1회 20 (첫 회 무료) · 🔮 타로 사주 심층 풀이 1회 10 (매일 1회 무료) · 🎮 게임 아이템</p>`;
   }
@@ -180,13 +190,50 @@ const Karma = (() => {
     const it = Store.item(k); metric('pay_start');
     if (Store.native) { Store.buy(k, (ok, err) => { if (ok) { metric('pay_done'); add(it.karma, it.n + ' 구매', 'buy'); Snd.sfx('fanfare'); after && after(); } else { metric(/cancel/i.test(err || '') ? 'pay_cancel' : 'pay_fail'); if (err && !/cancel/i.test(err)) openOverlay('결제하지 못했어요', `<p class="sjtxt" style="text-align:center">${Store.errText(err)}</p>`, [{ t: '확인', f: () => after && after() }]); } }); return; }
     if (testMode()) {
-      openOverlay('🧪 테스트 결제', `<p class="sjtxt" style="text-align:center">${it.e} <b>${it.n}</b> · ${it.price}<br>테스트 모드라 실제 결제 없이 카르마가 지급돼요.</p>`,
-        [{ t: `🧪 ${it.price} 결제한 것으로 하기`, pri: 1, f: () => { metric('pay_done'); add(it.karma, `${it.n} 구매 (테스트 결제)`, 'buy'); Snd.sfx('fanfare'); after && after(); } },
+      openOverlay('🧪 테스트 결제 (무료)', `<p class="sjtxt" style="text-align:center">${it.e} <b>${it.n}</b> · 실제 가격 ${it.price}<br><b>테스트 모드</b>라 돈이 나가지 않고 카르마만 지급돼요.<br><small>실제 서비스 모드(앱)에서는 스토어 결제가 진행돼요.</small></p>`,
+        [{ t: `🧪 무료로 결제한 것으로 하기 (+${it.karma})`, pri: 1, f: () => { metric('pay_done'); add(it.karma, `${it.n} 구매 (테스트 결제)`, 'buy'); Snd.sfx('fanfare'); after && after(); } },
          ...(STORE_CONFIG.feedbackUrl ? [{ t: '💬 이 가격에 대한 의견 남기기', f: () => window.open(STORE_CONFIG.feedbackUrl, '_blank', 'noopener') }] : []),
          { t: '취소', f: () => { metric('pay_cancel'); after && after(); } }]);
       return;
     }
     openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">카르마 구매는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.<br>웹에서는 광고 체험과 인생 게임으로 카르마를 모아 보세요.</p>`, [{ t: '돌아가기', f: () => after && after() }]);
+  }
+
+  /* ---------- 🧪 테스트 모드 / ✅ 실제 서비스 모드 ----------
+   * 테스트: 상업용 테스트 페이지(life-test)·웹 테스트 계정 — 광고·결제가 가상(무료), 아래 테스트 도구 사용 가능
+   * 실제 서비스: 일반 웹(life)·스토어 앱 — 결제는 스토어(앱)로만, 테스트 도구는 보이지도 동작하지도 않음 */
+  const mode = () => testMode() ? 'test' : 'live';
+  function modeBadge() { return testMode() ? '<em class="vmode t">🧪 테스트 모드</em>' : '<em class="vmode l">✅ 실제 서비스</em>'; }
+  function modeLine() { return testMode() ? '🧪 테스트 모드 · 광고·결제가 실제 없이 무료로 처리되고, 카르마 초기화 등 테스트 도구를 쓸 수 있어요' : (Store.native ? '✅ 실제 서비스 모드 · 결제는 스토어로 진행돼요' : '✅ 실제 서비스 모드 (웹) · 카르마 구매는 앱에서 할 수 있어요'); }
+  const denyLive = () => { if (testMode()) return false; Hub.toast('실제 서비스 모드에서는 사용할 수 없어요'); return true; };
+  function toolsHTML() {
+    if (!testMode()) return '';
+    return `<div class="hcard ktools"><b>🧪 테스트 도구</b><small>테스트 모드에서만 보여요 · 실제 서비스에는 없어요</small>
+      <div class="ktbtn"><button data-kt="reset">🔄 카르마 초기화</button><button data-kt="give">✨ +1000 무료 지급</button><button data-kt="day">📅 다음 날로 넘기기</button><button data-kt="views">🧾 열람 기록 지우기</button></div></div>`;
+  }
+  function bindTools(root, re) {
+    (root || document).querySelectorAll('[data-kt]').forEach(b => b.onclick = () => {
+      const k = b.dataset.kt;
+      if (k === 'reset') return resetAll(re);
+      if (k === 'give') { if (denyLive()) return; add(1000, '🧪 테스트 무료 지급', 'bonus'); re && re(); return; }
+      if (k === 'day') { if (denyLive()) return; nextDay(); Hub.toast('📅 다음 날이 된 것으로 바꿨어요 · 오늘 열람·광고 횟수가 새로 시작돼요'); re && re(); return; }
+      if (k === 'views') { if (denyLive()) return; Views.reset(); Hub.toast('🧾 열람·다시보기 기록을 지웠어요'); re && re(); }
+    });
+  }
+  // 하루가 지난 것처럼: 상세 열람권(그날 다시보기)과 광고 횟수를 어제 것으로
+  function nextDay() { if (denyLive()) return; try { Views.shiftDay(); } catch (e) { } const o = store.get(AKEY, null); if (o) { o.d = '2000-01-01'; o.last = 0; store.set(AKEY, o); } }
+  // 카르마·내역·열람 기록·이벤트·광고 횟수·카르마로 연 콘텐츠를 지우고 처음 시작 상태로 (기본 100 + 진행 중 이벤트)
+  function resetAll(re, now) {
+    if (denyLive()) return false;
+    const go = () => {
+      ['p8b_karma', 'p8b_klog', EKEY, AKEY, 'p8b_views', 'p8b_unlocks', 'p8b_metrics', 'p8b_test_acct_granted'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { } });
+      try { Views.reset(); } catch (e) { }
+      karma = 0; grants(); Store.notify(); Hub.toast(`🔄 카르마를 초기화했어요 · ✨ ${bal()}`); re && re();
+    };
+    if (now) { go(); return true; }
+    openOverlay('🔄 카르마 초기화 (테스트)', `<p class="sjtxt">카르마·사용 내역·상세 열람 기록·받은 이벤트·광고 횟수·카르마로 연 콘텐츠를 지우고 <b>처음 시작한 상태</b>로 돌려요.</p><p class="sjnote">사주 정보·궁합 관계도·게임 기록은 그대로예요. 실제 서비스 모드에는 이 기능이 없어요.</p>`,
+      [{ t: '🔄 초기화하기', pri: 1, f: go }, { t: '취소' }]);
+    return true;
   }
 
   /* ---------- ✨ 기본 지급 · 🧧 무상 카르마 이벤트 ---------- */
@@ -229,5 +276,5 @@ const Karma = (() => {
   init();
   setTimeout(grants, 600);   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
   return { metric, openMetrics, spend, unlock, openCharge, chargeHTML, bindCharge, adReward, showAd, testMode, add, bal, buyPack, AD_K, BREAK_K, AD_DAY,
-    openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, grants, events };
+    openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, grants, events, note, recentHTML, mode, modeBadge, modeLine, toolsHTML, bindTools, resetAll, nextDay };
 })();

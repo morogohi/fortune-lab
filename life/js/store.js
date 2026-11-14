@@ -13,7 +13,8 @@ window.STORE_CONFIG = {
     karma1000: { id: 'p8b_karma_1000', e: '🌟', n: '카르마 1,200 (+20%)', d: '모든 콘텐츠를 열고도 남는 양 · 보너스 200', price: '₩9,900', consumable: true, karma: 1200 },
     noads:     { id: 'p8b_remove_ads', e: '🚫', n: '광고 제거', d: '배너·전면 광고 영구 제거 (카르마를 주는 광고는 원할 때만)', price: '₩3,900', consumable: false },
     // 🔓 카르마로 여는 콘텐츠 — 대표 상품은 '상세 사주 리포트' 하나 (+ AI 상담은 회당 카르마)
-    report:  { e: '📜', n: '상세 사주 리포트', d: '2027 분야별 상세 · 12개월+좋은 날 · 10년 대운 · 궁합 상세 · MBTI 전략 · 토정비결 전체 · 개운', k: 50 },
+    // 예전 상품: 한 번 열면 영구. 지금은 판매하지 않고(legacy) 이미 연 사용자만 모든 상세 보기를 무료로 이용
+    report:  { e: '📜', n: '상세 사주 리포트', d: '2027 분야별 상세 · 12개월+좋은 날 · 10년 대운 · 궁합 상세 · MBTI 전략 · 토정비결 전체 · 개운', k: 50, legacy: 1 },
     fate:    { e: '🎛️', n: '운명 조작 팩 (게임 아이템)', d: '인생 게임에서 태어날 가정형편과 타고난 재능을 직접 선택', k: 30, game: 1 },
   },
 
@@ -27,10 +28,29 @@ window.STORE_CONFIG = {
     noads: ['없어지는 광고: 배너 광고 · 엔딩 전면 광고', '그대로인 것: 카르마를 주는 광고(원할 때만 직접 시청)',
       '이용 범위: 기간 제한 없음 · 앱에서 산 경우 기기 변경 시 스토어 「구매 복원」'],
     fate: ['구성: 탄생할 때 가정형편과 타고난 재능을 직접 선택 (인생 게임 아이템)', '이용 범위: 카르마로 한 번 열면 이 기기에서 이후 모든 판에 적용'],
-    karma: ['카르마로 하는 일: 상세 사주 리포트 50 · AI 사주상담 1회 20 (첫 회 무료) · 게임 아이템(운명 조작 팩 30·기적 40)',
+    karma: ['카르마로 하는 일: 목적별 상세 보기 1회 5~10 (결제한 날 다시보기 3회 무료) · AI 사주상담 1회 20 (첫 회 무료) · 게임 아이템(운명 조작 팩 30·기적 40) · 사주풀이는 무료',
       '무료로 모으기: 처음 시작 +100 · 광고 1번 +5 (3분 간격, 하루 10번) · 인생 게임 엔딩 5~15 · 게임 중 10살마다 광고 휴식 +3 · 이벤트 기간 무상 지급',
       '소모성: 쓰면 없어지고, 앱을 지우면 남은 카르마도 사라져요 (계정 동기화는 로그인 서버 연결 후)'],
     karma300: ['카르마 330 즉시 지급 (보너스 10%)', '소모성'], karma1000: ['카르마 1,200 즉시 지급 (보너스 20%)', '소모성'],
+  },
+  // 🔎 목적별 상세 보기: 볼 때마다 카르마 차감 · 결제한 날(자정까지) 같은 대상 다시보기 free회 무료 · 사주풀이(타고난 성향)는 무료
+  views: {
+    free: 3,
+    items: {
+      y_total:  { g: '2027 운세', e: '📊', n: '2027 종합운', d: '한 해 총점·키워드 · 상·하반기 흐름 · 좋은 달·조심할 달 · 주의할 점', k: 10 },
+      y_work:   { g: '분야별 운세', e: '💼', n: '직업·사업운', d: '2027 직업 점수와 상·하반기 풀이 · 움직일 때와 다질 때', k: 5, area: 0 },
+      y_money:  { g: '분야별 운세', e: '💰', n: '재물운', d: '2027 재물 점수 · 들어오는 돈과 새는 돈 · 타고난 재물 성향', k: 5, area: 1 },
+      y_love:   { g: '분야별 운세', e: '💕', n: '연애·결혼운', d: '2027 연애 점수 · 하반기 흐름 · 나의 연애 스타일', k: 5, area: 2 },
+      y_health: { g: '분야별 운세', e: '🩺', n: '건강운', d: '2027 건강 점수 · 챙길 몸 · 부족한 기운 보완', k: 5, area: 3 },
+      y_family: { g: '분야별 운세', e: '🏠', n: '가정·관계운', d: '2027 가정·대인 점수 · 띠 관계로 본 한 해', k: 5, area: 4 },
+      y_study:  { g: '분야별 운세', e: '📚', n: '학업·자기계발운', d: '2027 학업 점수 · 배움을 시작하기 좋은 때', k: 5, area: 5 },
+      y_month:  { g: '시기', e: '📅', n: '12개월 상세·좋은 날', d: '달마다 점수·초점·토정 신수 · 달마다 좋은 날짜', k: 10 },
+      y_luck:   { g: '시기', e: '🔮', n: '10년 대운 흐름', d: '대운 8구간 · 지금 대운과 올해 세운의 관계', k: 10 },
+      y_guide:  { g: '실행', e: '🍀', n: '개운·분기 전략', d: '분기별 핵심 과제 · MBTI로 본 전략 · 행운의 색·숫자·방향', k: 5 },
+      y_rel:    { g: '관계', e: '💞', n: '관계도 2027 궁합', d: '궁합 관계도에 등록한 사람과 올해의 흐름', k: 10 },
+      compat:   { g: '관계', e: '💑', n: '궁합 상세 풀이', d: '두 사람의 성격·연애 스타일(강점) · 올해 두 사람의 흐름 (상대마다)', k: 5 },
+      tojeong:  { g: '전통', e: '🏮', n: '토정비결 전체', d: '상·중·하괘 · 월별 신수 · 재물·처세', k: 10 },
+    },
   },
   // ✨ 기본 지급: 처음 시작하는 사용자의 카르마 (예전 20 → 100)
   startKarma: 100,
@@ -83,6 +103,8 @@ window.Store = (() => {
   const ALIAS = { newyear: 'report', compat: 'report' };   // 신년 종합 풀이·궁합 상세는 상세 사주 리포트에 포함
   const al = k => ALIAS[k] || k;
   const isTest = () => !!(window.Auth && Auth.isTest && Auth.isTest());
+  // 실제로 구매·카르마로 연 것만 (테스트 계정 전체 열람·이벤트 무료 제외) — 상세 보기 무료 판단용
+  const ownedReal = k => !!(owned[k] || unlocks()[k]);
   function has(k) {
     if (ALIAS[k] && (owned[k] || unlocks()[k])) return true;   // 예전에 따로 연 경우 유지
     k = al(k);
@@ -149,5 +171,5 @@ window.Store = (() => {
       fire(); onDone && onDone(true);
     } catch (e) { onDone && onDone(false, String(e && (e.code || '') + ' ' + (e.message || '') || e)); }
   }
-  return { native, errText, lastErr: () => lastErr, init, has, why, buy, restore, price, newYear, grant, unlock, isKarmaItem, notify: fire, packs: () => Object.keys(CFG.products).filter(k => CFG.products[k].karma), contents: () => Object.keys(CFG.products).filter(k => CFG.products[k].k), addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[al(k)], info: k => { k = al(k); return (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || []; } };
+  return { native, errText, lastErr: () => lastErr, init, has, why, buy, restore, price, newYear, grant, unlock, isKarmaItem, notify: fire, packs: () => Object.keys(CFG.products).filter(k => CFG.products[k].karma), contents: () => Object.keys(CFG.products).filter(k => CFG.products[k].k && !CFG.products[k].legacy), ownedReal, addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[al(k)], info: k => { k = al(k); return (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || []; } };
 })();

@@ -173,6 +173,8 @@ const Hub = (() => {
       <div class="setrow"><span>🎵 배경음악</span><div></div><button class="tgl${Snd.on.bgm ? ' on' : ''}" id="sBgm" aria-label="배경음악"><i></i></button></div>
       <div class="setrow"><span>🔊 효과음</span><div></div><button class="tgl${Snd.on.sfx ? ' on' : ''}" id="sSfx" aria-label="효과음"><i></i></button></div>
       <div class="setrow"><span>☰ 더보기</span><div><small>복주머니 교환, 기록 보관함, 매일 운세 알림, 도움말</small></div><button id="sMore">열기</button></div>
+      <div class="setrow"><span>🛠️ 운영 모드</span><div>${Karma.modeBadge()} <small>${Karma.modeLine()}</small></div></div>
+      ${Karma.toolsHTML()}
       <div class="setrow"><span>ℹ️ 앱 버전</span><div><b>${esc(appVer())}</b> <small>${Store.native ? '앱' : '웹'}</small></div><button id="sShop">상점</button></div>
       <div class="setrow"><span>🔒 개인정보</span><div><small>정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
     </div>`, [{ t: '닫기' }]);
@@ -183,6 +185,7 @@ const Hub = (() => {
     $('#sSfx').onclick = e => { Snd.toggle('sfx'); e.currentTarget.classList.toggle('on', Snd.on.sfx); Snd.sfx('tap'); };
     $('#sMore').onclick = () => { closeOverlay(); go('more'); };
     $('#sShop').onclick = () => { closeOverlay(); go('shop'); };
+    Karma.bindTools($('#osheet'), () => { closeOverlay(true); openSettings(); });
     $('#sPriv').onclick = () => { closeOverlay(true); openPrivacy(); };
   }
   function openWipe() {
@@ -327,7 +330,9 @@ const Hub = (() => {
   }
   /* ---------- 🛍️ 상점 탭 ---------- */
   function shopPageHTML() {
-    return `${karmaCardHTML(true)}
+    return `<div class="vmodebar">${Karma.modeBadge()}<small>${Karma.modeLine()}</small></div>
+      ${karmaCardHTML(true)}
+      ${Karma.toolsHTML()}
       ${Karma.testMode() ? '' : TRIAL()}
       ${shopListHTML(true)}
       ${Store.native ? '<button class="ghost wide" id="shRestore">🔄 구매 복원</button>' : ''}
@@ -337,7 +342,7 @@ const Hub = (() => {
   }
   function bindShopPage() {
     const body = $('#hubBody'), re = () => { body.dataset.keep = '1'; const y = body.scrollTop; render(); body.scrollTop = y; delete body.dataset.keep; };
-    bindKarmaCard(); bindShopList(body, re);
+    bindKarmaCard(); bindShopList(body, re); Karma.bindTools(body, re);
     const r = $('#shRestore'); if (r) r.onclick = () => restoreBuys(re);
     $('#shMore').onclick = () => go('more'); $('#shExch').onclick = openExchange;
   }
@@ -348,7 +353,7 @@ const Hub = (() => {
     const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${it.e}</i><span><b>${itemName(it)}</b><small>${it.d}</small></span></button>`;
     const sec = (t, gk) => `<h3 class="hsec">${t}</h3><div class="htiles">${ITEMS.filter(x => x.g === gk).map(tile).join('')}</div>`;
     return `<div class="hhome">
-      <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1><em class="hver" id="hVer">${esc(appVer())}</em></div>
+      <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1><em class="hver" id="hVer">${esc(appVer())}${typeof Karma !== 'undefined' && Karma.mode() === 'test' ? ' · 🧪 테스트' : ''}</em></div>
       ${p && a
         ? `<button class="hme" id="hmMe"><span class="ddi" title="${a.ddi}띠">${DDI_E[a.p.y.b]}</span><div><b>${esc(p.name)}님 <em class="ddit">${a.ddi}띠</em></b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
@@ -665,11 +670,12 @@ const Hub = (() => {
   /* ---------- 토정비결: 인생 게임에서 모은 카르마로 열기 ---------- */
   function tojeongHTML(p) {
     const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) return '<div class="hcard"><p class="hsub">생년월일을 확인해 주세요.</p></div>';
-    const open = Tojeong.opened(p, Y) || (Y === 2027 && Store.has('report')), k = karma, need = Math.max(0, Tojeong.COST - k);
+    const open = Tojeong.opened(p, Y) || (Y === 2027 && Store.ownedReal('report')), k = karma, need = Math.max(0, Tojeong.COST - k);
+    const tv = Y === 2027 && typeof Views !== 'undefined' ? Views.item('tojeong') : null;
     return `<div class="hhead"><small>${esc(p.name)}님 · 음력 ${t.lm}월 ${t.ld}일생</small><h2>${Y} 토정비결</h2></div>
       ${open ? `<div class="hcard">${Tojeong.fullHTML(t)}</div>`
       : `<div class="hcard">${Tojeong.previewHTML(t)}</div>
-         ${Y === 2027 ? '' : `<div class="hcard tjcard"><h3 class="ht">🔒 월별 신수 · 재물 · 처세</h3><p class="hsub">카르마 ${Tojeong.COST}으로 전체 풀이를 열 수 있어요.</p><button class="bigbtn" id="hTJ">✨ 카르마 ${Tojeong.COST}으로 열기</button></div>`}`}
+         ${tv ? `<div class="hcard tjcard"><h3 class="ht">🔒 상·중·하괘 · 월별 신수 · 재물 · 처세</h3><p class="hsub">볼 때 카르마 ${tv.k} · 결제한 날 다시보기 ${Views.FREE()}회 무료</p><button class="bigbtn" data-yv="tojeong">🏮 토정비결 전체 보기 ${Views.chip('tojeong', Views.subj(p))}</button></div>` : Y === 2027 ? '' : `<div class="hcard tjcard"><h3 class="ht">🔒 월별 신수 · 재물 · 처세</h3><p class="hsub">카르마 ${Tojeong.COST}으로 전체 풀이를 열 수 있어요.</p><button class="bigbtn" id="hTJ">✨ 카르마 ${Tojeong.COST}으로 열기</button></div>`}`}
       ${Y === 2027 && typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
   }
   function bindTojeong(p) {
@@ -726,13 +732,17 @@ const Hub = (() => {
     return `<div class="hhead"><small>${p.date} (${p.cal === 'll' ? '음력 윤달' : p.cal === 'l' ? '음력' : '양력'}) · ${p.time ? SIJIN.find(x => x[0] === p.time)[1].split(' ')[0] : '태어난 시간 모름(시주 제외)'} · ${p.sex === 'f' ? '여' : '남'}</small><h2>${esc(p.name)}님의 사주</h2></div>
       ${Saju.summaryHTML(a)}
       ${L ? `<div class="sjnow">${L.e} 지금 대운 (${L.start}세~) <b>${L.name}</b><br><span>${L.desc}</span></div>` : ''}
-      <div class="hcard"><div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p></div></div>
+      <div class="hcard"><h3 class="ht">📜 사주풀이 <em class="vch free">무료</em></h3><div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
+        <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
+        <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>
       <div class="hmenu">
-        <button id="hRep"><span>📜</span><b>상세 사주 리포트</b><small>${Store.has('report') ? Store.why('report') || '열림' : '2027 분야별 · 12개월 좋은 날 · 10년 대운 · 궁합 · ' + Store.price('report')}</small></button>
-      </div>`;
+        <button id="hRep"><span>🔎</span><b>목적별 상세 운세</b><small>2027 종합·재물·연애·직업·건강·12개월·대운·토정비결 · 1회 ✨5~10</small></button>
+      </div>
+      ${typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
   }
   function bindSaju(p, a) {
     $('#hRep').onclick = () => go('yearfull');
+    if (typeof YearFull !== 'undefined') YearFull.bind(p, a);
   }
   function newYearHTML(p, a) {
     const n = Fortune.newYear(a, 2027);
@@ -744,7 +754,7 @@ const Hub = (() => {
       ${n.yrel ? `<p>🐑 내 띠와 올해 양띠는 <b>${n.yrel.n}</b> — ${n.yrel.d.replace('날', '해')}</p>` : ''}
       <p>📈 좋은 달: <b>${n.best.map(mm).join(', ')}</b> · 조심할 달: <b>${mm(n.worst)}</b></p>
       <h4>📅 12개월 흐름 (간략)</h4><table class="dytbl hmonth"><tr><th>달</th><th>점수</th><th>한마디</th></tr>${n.months.map(m => `<tr><td>${mm(m)}</td><td><b style="color:${gColor(m.v)}">${m.v}</b></td><td>${m.txt}</td></tr>`).join('')}</table>
-      <p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터). ※ 분야별 상세·달마다 좋은 날·10년 대운·궁합·MBTI 전략은 아래 상세 사주 리포트에서 볼 수 있어요.</p></div></div>
+      <p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터). ※ 분야별 상세·달마다 좋은 날·10년 대운·궁합·MBTI 전략은 아래 목적별 상세 보기에서 골라 볼 수 있어요.</p></div></div>
       ${typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
   }
   function openNewYear() { go('newyear'); }
@@ -799,10 +809,12 @@ const Hub = (() => {
     work: { e: '💼', n: '동료', yk: '직업', yn: '일 흐름', how: '역할·마감을 글로 정리해 두고, 피드백은 사실 중심으로',
       tip: ['손발이 잘 맞는 동료예요. 한 사람은 기획, 한 사람은 실행으로 나누면 성과가 커요.', '일하는 속도와 방식이 조금 달라요. 중간 점검을 자주 하면 시너지가 나요.', '의견이 자주 갈릴 수 있어요. 결정 기준을 미리 합의하면 오히려 꼼꼼한 팀이 돼요.'] },
   };
-  function showCompat(p, a, q, b) {
+  function showCompat(p, a, q, b, viewing) {
     Snd.sfx('love');
     const R = REL[q.rel] || REL.love, love = R === REL.love;
-    const open = Store.has('compat'), yg = S.yearGz(new Date().getFullYear());
+    const vs = typeof Views !== 'undefined', pk = vs ? Views.pair(p, q) : '', cst = vs ? Views.status('compat', pk) : {};
+    const open = viewing || Store.ownedReal('compat') || Store.ownedReal('report') || !vs, yg = S.yearGz(new Date().getFullYear());
+    const cv = vs ? Views.item('compat') : null;
     const yl = x => S.SEUN[S.tg10(x.me, yg.s).g][love ? '연애' : R.yk];
     const pc = Saju.compatPair(a, b), band = pc ? (pc.score >= 80 ? 0 : pc.score >= 65 ? 1 : 2) : 1;
     const relBox = `<div class="relbox"><b>${R.e} ${R.n}로서의 궁합</b><p>${R.tip[band]}</p><small>💡 ${R.how}</small></div>`;
@@ -810,10 +822,11 @@ const Hub = (() => {
         ${love ? `<h4>💕 ${esc(p.name)}의 연애 스타일</h4><p>${a.dm.연애}</p><h4>💕 ${esc(q.name)}의 연애 스타일</h4><p>${b.dm.연애}</p>`
           : `<h4>✨ ${esc(p.name)}의 강점</h4><p>${a.dm.강점}</p><h4>✨ ${esc(q.name)}의 강점</h4><p>${b.dm.강점}</p>`}
         <h4>📅 올해 두 사람의 ${R.yn}</h4><p><b>${esc(p.name)}</b> ${yl(a)}</p><p><b>${esc(q.name)}</b> ${yl(b)}</p></div>`
-      : `<div class="lock"><b>🔒 궁합 상세 풀이</b><small>두 사람의 성격·${love ? '연애 스타일' : '강점'}·올해 ${R.yn} (모든 상대 무제한)</small></div>`;
+      : `<div class="lock"><b>🔒 궁합 상세 풀이</b><small>두 사람의 성격·${love ? '연애 스타일' : '강점'}·올해 ${R.yn} · 볼 때 ✨${cv.k} (상대마다) · 결제한 날 다시보기 ${Views.FREE()}회 무료</small></div>`;
     openOverlay(`${R.e} 궁합 결과 · ${R.n}`, Saju.compatHTML(esc(p.name), a, esc(q.name), b, q.rel || 'love') + relBox + detail + '<p class="sjnote" style="text-align:center">※ 궁합은 참고·재미용이에요. 관계는 서로의 노력이 만들어요.</p>',
-      [...(open ? [] : [{ t: `🔓 상세 풀이 열기 (${Store.price('compat')})`, pri: 1, f: () => openProduct('compat', () => showCompat(p, a, q, b)) }]),
-       { t: '🧮 두 사람 계산 과정 보기', f: () => { const pq = birthOf(q); openOverlay('🧮 궁합 계산 과정', `<iframe class="hlearn" src="learn.html?embed=1&d=${p.date}&cal=${p.cal || 's'}&sx=${p.sex}${p.time ? '&t=' + p.time : ''}&d2=${q.date}&cal2=${q.cal}&sx2=${q.sex}${q.time ? '&t2=' + q.time : ''}"></iframe>`, [{ t: '닫기' }]); } },
+      [...(open ? [] : [{ t: cst.paid && cst.freeLeft > 0 ? `🔁 상세 풀이 다시 보기 (오늘 무료 ${cst.freeLeft}회)` : `🔓 상세 풀이 보기 (✨ ${cv.k})`, pri: 1, keep: true,
+         f: () => Views.open('compat', pk, `💑 궁합 상세 · ${p.name}·${q.name}`, () => showCompat(p, a, q, b, true), () => showCompat(p, a, q, b)) }]),
+       { t: '🧮 두 사람 계산 과정 보기', f: () => { const pq = birthOf(q); openOverlay('🧮 궁합 계산 과정', `<iframe class="hlearn" src="learn.html?embed=1&d=${p.date}&cal=${p.cal || 's'}&sx=${p.sex}${p.time ? '&t=' + p.time : ''}&d2=${q.date}&cal2=${q.cal}&sx2=${q.sex}${q.time ? '&t2=' + q.time : ''}"></iframe>`, [{ t: '닫기', f: () => { if (viewing) render(); } }]); } },
        { t: '닫기' }]);
   }
 
@@ -923,6 +936,10 @@ const Hub = (() => {
     else if (PAGES[tab]) { body.innerHTML = PAGES[tab].html(p, a); PAGES[tab].bind(p, a); }
     else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); body.innerHTML = newYearHTML(p, a); if (typeof YearFull !== 'undefined') YearFull.bind(p, a); }
     body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav(); fitTitles(body);
+    if (typeof Views !== 'undefined') {
+      if (tab !== 'yfview') Views.leave();
+      if (tab !== 'yfview' && tab !== 'yearfull' && Views.takeReturn()) { const nv = body.querySelector('.hnav'); if (nv) { nv.insertAdjacentHTML('afterend', Views.receiptHTML()); Views.bindReceipt(() => { const r = $('#vRec'); if (r) r.remove(); }); } }
+    }
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
   }
