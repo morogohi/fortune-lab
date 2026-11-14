@@ -61,7 +61,7 @@ function shopListHTML(page) {
   const cont = `<p class="sjnote" style="margin:4px 0 8px">📜 사주풀이는 무료 · 각 서비스의 개요는 무료로 보고, 더 자세한 풀이만 볼 때 카르마를 써요 (결제한 날 자정까지 다시보기 ${Views.FREE()}회 무료).</p>`
     + SV.map(([k, g]) => vrow(k, g)).join('')
     + `<div class="shopitem"><span class="se">🃏</span><div><b>타로 상세 리딩</b><small>${Views.item('tarot5').d}</small></div><button data-go="tarot">1장 ✨${Views.item('tarot1').k} · 3장 ✨${Views.item('tarot3').k} · 5장 ✨${Views.item('tarot5').k}</button></div>`
-    + main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>고민을 대화로 상담 · 사주·대운·MBTI를 바탕으로 답해요 · 처음 질문 1개 무료</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 10}/질문</button></div>`
+    + main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>💬 대화 상담 · 🧭 선택 상담(선택지별 상세 비교) · 처음 질문 1개 무료</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 3}/질문</button></div>`
     + ''
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
