@@ -62,7 +62,7 @@ function shopListHTML(page) {
     + SV.map(([k, g]) => vrow(k, g)).join('')
     + `<div class="shopitem pdfrow"><span class="se">📑</span><div><b>${Views.item('pdf').n}</b><small>${Views.item('pdf').d}</small></div><button data-pdf="1" class="${PdfReport.ready() ? '' : 'pdf-off'}">✨ ${Views.item('pdf').k}</button></div>${PdfReport.noteHTML()}`
     + `<div class="shopitem"><span class="se">🃏</span><div><b>타로 상세 리딩</b><small>${Views.item('tarot5').d}</small></div><button data-go="tarot">1장 ✨${Views.item('tarot1').k} · 3장 ✨${Views.item('tarot3').k} · 5장 ✨${Views.item('tarot5').k}</button></div>`
-    + main.map(row).join('') + `<div class="shopitem"><span class="se">🧭</span><div><b>사주 자동 상담</b><small>기기 안 규칙 기반 풀이 · 대화 상담 · 선택 상담 · ${CounselPrice.text()}</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 3}/질문</button></div>`
+    + main.map(row).join('') + `<div class="shopitem"><span class="se">🧭</span><div><b>사주 상담</b><small>기기 안 규칙 기반 풀이 · 대화 상담 · 선택 상담 · ${CounselPrice.text()}</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 3}/질문</button></div>`
     + ''
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
