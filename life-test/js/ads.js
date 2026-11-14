@@ -179,17 +179,17 @@ window.Native = (() => {
       await navigator.clipboard.writeText(text); return 'copied';
     },
     /* 인생 카드 이미지 저장·공유: 앱은 공유 시트, 웹은 공유(지원 시) 또는 다운로드 */
-    async shareImage(dataUrl, text, mode) {
+    async shareImage(dataUrl, text, mode, opt = {}) {
       text = withLink(text);
       const b64 = dataUrl.split(',')[1];
       if (native && C.Plugins.Filesystem && C.Plugins.Share) {
-        const w = await C.Plugins.Filesystem.writeFile({ path: 'life-card.png', data: b64, directory: 'CACHE' });
-        await C.Plugins.Share.share({ title: '프로젝트 80억 인생 카드', text, files: [w.uri] });
+        const w = await C.Plugins.Filesystem.writeFile({ path: opt.file || 'life-card.png', data: b64, directory: 'CACHE' });
+        await C.Plugins.Share.share({ title: opt.title || '프로젝트 80억 인생 카드', text, files: [w.uri] });
         return 'shared';
       }
-      const blob = await (await fetch(dataUrl)).blob(), file = new File([blob], 'life-card.png', { type: 'image/png' });
+      const blob = await (await fetch(dataUrl)).blob(), file = new File([blob], opt.file || 'life-card.png', { type: 'image/png' });
       if (mode === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return 'shared'; }
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'life-card.png'; document.body.appendChild(a); a.click(); a.remove();
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = opt.file || 'life-card.png'; document.body.appendChild(a); a.click(); a.remove();
       return 'downloaded';
     },
     hideSplash() { if (native && C.Plugins.SplashScreen) C.Plugins.SplashScreen.hide().catch(() => {}); },

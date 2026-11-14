@@ -776,10 +776,8 @@ const Hub = (() => {
     bindDailyTarot(p);
     const sh = $('#hShare'); if (sh) sh.onclick = async () => {
       const f = Fortune.today(a, keyOf(p));
-      try {
-        await Native.share(`🔮 ${p.name}님의 오늘 운세 (${f.gzTxt}일)\n총운 ${f.sc[0]}점 · ${f.grade}\n${f.lines[0]}\n🍀 행운의 색 ${f.lucky.color} · 숫자 ${f.lucky.num}\n\n운명 연구소 — 내 사주로 사는 인생 게임`);
-        const d = daily(); if (!d.shared) { d.shared = true; store.set('p8b_daily', d); addPouch(2, '운세 공유'); render(); }
-      } catch (e) {}
+      // 이미지 카드 공유 창 (이름은 기본 숨김 · 생년월일 없음) → 공유하면 오늘의 미션 완료
+      TodayShare.open(p, f, () => { const d = daily(); if (!d.shared) { d.shared = true; store.set('p8b_daily', d); addPouch(2, '운세 공유'); render(); } });
     };
   }
   function whyFortune(p, a) {
