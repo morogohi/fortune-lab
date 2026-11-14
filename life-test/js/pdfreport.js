@@ -31,7 +31,15 @@ const PdfReport = (() => {
       <p class="pdf-gz">${S.ST[a.p.y.s]}${S.BR[a.p.y.b]}년 · ${S.ST[a.p.m.s]}${S.BR[a.p.m.b]}월 · ${S.ST[a.p.d.s]}${S.BR[a.p.d.b]}일${a.p.h ? ` · ${S.ST[a.p.h.s]}${S.BR[a.p.h.b]}시` : ''}</p>
       <div class="pdf-toc"><b>차례</b>${['타고난 사주풀이', `${Y()} 신년운세 상세`, `${Y()} 토정비결 · 월별 상세`, '사주 MBTI 상세', '연애 성향(바람기) 상세', ...(people.length ? [`궁합 상세 · ${people.map(q => esc(q.name)).join(', ')}`] : [])].map((t, i) => `<p>${i + 1}. ${t}</p>`).join('')}</div>
       <p class="pdf-date">만든 날 ${now.getFullYear()}.${now.getMonth() + 1}.${now.getDate()} · 이 리포트는 기기 안에서 만들어졌어요</p></div>` });
-    out.push({ t: '사주풀이', html: h('📜', '1. 타고난 사주풀이', '일간·오행·성격·강점·연애·재물·건강·개운') + `<div class="hcard">${reportHTML(esc(p.name), a, age)}</div>` });
+    // 앱 화면용 사주 카드(색 칸·막대)는 PDF 표로 바꿔 넣음
+    const EL = ['🌳', '🔥', '⛰️', '⚔️', '💧'], LAB = ['년주', '월주', '일주', '시주'], P4 = [a.p.y, a.p.m, a.p.d, a.p.h];
+    const pdfSaju = `<div class="pdf-saju"><table class="pdf-tbl"><tr>${LAB.map((l, i) => `<th>${l}${i === 2 ? ' (나)' : ''}</th>`).join('')}</tr>
+      <tr>${P4.map(c => `<td>${c ? `<b>${S.ST[c.s]}</b> ${S.STK[c.s]}<br><small>${S.EK[S.SE[c.s]]}</small>` : '?'}</td>`).join('')}</tr>
+      <tr>${P4.map(c => `<td>${c ? `<b>${S.BR[c.b]}</b> ${S.BRK[c.b]}<br><small>${S.EK[S.BE[c.b]]}</small>` : '?'}</td>`).join('')}</tr></table>
+      <p><b>${a.dm.nm}</b> 일간 · ${a.ddi}띠 — ${a.dm.key}</p>
+      <p><b>오행 분포</b> ${a.el.map((n, i) => `${EL[i]} ${S.EK[i]} ${n}`).join(' · ')}</p>
+      <p><b>강한 운</b> ${['독립·경쟁운', '재능·표현운', '재물운', '승진·명예운', '학업·귀인운'][a.dom] || ''} · <b>부족한 기운</b> ${S.EK[a.weak]}</p></div>`;
+    out.push({ t: '사주풀이', html: h('📜', '1. 타고난 사주풀이', '일간·오행·성격·강점·연애·재물·건강·개운') + `<div class="hcard">${reportHTML(esc(p.name), a, age).replace(Saju.summaryHTML(a), pdfSaju)}</div>` });
     try { out.push({ t: '신년운세', html: h('🧧', `2. ${Y()} 신년운세 상세`, '한 해 총운 · 분야별 · 12개월 · 대운 · 분기 전략') + Detail.newyear(p, a) }); } catch (e) { console.warn('pdf newyear', e); }
     try { const t = Tojeong.calc(p, Y()); if (t) out.push({ t: '토정비결', html: h('🏮', `3. ${Y()} 토정비결 상세`, '괘 풀이 · 계절 흐름 · 월별 상세') + Detail.tojeong(p, a, t) }); } catch (e) { console.warn('pdf tojeong', e); }
     const me = Object.assign({}, p, { self: true });
@@ -51,13 +59,60 @@ const PdfReport = (() => {
       <button class="bigbtn wide" id="pdfMake">📥 PDF로 저장하기</button><div class="fk-bar pdf-prog" hidden><i id="pdfBar"></i></div><p class="sjnote" id="pdfMsg"></p></div>`
       + s.map(x => `<div class="pdf-sec">${x.html}</div>`).join('');
   }
-  // 화면 테마와 상관없이 흰 바탕 · 진한 글씨로 그린다
-  const PDF_CSS = `.pdfdoc{position:fixed;left:-10000px;top:0;width:720px;background:#fff;color:#222;padding:0;--card:#fff;--card2:#f4f3f8;--ink:#222;--ink2:#333;--dim:#666;--line:#e3e1ea;--line2:#d5d2de;--money:#2f8f5b;--hp:#c24b4b;--hap:#b98a1d;--accent:#6a5acd}
-    .pdfdoc .hcard{box-shadow:none;border:1px solid #e3e1ea;background:#fff;margin:0 0 10px;border-radius:12px}.pdfdoc *{animation:none!important;transition:none!important;box-shadow:none!important}.pdfdoc .tjm.hi,.pdfdoc .cs-deep.best{border:1.5px solid #2f8f5b}.pdfdoc .tjm.lo{border:1.5px solid #c24b4b}.pdfdoc .tjm,.pdfdoc .tjm-g div,.pdfdoc .tjm-c{border:1px solid #e3e1ea}.pdfdoc .tjbrief div.hi{border-left:3px solid #2f8f5b}.pdfdoc .tjbrief div.lo{border-left:3px solid #c24b4b}.pdfdoc .tjmonths div.hi{border:1.5px solid #2f8f5b}.pdfdoc .tjmonths div.lo{border:1.5px solid #c24b4b}.pdfdoc .sjtxt,.pdfdoc .sjsum,.pdfdoc .hcard>div{background-color:transparent}.pdfdoc .pdf-toc p{margin:4px 0}
-    .pdfdoc .pdf-cover{height:980px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;background:linear-gradient(160deg,#f6f1ff,#fff7ea);border-radius:0}
-    .pdfdoc .pdf-cover h1{font-size:40px;line-height:1.3;margin:18px 0}.pdfdoc .pdf-logo{font-size:20px;color:#6a5acd;font-weight:700}.pdfdoc .pdf-gz{font-size:22px;letter-spacing:2px;color:#5a4a1d}
-    .pdfdoc .pdf-toc{text-align:left;background:#fff;border-radius:14px;padding:14px 22px;margin:22px 0;border:1px solid #e3e1ea;font-size:16px;line-height:1.8}.pdfdoc .pdf-date{color:#888;font-size:13px}
-    .pdfdoc .pdf-h,.pdf-sec .pdf-h{display:flex;flex-direction:column;padding:12px 4px 8px;border-bottom:2px solid #6a5acd;margin:6px 0 10px}.pdf-h b{font-size:20px}.pdf-h small{color:#666;margin-top:2px}`;
+  // 📄 PDF 전용 문서 스타일 — 앱 화면 스타일(카드·칩·격자·작은 글씨)을 쓰지 않고 한 가지 문서 형식으로 통일
+  //   폭 600px 를 A4 본문 190mm 에 맞춤 → 본문 16px ≈ 14pt, 소제목 18px, 장 제목 26px, 메모 14px
+  const PDF_W = 600;
+  const PDF_CSS = `
+  .pdfdoc{position:fixed;left:-10000px;top:0;width:${PDF_W}px;background:#fff;color:#222;padding:0 2px;font-family:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+  .pdfdoc *{animation:none!important;transition:none!important;box-shadow:none!important;text-shadow:none!important;background:transparent!important;border:0!important;border-radius:0!important;
+    font-size:16px!important;line-height:1.75!important;color:#222!important;font-weight:400;letter-spacing:0!important;font-style:normal!important;text-align:left!important;
+    max-width:none!important;width:auto!important;min-height:0!important;height:auto!important;position:static!important;transform:none!important;opacity:1!important;filter:none!important}
+  .pdfdoc div,.pdfdoc section,.pdfdoc ul,.pdfdoc ol,.pdfdoc label{display:block!important;margin:0!important;padding:0!important}
+  .pdfdoc p{display:block!important;margin:0 0 10px!important;padding:0!important}
+  .pdfdoc b,.pdfdoc strong,.pdfdoc em.on{font-weight:700!important}
+  .pdfdoc i,.pdfdoc em,.pdfdoc span,.pdfdoc small,.pdfdoc a{display:inline!important;margin:0!important;padding:0!important}
+  .pdfdoc ul,.pdfdoc ol{padding-left:22px!important;margin:0 0 10px!important}.pdfdoc li{display:list-item!important;margin:0 0 4px!important}
+  .pdfdoc input,.pdfdoc button,.pdfdoc svg,.pdfdoc canvas,.pdfdoc img,.pdfdoc .vbtn,.pdfdoc .vdet,.pdfdoc .vfreetag{display:none!important}
+  /* 묶음(카드) = 한 꼭지: 위아래 여백만 */
+  .pdfdoc .pdf-blk{padding:6px 0 16px!important}
+  /* 꼭지 제목 */
+  .pdfdoc h2,.pdfdoc h3,.pdfdoc .ht{display:block!important;font-size:20px!important;font-weight:700!important;margin:0 0 12px!important;padding:0 0 6px!important;border-bottom:2px solid #d9d2f2!important;color:#3d2f86!important}
+  .pdfdoc h3 small,.pdfdoc .ht small{font-size:15px!important;font-weight:400!important;color:#666!important}
+  /* 소제목 */
+  .pdfdoc h4,.pdfdoc h5{display:block!important;font-size:18px!important;font-weight:700!important;margin:14px 0 6px!important;color:#222!important}
+  /* 격자·행(월별 행, 분야 칸, 비교 칸 등)은 한 줄씩 문단으로 */
+  .pdfdoc .tjm,.pdfdoc .cs-deep,.pdfdoc .yf-m,.pdfdoc .yf-q,.pdfdoc .dsec{margin:0 0 14px!important;padding:0 0 10px!important;border-bottom:1px solid #e6e3ee!important}
+  .pdfdoc .tjm-h b,.pdfdoc .yf-m>b:first-child{font-size:18px!important}
+  .pdfdoc .tjm-g>div,.pdfdoc .cm-row,.pdfdoc .tjbrief>div,.pdfdoc .hdt-g>div,.pdfdoc .cs-two>div,.pdfdoc .cs-plan>div,.pdfdoc .dtwo>div,.pdfdoc .dscore>div,.pdfdoc .tjm-l>span,.pdfdoc .yf-a>div{display:block!important;margin:0 0 6px!important}
+  .pdfdoc .tjm-g>div>b,.pdfdoc .cm-row>b,.pdfdoc .tjbrief>div>b,.pdfdoc .cs-plan>div>b,.pdfdoc .dtwo>div>b{display:inline!important;margin-right:8px!important}
+  .pdfdoc .cm-row>span+span,.pdfdoc .tjm-h>*+*{margin-left:8px!important}
+  .pdfdoc .tjm-h em,.pdfdoc .tjm-h small,.pdfdoc .cm-v{color:#555!important}
+  .pdfdoc .tjm-s{font-weight:700!important}
+  /* 메모(작은 글씨)도 너무 작지 않게 */
+  .pdfdoc table.pdf-tbl{display:table!important;border-collapse:collapse!important;width:100%!important;margin:0 0 14px!important}.pdfdoc .pdf-tbl tr{display:table-row!important}
+  .pdfdoc .pdf-tbl th,.pdfdoc .pdf-tbl td{display:table-cell!important;border:1px solid #cfc8e6!important;padding:8px 6px!important;text-align:center!important;vertical-align:middle!important}
+  .pdfdoc .pdf-tbl th{background:#f1edfb!important;font-weight:700!important}.pdfdoc .pdf-tbl td b{font-size:24px!important}.pdfdoc .pdf-tbl small{font-size:14px!important;color:#666!important}
+  /* 오행·원소 막대 → 한 줄 숫자 (목 1 · 화 2 …), 궁합 점수 크게 */
+  .pdfdoc .dels{display:block!important;margin:0 0 10px!important}.pdfdoc .dels>div{display:inline!important;margin-right:16px!important}.pdfdoc .dels>div>i{display:none!important}.pdfdoc .dels>div>b{margin-left:4px!important}.pdfdoc .dels>div.on>span{font-weight:700!important}
+  .pdfdoc .dscore{margin:0 0 10px!important}.pdfdoc .dscore b{font-size:28px!important;font-weight:700!important;margin-right:10px!important;color:#3d2f86!important}.pdfdoc .dscore span{font-size:18px!important;font-weight:700!important}
+  .pdfdoc .sjnote,.pdfdoc .hsub,.pdfdoc .pdf-note{display:block!important;font-size:14px!important;color:#666!important;margin:4px 0 10px!important}
+  .pdfdoc .sjnote *{font-size:14px!important;color:#666!important}
+  /* 점수 막대는 남김 */
+  .pdfdoc [class*="bar"]{display:block!important;height:10px!important;background:#eeeaf6!important;margin:4px 0 8px!important}
+  .pdfdoc [class*="bar"]>i,.pdfdoc [class*="bar"]>b,.pdfdoc [class*="bar"]>span{display:block!important;height:10px!important;background:#7a68d6!important}
+  /* 장 제목 */
+  .pdfdoc .pdf-h{display:block!important;margin:0 0 18px!important;padding:0 0 10px!important;border-bottom:3px solid #3d2f86!important}
+  .pdfdoc .pdf-h b{display:block!important;font-size:26px!important;color:#3d2f86!important;line-height:1.4!important}
+  .pdfdoc .pdf-h small{display:block!important;font-size:15px!important;color:#666!important;margin-top:4px!important}
+  /* 표지 */
+  .pdfdoc .pdf-cover{display:flex!important;flex-direction:column;justify-content:center;height:${Math.round(PDF_W * 297 / 210)}px!important;padding:0 40px!important;background:#f7f4ff!important}
+  .pdfdoc .pdf-cover *{text-align:center!important}
+  .pdfdoc .pdf-cover .pdf-logo{font-size:20px!important;color:#6a5acd!important;font-weight:700!important;margin-bottom:24px!important}
+  .pdfdoc .pdf-cover h1{display:block!important;font-size:38px!important;line-height:1.35!important;font-weight:700!important;margin:0 0 20px!important;color:#2a2060!important}
+  .pdfdoc .pdf-cover .pdf-gz{font-size:22px!important;letter-spacing:2px!important;color:#5a4a1d!important}
+  .pdfdoc .pdf-cover .pdf-toc{margin:30px auto!important;padding:18px 28px!important;background:#fff!important;border:1px solid #ddd6f3!important}
+  .pdfdoc .pdf-cover .pdf-toc *{text-align:left!important;font-size:17px!important}.pdfdoc .pdf-cover .pdf-toc b{display:block!important;font-size:18px!important;margin-bottom:6px!important}
+  .pdfdoc .pdf-cover .pdf-date{font-size:14px!important;color:#888!important}`;
   async function make(p, done) {
     const s = sections(p); if (!s) return;
     const msg = t => { const m = $('#pdfMsg'); if (m) m.textContent = t; }, bar = v => { const b = $('#pdfBar'); if (b) { b.parentNode.hidden = false; b.style.width = Math.round(v * 100) + '%'; } };
@@ -67,28 +122,40 @@ const PdfReport = (() => {
       let st = document.getElementById('pdfCss'); if (!st) { st = document.createElement('style'); st.id = 'pdfCss'; st.textContent = PDF_CSS; document.head.appendChild(st); }
       const box = document.createElement('div'); box.className = 'pdfdoc'; document.body.appendChild(box);
       const { jsPDF } = window.jspdf, doc = new jsPDF({ unit: 'mm', format: 'a4', compress: true });
-      const PW = 210, PH = 297, M = 10, W = PW - M * 2, HMAX = PH - M * 2 - 6;
+      const PW = 210, PH = 297, M = 12, W = PW - M * 2, HMAX = PH - M * 2 - 6;
       let y = M, page = 1, first = true;
-      const foot = () => { doc.setFontSize(8); doc.setTextColor(150); doc.text(`- ${page} -`, PW / 2, PH - 5, { align: 'center' }); };
+      const foot = () => { doc.setFontSize(9); doc.setTextColor(140); doc.text(`- ${page} -`, PW / 2, PH - 5, { align: 'center' }); };
       // 섹션마다 블록(제목·카드) 단위로 캡처해서 페이지에 쌓는다 (카드가 페이지보다 길면 잘라서 이어 붙임)
-      const blocks = []; s.forEach((x, i) => { const d = document.createElement('div'); d.innerHTML = x.html; [...d.children].forEach((c, k) => blocks.push({ el: c, sec: i, newPage: k === 0 && i > 0, cover: i === 0 })); });
+      const blocks = []; s.forEach((x, i) => { const d = document.createElement('div'); d.innerHTML = x.html; d.querySelectorAll('.pdf-skip').forEach(e => e.remove()); [...d.children].forEach((c, k) => blocks.push({ el: c, sec: i, newPage: k === 0 && i > 0, cover: i === 0 })); });
       for (let i = 0; i < blocks.length; i++) {
-        const B = blocks[i]; box.innerHTML = ''; box.appendChild(B.el);
+        const B = blocks[i]; box.innerHTML = ''; B.el.classList.add('pdf-blk'); box.appendChild(B.el);
         box.querySelectorAll('img').forEach(im => im.remove());
-        const cv = await html2canvas(box, { scale: 1.6, backgroundColor: '#ffffff', logging: false, useCORS: true });
-        const jpg = c => c.toDataURL('image/jpeg', 0.78);
-        const hmm = cv.height * W / cv.width;
+        // 줄 중간에서 자르지 않도록: 문단·행·제목의 아래 끝 위치를 미리 모아 둠 (CSS px)
+        const top0 = box.getBoundingClientRect().top;
+        const cuts = [...new Set([...box.querySelectorAll('p,li,h2,h3,h4,h5,.cm-row,.tjm,.tjm-g>div,.tjm-l,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec,.pdf-h,div')].filter(e => e.children.length === 0 || /^(P|LI|H\d)$/.test(e.tagName) || e.matches('.cm-row,.tjm,.tjm-g>div,.tjm-c,.cs-deep,.yf-m,.yf-q,.dsec,.pdf-h'))
+          .map(e => Math.round(e.getBoundingClientRect().bottom - top0 + 4)))].sort((x, y) => x - y);
+        const cv = await html2canvas(box, { scale: 2, backgroundColor: '#ffffff', logging: false, useCORS: true });
+        const jpg = c => c.toDataURL('image/jpeg', 0.75), k = cv.width / box.getBoundingClientRect().width;   // canvas px / CSS px
+        const hmm = cv.height * W / cv.width, pxPerMm = cv.width / W;
         if (B.cover) { doc.addImage(jpg(cv), 'JPEG', 0, 0, PW, Math.min(PH, cv.height * PW / cv.width)); first = false; bar((i + 1) / blocks.length); continue; }
-        if (B.newPage || y + Math.min(hmm, 60) > M + HMAX) { if (!first) { foot(); doc.addPage(); page++; } y = M; }
+        if (B.newPage) { if (!first) { foot(); doc.addPage(); page++; } y = M; }
+        else if (!first && y + Math.min(hmm, 25) > M + HMAX) { foot(); doc.addPage(); page++; y = M; }
         first = false;
-        if (hmm <= M + HMAX - y + 4) { doc.addImage(jpg(cv), 'JPEG', M, y, W, hmm); y += hmm + 2; }
-        else {   // 긴 카드: 페이지 높이만큼 잘라서
-          const pxPerMm = cv.width / W; let sy = 0;
-          while (sy < cv.height) {
-            const room = (M + HMAX - y) * pxPerMm, rest = cv.height - sy, hpx = rest - room < 14 * pxPerMm ? rest : Math.min(room, rest);   // 남는 조각이 아주 작으면 여백에 함께 넣음
-            const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = Math.ceil(hpx); c2.getContext('2d').drawImage(cv, 0, sy, cv.width, hpx, 0, 0, cv.width, hpx);
-            doc.addImage(jpg(c2), 'JPEG', M, y, W, hpx / pxPerMm); sy += hpx; y += hpx / pxPerMm + 2;
-            if (sy < cv.height) { foot(); doc.addPage(); page++; y = M; }
+        if (hmm <= M + HMAX - y + 2) { doc.addImage(jpg(cv), 'JPEG', M, y, W, hmm); y += hmm + 3; }
+        else {   // 페이지를 넘는 꼭지: 문단 경계에서 나눔
+          let sy = 0;
+          while (sy < cv.height - 2) {
+            const room = (M + HMAX - y) * pxPerMm;
+            let cut = cv.height;
+            if (cv.height - sy > room) {
+              const lim = sy + room, ok = cuts.map(c => c * k).filter(c => c > sy + 40 && c <= lim);
+              cut = ok.length ? ok[ok.length - 1] : lim;
+              if (!ok.length && y > M + 5) { foot(); doc.addPage(); page++; y = M; continue; }   // 남은 칸에 문단 하나도 안 들어가면 다음 쪽부터
+            }
+            const hpx = Math.max(1, Math.round(cut - sy));
+            const c2 = document.createElement('canvas'); c2.width = cv.width; c2.height = hpx; const g = c2.getContext('2d'); g.fillStyle = '#fff'; g.fillRect(0, 0, c2.width, hpx); g.drawImage(cv, 0, sy, cv.width, hpx, 0, 0, cv.width, hpx);
+            doc.addImage(jpg(c2), 'JPEG', M, y, W, hpx / pxPerMm); sy += hpx; y += hpx / pxPerMm + 3;
+            if (sy < cv.height - 2) { foot(); doc.addPage(); page++; y = M; }
           }
         }
         bar((i + 1) / blocks.length); msg(`페이지를 만드는 중… ${Math.round((i + 1) / blocks.length * 100)}%`);
