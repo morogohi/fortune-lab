@@ -211,7 +211,7 @@ const Karma = (() => {
   function toolsHTML() {
     if (!testMode()) return '';
     return `<div class="hcard ktools"><b>🧪 테스트 도구</b><small>테스트 모드에서만 보여요 · 실제 서비스에는 없어요</small>
-      <div class="ktbtn"><button data-kt="reset">🔄 카르마 초기화</button><button data-kt="give">✨ +1000 무료 지급</button><button data-kt="day">📅 다음 날로 넘기기</button><button data-kt="views">🧾 열람 기록 지우기</button></div></div>`;
+      <div class="ktbtn"><button data-kt="reset">🔄 카르마 초기화</button><button data-kt="give">✨ +1000 무료 지급</button><button data-kt="day">📅 다음 날로 넘기기</button><button data-kt="views">🧾 열람 기록 지우기</button><button data-kt="daily" class="${dailyOn() ? 'on' : ''}">🗓️ 매일 초기화 · ${dailyOn() ? '켜짐' : '꺼짐'}</button></div></div>`;
   }
   function bindTools(root, re) {
     (root || document).querySelectorAll('[data-kt]').forEach(b => b.onclick = () => {
@@ -220,8 +220,24 @@ const Karma = (() => {
       if (k === 'give') { if (denyLive()) return; add(1000, '🧪 테스트 무료 지급', 'bonus'); re && re(); return; }
       if (k === 'day') { if (denyLive()) return; nextDay(); Hub.toast('📅 다음 날이 된 것으로 바꿨어요 · 오늘 열람·광고 횟수가 새로 시작돼요'); re && re(); return; }
       if (k === 'views') { if (denyLive()) return; Views.reset(); Hub.toast('🧾 열람·다시보기 기록을 지웠어요'); re && re(); }
+      if (k === 'daily') { if (denyLive()) return; const on = !dailyOn(); store.set(DKEY, { on, last: KST.ymd() }); Hub.toast(on ? '🗓️ 매일 초기화를 켰어요 · 내일부터 하루에 한 번 처음 상태로 돌아가요' : '🗓️ 매일 초기화를 껐어요'); re && re(); }
     });
   }
+  /* 🗓️ 매일 초기화 (테스트 모드 전용 · 켜고 끄는 옵션)
+   * 켜 두면 한국 날짜가 바뀐 뒤 앱을 처음 열 때(또는 다시 볼 때) 한 번: 카르마·내역·열람/보관 기록·광고 횟수·이벤트 지급·복주머니·
+   * 오늘의 출석/미션·매일 타로·상담 첫 무료 질문을 처음 상태로. 내 정보·궁합 상대·게임 저장·테마는 그대로 */
+  const DKEY = 'p8b_test_daily';
+  const dailyOn = () => !!(store.get(DKEY, null) || {}).on;
+  function dailyCheck() {
+    try {
+      const o = store.get(DKEY, null); if (!o || !o.on || !testMode() || o.last === KST.ymd()) return false;
+      store.set(DKEY, { on: true, last: KST.ymd() });
+      ['p8b_pouch', 'p8b_daily', 'p8b_dtarot', 'p8b_counsel_free', 'p8b_owned'].forEach(k => { try { localStorage.removeItem(k); } catch (e) { } });
+      resetAll(() => { try { Hub.toast('🗓️ 매일 초기화 (테스트) · 카르마와 오늘 기록을 처음 상태로 돌렸어요'); if (Hub.cur && Hub.cur() === 'home') Hub.render(); } catch (e) { } }, true);
+      return true;
+    } catch (e) { console.warn('dailyCheck', e); return false; }
+  }
+  document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyCheck(); });
   // 하루가 지난 것처럼: 상세 열람권(그날 다시보기)과 광고 횟수를 어제 것으로
   function nextDay() { if (denyLive()) return; try { Views.shiftDay(); } catch (e) { } const o = store.get(AKEY, null); if (o) { o.d = '2000-01-01'; o.last = 0; store.set(AKEY, o); } }
   // 카르마·내역·열람 기록·이벤트·광고 횟수·카르마로 연 콘텐츠를 지우고 처음 시작 상태로 (기본 100 + 진행 중 이벤트)
@@ -276,7 +292,7 @@ const Karma = (() => {
     };
   }
   init();
-  setTimeout(grants, 600);   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
+  setTimeout(() => { if (!dailyCheck()) grants(); }, 600);   // 매일 초기화가 돌면 그 안에서 기본 지급까지 함   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
   return { metric, openMetrics, spend, unlock, openCharge, chargeHTML, bindCharge, adReward, showAd, testMode, add, bal, buyPack, AD_K, BREAK_K, AD_DAY,
-    openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, grants, events, note, recentHTML, mode, modeBadge, modeLine, toolsHTML, bindTools, resetAll, nextDay };
+    openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, grants, events, note, recentHTML, mode, modeBadge, modeLine, toolsHTML, bindTools, resetAll, nextDay, dailyCheck, dailyOn };
 })();
