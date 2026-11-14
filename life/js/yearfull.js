@@ -103,7 +103,7 @@ const YearFull = (() => {
   const WITH = ['함께 새 일을 벌이기', '함께 배우고 만들기', '돈 계획·살림 함께 세우기', '역할을 나눠 목표 이루기', '함께 공부하고 조언 주고받기'];
   function relHTML(p, a, B) {
     const ppl = store.get('p8b_people', []).map(q => ({ q, b: Hub.analyze(q) })).filter(x => x.b).slice(0, 4);
-    if (!ppl.length) return `<div class="hcard"><h3 class="ht">💞 2027 관계 · 궁합</h3><p class="sjtxt" style="margin:0">궁합 메뉴에 가족·연인·친구·동료를 등록하면, 여기에서 그 사람과의 2027년 흐름을 함께 풀어 드려요.</p></div>`;
+    if (!ppl.length) return `<div class="hcard pdf-skip"><h3 class="ht">💞 2027 관계 · 궁합</h3><p class="sjtxt" style="margin:0">궁합 메뉴에 가족·연인·친구·동료를 등록하면, 여기에서 그 사람과의 2027년 흐름을 함께 풀어 드려요.</p></div>`;
     const myBest = B.n.best.map(m => m.solarM);
     return `<div class="hcard"><h3 class="ht">💞 2027 관계 · 궁합</h3><p class="sjnote">궁합 관계도에 등록한 사람과 올해를 함께 보낼 때의 흐름이에요.</p>
       ${ppl.map(({ q, b }) => {
