@@ -60,6 +60,7 @@ function shopListHTML(page) {
   const vrow = (k, go) => { const it = Views.item(k); return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small></div><button data-go="${go}">✨ ${it.k}/회</button></div>`; };
   const cont = `<p class="sjnote" style="margin:4px 0 8px">📜 사주풀이는 무료 · 각 서비스의 개요는 무료로 보고, 더 자세한 풀이만 볼 때 카르마를 써요 (결제한 날 자정까지 다시보기 ${Views.FREE()}회 무료).</p>`
     + SV.map(([k, g]) => vrow(k, g)).join('')
+    + `<div class="shopitem pdfrow"><span class="se">📑</span><div><b>${Views.item('pdf').n}</b><small>${Views.item('pdf').d}</small></div><button data-pdf="1">✨ ${Views.item('pdf').k}</button></div>`
     + `<div class="shopitem"><span class="se">🃏</span><div><b>타로 상세 리딩</b><small>${Views.item('tarot5').d}</small></div><button data-go="tarot">1장 ✨${Views.item('tarot1').k} · 3장 ✨${Views.item('tarot3').k} · 5장 ✨${Views.item('tarot5').k}</button></div>`
     + main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>💬 대화 상담 · 🧭 선택 상담(선택지별 상세 비교) · 처음 질문 1개 무료</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 3}/질문</button></div>`
     + ''
@@ -73,6 +74,7 @@ function shopListHTML(page) {
 function bindShopList(root, re) {
   Karma.bindCharge(re, root);
   root.querySelectorAll('[data-c]').forEach(b => b.onclick = () => openProduct(b.dataset.c, re));
+  root.querySelectorAll('[data-pdf]').forEach(b => b.onclick = () => { if (document.getElementById('overlay').classList.contains('on')) closeOverlay(true); PdfReport.open(Hub.me()); });
   root.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { if (document.getElementById('overlay').classList.contains('on')) closeOverlay(); Hub.go(b.dataset.go); });
   root.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => doBuy(b.dataset.buy, re));
 }

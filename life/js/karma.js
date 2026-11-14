@@ -2,7 +2,7 @@
  *  karma.js — 카르마 하나로 단순화한 유료 모델
  *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · AI 사주상담(1회 20, 첫 회 무료)
  *   · 상세 풀이: 서비스별 5~15 · 타로 1/3/5장 5/10/15 · AI 상담 질문당 3 (views.js·detail.js·counsel.js) / 게임 아이템은 별도
- *   · 카르마 모으기: 📺 광고 1번 +5 (3분 간격 · 하루 10번) · 🎲 인생 게임 엔딩 5~15 · 게임 중간 광고 휴식 +3
+ *   · 카르마 모으기: 📺 광고 1번 +5 (3분 간격 · 하루 6번) · 🎲 인생 게임 엔딩 5~15 · 게임 중간 광고 휴식 +3
  *   · 💳 카르마는 돈으로도 살 수 있다 (100 · 330 · 1,200)
  *   · 🧪 테스트 모드(테스트 페이지·테스트 계정): 광고·결제를 실제 없이 가상으로 처리
  *   · 📒 사용 내역: 모으기(광고·게임·보너스) · 구매 · 사용을 나눠 기록하고 필터·요약으로 보여 줌
@@ -10,7 +10,7 @@
  *   · ❓ 카르마 안내: 무엇인지 · 어떻게 모으는지 · 어디에 쓰는지 (홈·상점의 ? 버튼)
  * ===================================================================== */
 const Karma = (() => {
-  const AD_K = 5, AD_GAP = 3 * 60e3, AD_DAY = 10, BREAK_K = 3, BREAK_EVERY = 10, AKEY = 'p8b_adk';
+  const AD_K = 5, AD_GAP = 3 * 60e3, AD_DAY = 6, BREAK_K = 3, BREAK_EVERY = 10, AKEY = 'p8b_adk';
   const day = () => new Date().toISOString().slice(0, 10);
   const testMode = () => !Store.native && (!!window.P8B_COMMERCIAL || !!(window.Auth && Auth.isTest && Auth.isTest()));
   const bal = () => (typeof karma !== 'undefined' ? karma : 0);
@@ -128,11 +128,13 @@ const Karma = (() => {
       <div class="kway"><i>✨</i><span><b>처음 시작 +${START()}</b><small>처음 앱을 열면 기본으로 드려요</small></span></div>
       ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 생년월일 등 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
       ${events().map(g => `<div class="kway"><i>${g.e}</i><span><b>${esc(g.n)} +${g.karma}</b><small>${fmtD(g.until)}까지 앱을 열면 1회 · ${gotEvent(g.id) ? '받았어요 ✅' : '곧 지급돼요'}</small></span></div>`).join('')}
-      <div class="kway"><i>🎁</i><span><b>복주머니 교환 +20</b><small>출석·미션으로 모은 복주머니 2개</small></span></div>
+      <div class="kway"><i>🎁</i><span><b>복주머니 교환 +10</b><small>출석·미션으로 모은 복주머니 3개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>
       <h4 class="kh">어디에 쓰나요?</h4>
       <div class="kway"><i>🔓</i><span><b>서비스별 상세 풀이 5~15</b><small>신년운세 15 · 토정비결 10 · 궁합 10 · 바람기 5 · 사주 MBTI 5 · 개요는 무료 · 결제한 날 자정까지 다시보기 ${(STORE_CONFIG.views || {}).free || 3}회 무료</small></span></div>
       <div class="kway"><i>🃏</i><span><b>타로 상세 리딩</b><small>1장 5 · 3장 10 · 5장 15 · 카드 뒤집기와 요약은 무료</small></span></div>
+      <div class="kway"><i>📑</i><span><b>종합 사주 리포트 PDF ${Views.item('pdf').k}</b><small>모든 상세 풀이를 한 권으로 · PDF 저장 · 결제한 날 다시 만들기 무료</small></span></div>
+      <div class="kway"><i>🃏</i><span><b>매일 타로 1장은 무료</b><small>오늘의 운세에서 하루 한 장</small></span></div>
       <div class="kway"><i>📜</i><span><b>사주풀이는 무료</b><small>타고난 성격·강점·약점·연애·재물·건강 성향·개운법</small></span></div>
       <div class="kway"><i>🤖</i><span><b>AI 사주상담 질문 1개 ${(STORE_CONFIG.counsel || {}).perQ || 3}</b><small>대화 상담 · 선택 상담 · 처음 질문 1개 무료</small></span></div>
       <div class="kway"><i>🎮</i><span><b>인생 게임 아이템</b><small>다시 태어나기 15 · 기적 40 · 운명 조작 팩 30 · 갈림길 미리 보기 3</small></span></div>
@@ -151,7 +153,7 @@ const Karma = (() => {
 
   // 테스트 모드: 전환 기록 보기
   function openMetrics() {
-    const m = store.get(MKEY, {}), N = { ad_start: '광고 시작', ad_done: '광고 완료', ad_fail: '광고 중단·실패', lack_shown: '카르마 부족 안내', pay_start: '결제 시작', pay_cancel: '결제 취소', pay_done: '결제 완료', pay_fail: '결제 실패', spend: '카르마 사용', unlock_report: '상세 리포트 해제', unlock_fate: '운명 조작 해제', unlock_tarot: '타로 심층 (카르마)', tarot_free: '타로 심층 (무료)', report_view: '상세 리포트 열람', counsel_run: '상담 실행', event_newyear2027: '신년 이벤트 지급' };
+    const m = store.get(MKEY, {}), N = { ad_start: '광고 시작', ad_done: '광고 완료', ad_fail: '광고 중단·실패', lack_shown: '카르마 부족 안내', pay_start: '결제 시작', pay_cancel: '결제 취소', pay_done: '결제 완료', pay_fail: '결제 실패', spend: '카르마 사용', unlock_report: '상세 리포트 해제', unlock_fate: '운명 조작 해제', unlock_tarot: '타로 심층 (카르마)', tarot_free: '타로 심층 (무료)', report_view: '상세 리포트 열람', counsel_run: '상담 실행', counsel_q: 'AI 상담 질문', daily_tarot: '매일 타로 뒤집기', pdf_made: '종합 리포트 PDF 생성', event_newyear2027: '신년 이벤트 지급' };
     const rate = (a, b) => m[b] ? Math.round((m[a] || 0) / m[b] * 100) + '%' : '—';
     openOverlay('📈 전환 기록 (이 기기)', `<p class="sjnote">${m._since ? new Date(m._since).toLocaleDateString('ko-KR') + '부터' : '아직 기록 없음'} · 서버로 보내지 않아요</p>
       ${Object.keys(N).map(k => `<div class="kledr"><b>${N[k]}</b><em>${m[k] || 0}</em></div>`).join('')}

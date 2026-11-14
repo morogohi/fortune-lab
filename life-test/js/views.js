@@ -102,7 +102,7 @@ const Views = (() => {
   let page = null;   // { k, s, label, html }
   function openDetail(k, s, label, html, opt = {}) {
     const from = Hub.cur ? Hub.cur() : 'home';
-    open(k, s, label, () => { page = { k, s, label, html, from: from === 'detail' ? 'home' : from }; if (document.getElementById('overlay').classList.contains('on')) closeOverlay(true); Hub.register({ page: 'detail', title: opt.title || item(k).n, html: detailHTML, bind: bindDetail }); Hub.go('detail'); }, opt.back, opt.legacy);
+    open(k, s, label, () => { page = { k, s, label, html, bind: opt.bind, from: from === 'detail' ? 'home' : from }; if (document.getElementById('overlay').classList.contains('on')) closeOverlay(true); Hub.register({ page: 'detail', title: opt.title || item(k).n, html: detailHTML, bind: bindDetail }); Hub.go('detail'); }, opt.back, opt.legacy);
   }
   // 상세 버튼: 가격 또는 오늘 다시보기 상태를 함께 표시
   function button(k, s, id, extraLegacy, label) {

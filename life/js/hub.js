@@ -311,6 +311,9 @@ const Hub = (() => {
   function karmaCardHTML(inShop) {
     if (typeof Karma === 'undefined') return '';
     const b = Karma.bal(), t = Karma.today(), g = Karma.nextGoal(), pct = Math.min(100, Math.round(b / g.k * 100));
+    // 홈: 프로필 카드 높이의 한 줄 카드 (잔액 · ? · 오늘 증감 · 광고 · 상점). 자세한 카드는 상점 탭에서
+    if (!inShop) return `<div class="hkarma mini"><button class="hkmb" id="hkHist" aria-label="카르마 사용 내역"><b class="hkbal">${b.toLocaleString()}</b><small>카르마<br><em class="p">+${t.earn + t.buy}</em> <em class="m">−${t.spend}</em></small></button>
+      <button class="hkq" id="hkHelp" aria-label="카르마가 뭔가요?">?</button><span class="hksp"></span><button class="hkm" id="hkAd">📺 +${Karma.AD_K}</button><button class="hkm pri" id="hkShop">🛍️ 상점</button></div>`;
     return `<div class="hkarma">
       <div class="hkt"><span>✨ 내 카르마</span><button class="hkq" id="hkHelp" aria-label="카르마가 뭔가요?">?</button><button class="hklog" id="hkHist">사용 내역 ›</button></div>
       <div class="hkrow"><b class="hkbal">${b.toLocaleString()}</b><small>오늘 모음 <em class="p">+${t.earn + t.buy}</em> · 사용 <em class="m">−${t.spend}</em><br>광고 보상 ${Karma.AD_DAY - t.adLeft}/${Karma.AD_DAY}회</small></div>
@@ -336,7 +339,7 @@ const Hub = (() => {
       ${shopListHTML(true)}
       ${Store.native ? '<button class="ghost wide" id="shRestore">🔄 구매 복원</button>' : ''}
       <div class="hmenu"><button id="shMore"><span>☰</span><b>더보기</b><small>복주머니 교환 · 기록 보관함 · 알림 · 도움말</small></button>
-        <button id="shExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개 · 2개 = 카르마 20</small></button></div>
+        <button id="shExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개 · 3개 = 카르마 10</small></button></div>
       <p class="sjnote" style="text-align:center">카르마는 소모성 재화예요 · 앱 ${esc(appVer())}</p>`;
   }
   function bindShopPage() {
@@ -415,6 +418,31 @@ const Hub = (() => {
   function editProfile() { if (tab === 'more' || tab === 'game') tab = 'home'; editing = true; show('hub'); render(); }
 
   /* ---------- 오늘 ---------- */
+  /* ---------- 🃏 매일 타로 1장 (무료) : 날짜·사람마다 같은 카드, 하루 한 번 뒤집기 ---------- */
+  const DTK = 'p8b_dtarot';
+  const dtDay = () => { const d = new Date(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  function dailyCard(p) {
+    let h = 2166136261; for (const ch of dtDay() + '|' + p.date + '|' + (p.time || '') + '|' + p.name) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+    const D = Tarot.DECK; return { c: D[h % D.length], rev: (h >>> 8) % 100 < 25 };
+  }
+  const DT_EL = { 불: ['🔥', '열정과 행동', '오늘은 생각보다 몸이 먼저 움직일 때 일이 풀려요. 미뤄 둔 일 하나를 지금 시작해 보세요.'], 물: ['💧', '감정과 관계', '오늘은 마음을 나누는 데서 운이 열려요. 고마운 사람에게 짧은 안부를 전해 보세요.'],
+    바람: ['🌬️', '생각과 말', '오늘은 말과 글이 운을 좌우해요. 중요한 말은 한 번 정리한 뒤 전하세요.'], 흙: ['🌱', '현실과 재물', '오늘은 손에 잡히는 결과를 챙길 때예요. 지출 하나를 점검하거나 할 일 목록을 끝내 보세요.'] };
+  function dailyTarotHTML(p) {
+    const st = store.get(DTK, {}), open = st.d === dtDay() && st.k === p.date, x = dailyCard(p), C = x.c;
+    if (!open) return `<div class="hcard hdt"><span class="vfreetag">매일 무료</span><h3 class="ht">🃏 오늘의 타로 한 장</h3>
+      <button class="hdt-back" id="hDTflip" aria-label="오늘의 카드 뒤집기"><span class="hdt-card">${Tarot.TBACK}</span><span><b>오늘의 카드를 뒤집어 보세요</b><small>하루 한 장 · 날마다 새 카드 · 무료</small></span></button></div>`;
+    const E = DT_EL[C.el] || DT_EL['바람'], pol = Tarot.pol(x);
+    const msg = (x.rev ? C.rev : C.up);
+    return `<div class="hcard hdt"><span class="vfreetag">매일 무료</span><h3 class="ht">🃏 오늘의 타로 한 장</h3>
+      <div class="hdt-open"><img src="${Tarot.img(C)}" class="${x.rev ? 'rev' : ''}" alt="${C.ko}"><div>
+        <b class="hdt-n">${C.ko} <small>${C.en}</small></b>
+        <div class="tpoptags"><span>${x.rev ? '역방향' : '정방향'}</span><span>${E[0]} ${C.el}</span><span>${pol > 0 ? '😊 밝은 기운' : pol < 0 ? '🧐 점검의 기운' : '⚖️ 균형의 기운'}</span></div>
+        <p class="hdt-k">「${C.kw}」</p></div></div>
+      <p class="sjtxt">${msg}</p>
+      <div class="hdt-g">${[['💞 사랑', C.love], ['💼 일', C.work], ['💰 돈', C.money]].map(([t, v]) => `<div><b>${t}</b><span>${C.major ? v : String(v).split('. ')[0] + '.'}${x.rev ? ' 다만 오늘은 서두르지 말고 한 번 더 확인하세요.' : ''}</span></div>`).join('')}</div>
+      <p class="sjtxt">🧭 <b>오늘의 조언 · ${E[1]}</b> — ${E[2]}${x.rev ? ' 역방향이 나왔으니 서두르지 말고 한 번 더 확인하는 하루로 쓰세요.' : ''}</p>
+      <button class="ghost wide" id="hDTmore">🔮 질문을 정해 타로 더 보기</button></div>`;
+  }
   function todayHTML(p, a) {
     const f = Fortune.today(a, keyOf(p));
     const now = new Date(), wd = '일월화수목금토'[now.getDay()];
@@ -428,6 +456,7 @@ const Hub = (() => {
           ${f.rel ? `<p class="hrel">🔗 내 ${f.rel.who}와 오늘 일진이 <b>${f.rel.n}</b> — ${f.rel.d}</p>` : ''}
           <button class="hwhy" id="hWhy">🤔 왜 이런 운세가 나왔나요?</button></div>
       </div>
+      ${dailyTarotHTML(p)}
       <div class="hcard">${areas}</div>
       <div class="hcard"><h3 class="ht">⏰ 시간대별 흐름</h3><div class="hbands">${bands}</div></div>
       <div class="hcard"><h3 class="ht">🍀 오늘의 행운 아이템</h3><p class="hsub">부족한 ${S.EK[f.lucky.el]} 기운을 채워 주는 것들이에요</p>
@@ -686,6 +715,8 @@ const Hub = (() => {
   }
   function bindToday(p, a) {
     $('#hWhy').onclick = () => whyFortune(p, a);
+    const fl = $('#hDTflip'); if (fl) fl.onclick = () => { store.set(DTK, { d: dtDay(), k: p.date }); Snd.sfx('reveal'); try { Karma.metric('daily_tarot'); } catch (e) { } render(); };
+    const dm = $('#hDTmore'); if (dm) dm.onclick = () => go('tarot');
     const sh = $('#hShare'); if (sh) sh.onclick = async () => {
       const f = Fortune.today(a, keyOf(p));
       try {
@@ -721,10 +752,12 @@ const Hub = (() => {
         <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>
       <div class="hmenu">
         <button id="hRep"><span>🧧</span><b>2027 신년운세</b><small>올해의 흐름 개요는 무료 · 분야별·12개월·대운 상세 풀이</small></button>
+        <button id="hPdf"><span>📑</span><b>종합 사주 리포트 PDF</b><small>모든 풀이를 한 권으로 저장 · ${Views.button ? '✨ ' + Views.item('pdf').k : ''}</small></button>
       </div>`;
   }
   function bindSaju(p, a) {
     $('#hRep').onclick = () => go('newyear');
+    const hp = $('#hPdf'); if (hp) hp.onclick = () => PdfReport.open(p);
   }
   function newYearHTML(p, a) {
     const n = Fortune.newYear(a, 2027);
@@ -808,10 +841,9 @@ const Hub = (() => {
   /* ---------- 더보기 ---------- */
   const EXCH = [
     { k: 'pass2h', e: '🍀', n: '행운패스 2시간', c: 3, can: () => Ads.native && !Store.has('noads'), show: () => Ads.native, f: () => { Store.addPass(2 * 36e5); Ads.banner(false); } },
-    { k: 'karma', e: '✨', n: '카르마 20 (인생 게임)', c: 2, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 20; window.KREASON = '복주머니 교환'; window.KCAT = 'bonus'; saveMeta(); } } },
+    { k: 'karma', e: '✨', n: '카르마 10', c: 3, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 10; window.KREASON = '복주머니 교환'; window.KCAT = 'bonus'; saveMeta(); } } },
     { k: 'theme', e: '🎨', n: '오행 컬러 테마 1개', c: 10, can: () => themesOwned().length < 5, f: () => { const o = themesOwned(), nx = [0, 1, 2, 3, 4].find(i => !o.includes(i)); o.push(nx); store.set('p8b_themes', o); setTheme(nx); } },
     { k: 'fate', e: '🎛️', n: '운명 조작 팩 (인생 게임)', c: 20, can: () => !Store.has('fate'), f: () => Store.grant('fate') },
-    { k: 'report', e: '📜', n: '프리미엄 사주 리포트', c: 60, can: () => !Store.has('report'), f: () => Store.grant('report') },
   ];
   // [이름, 블랙 테마용, 화이트 테마용] — 흰 바탕에서도 글씨 대비 4.5:1 이상 되도록 밝기 분리
   const THEMES = [['목', '#a8dcc0', '#3d7a5c'], ['화', '#f5b3a8', '#a8493f'], ['토', '#ecd49a', '#80621c'], ['금', '#cfd4de', '#5a6170'], ['수', '#aac6f0', '#3a5f96']];
