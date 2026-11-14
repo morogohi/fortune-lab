@@ -77,7 +77,7 @@ const Counsel = (() => {
   function ctxOf(p) {
     const a = Hub.analyze(p); if (!a) return null;
     const Y = baseYear(), age = Y - +p.date.slice(0, 4);
-    const luck = Saju.luckAt(a, age), nextD = a.dy.find(d => d.age > age);
+    const luck = Saju.luckAt(a, age), nextD = a.dy.find(d => d.age > age + 1);
     const ny = Fortune.newYear(a, Y), ny2 = ny;
     const test = store.get('p8b_mbti_test', null), sm = Fun.mbti(a);
     const set = MbtiTest.settled(test);
