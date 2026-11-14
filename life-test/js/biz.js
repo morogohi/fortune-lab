@@ -40,7 +40,7 @@ function doBuy(k, after) {
   Snd.sfx('tap');
   if (!Store.native && Karma.testMode()) {
     openOverlay('🧪 테스트 결제', `<p class="sjtxt" style="text-align:center">${it.e} <b>${it.n}</b> · ${it.price}<br>테스트 모드라 실제 결제 없이 적용돼요.</p>`,
-      [{ t: `🧪 ${it.price} 결제한 것으로 하기`, pri: 1, f: () => { Store.grant(k); if (k === 'noads') Ads.banner(false); Snd.sfx('fanfare'); after ? after() : openShop(null, true); } }, { t: '취소' }]);
+      [{ t: `🧪 무료로 결제한 것으로 하기 (실제 ${it.price})`, pri: 1, f: () => { Store.grant(k); if (k === 'noads') Ads.banner(false); Snd.sfx('fanfare'); after ? after() : openShop(null, true); } }, { t: '취소' }]);
     return;
   }
   Store.buy(k, (ok, err) => {
@@ -55,7 +55,9 @@ function shopListHTML(page) {
     return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${own ? `<small style="color:var(--money)">${Store.why(k)}</small>` : ''}</div>
       <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`; };
   const main = Store.contents().filter(k => !Store.item(k).game), game = Store.contents().filter(k => Store.item(k).game);
-  const cont = main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>인생의 갈림길 고민 — 선택지별 적합도·대운·MBTI·가상 인생 비교 · 첫 회 무료</small></div><button data-go="counsel">✨ 20/회</button></div>`
+  const vw = typeof Views !== 'undefined' ? Views.list().map(Views.item) : [], vk = vw.map(x => x.k);
+  const cont = (vw.length ? `<div class="shopitem"><span class="se">🔎</span><div><b>목적별 상세 운세 ${vw.length}종</b><small>2027 종합·재물·연애·직업·건강·12개월·대운·궁합·토정비결 · 볼 때 차감 · 결제한 날 다시보기 ${Views.FREE()}회 무료 · 사주풀이는 무료</small></div><button data-go="yearfull">✨ ${Math.min(...vk)}~${Math.max(...vk)}/회</button></div>` : '')
+    + main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>인생의 갈림길 고민 — 선택지별 적합도·대운·MBTI·가상 인생 비교 · 첫 회 무료</small></div><button data-go="counsel">✨ 20/회</button></div>`
     + `<h4 class="kh">☕ 가볍게</h4><div class="shopitem"><span class="se">🔮</span><div><b>타로 사주 심층 풀이</b><small>뽑은 카드를 내 사주·대운·올해·이번 달과 엮은 주제별 상담 · 매일 1회 무료 (리포트 보유 시 3회)</small></div><button data-go="tarot">✨ 10/회</button></div>`
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
@@ -82,17 +84,18 @@ function openShop(focus, full) {
 }
 
 /* ---------- 프리미엄 사주 리포트 ---------- */
+// 사주풀이는 무료 (타고난 성향 전체). 2027 운세·대운 등 시기 풀이는 목적별 상세 보기에서
 function reportHTML(name, a, age) {
-  if (Store.has('report')) return Saju.premiumHTML(a, age, new Date().getFullYear());
+  const S = window.SAJU;
   return `${Saju.summaryHTML(a)}
-    ${(() => { try { const S = window.SAJU, y = new Date().getFullYear(), sx = S.SEUN[S.tg10(a.me, S.yearGz(y).s).g]; return `<div class="sjtxt"><h4>👀 미리보기 · ${y}년 총운</h4><p>${sx.총운}</p></div>`; } catch (e) { return ''; } })()}
-    <div class="lock"><b>🔒 프리미엄 사주 리포트</b><small>${new Date().getFullYear()}년 분야별 운세(일·재물·연애·건강, 상·하반기) · 이번 달 한마디 · 10년 대운 8구간 · 성격·강점·약점 · 개운법</small></div>
-    <p class="sjnote" style="text-align:center">※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
+    <div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
+    <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
+    <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div>
+    <p class="sjnote" style="text-align:center">📜 사주풀이는 무료예요 · 2027 운세·12개월·대운은 목적별 상세 보기에서 골라 볼 수 있어요.<br>※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
 }
 function showReport(name, a, age, fromGame) {
-  const locked = !Store.has('report');
-  openOverlay(`📜 ${name}의 사주`, reportHTML(name, a, age), [
-    ...(locked ? [{ t: `🔓 상세 사주 리포트 열기 (${Store.price('report')})`, pri: 1, f: () => openProduct('report', () => showReport(name, a, age, fromGame)) }] : []),
+  openOverlay(`📜 ${name}의 사주풀이`, reportHTML(name, a, age), [
+    ...(fromGame ? [] : [{ t: '🔎 목적별 상세 운세 보기', pri: 1, f: () => Hub.go('yearfull') }]),
     { t: '닫기' }]);
 }
 function myReport() {
