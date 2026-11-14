@@ -1,0 +1,203 @@
+/*
+ * Ads — AdMob 연동 (앱에서만 동작, 웹에서는 아무 일도 하지 않음)
+ *  - 배너: 첫 화면·탄생 뽑기·엔딩에서만 표시. 플레이 중엔 숨김 (실수로 누르는 것 방지)
+ *  - 전면 광고: 엔딩 화면으로 넘어갈 때만, 빈도 제한 적용
+ *  - 보상형 광고: 사용자가 직접 선택해서 시청 → 카르마 보상 / 무료 기적
+ *  - 동의: 구글 UMP(유럽 GDPR 등) → 아이폰은 추적 허용(ATT) 팝업
+ */
+window.Ads = (() => {
+  const C = window.Capacitor;
+  const native = !!(C && C.isNativePlatform && C.isNativePlatform());
+  const plat = native ? C.getPlatform() : 'web';
+  const A = native ? C.Plugins.AdMob : null;
+  const CFG = window.AD_CONFIG || {};
+  const ID = CFG[plat] || {};
+
+  let ready = false, wantBanner = false, bannerShown = false, bannerAlive = false;
+  let interLoaded = false, rewardLoaded = false, lastInter = 0, endings = 0;
+  let privacyRequired = false, rewardCb = null, rewardGot = false;
+  const listeners = new Set();
+  const notify = () => listeners.forEach(f => { try { f() } catch (e) {} });
+
+  const day = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };   // 출석과 같은 기기 현지 날짜
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d } catch (e) { return d } },
+    set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} },
+  };
+  function rewardsLeft() {
+    const r = store.get('ads_reward_day', { d: '', n: 0 });
+    return (r.d === day() ? CFG.rewardDailyLimit - r.n : CFG.rewardDailyLimit);
+  }
+  function countReward() {
+    const r = store.get('ads_reward_day', { d: '', n: 0 });
+    store.set('ads_reward_day', r.d === day() ? { d: r.d, n: r.n + 1 } : { d: day(), n: 1 });
+  }
+
+  function setBannerHeight(h) {
+    document.documentElement.style.setProperty('--ad-h', (h || 0) + 'px');
+    document.documentElement.classList.toggle('adon', (h || 0) > 0);   // 게임 버튼과 배너 사이 여백 (잘못 누름 방지)
+    window.dispatchEvent(new Event('resize'));
+  }
+
+  async function init() {
+    if (!native) { if (window.WebAds && WebAds.on) { WebAds.load(); WebAds.onChange(notify); notify(); if (!noAds()) WebAds.banner('webAdTitle'); } return; }
+    try {
+      // 1) 광고 동의(UMP) — 유럽 등 동의가 필요한 지역에서 동의 창 표시
+      let ci = await A.requestConsentInfo();
+      if (ci.isConsentFormAvailable && ci.status === 'REQUIRED') ci = await A.showConsentForm();
+      privacyRequired = ci.privacyOptionsRequirementStatus === 'REQUIRED';
+      // 2) 아이폰 추적 허용(ATT) 팝업
+      if (plat === 'ios') {
+        try {
+          const st = await A.trackingAuthorizationStatus();
+          if (st.status === 'notDetermined') await A.requestTrackingAuthorization();
+        } catch (e) {}
+      }
+      if (!ci.canRequestAds) { notify(); return; }
+      await A.initialize({ initializeForTesting: !!CFG.testing });
+      ready = true;
+
+      A.addListener('bannerAdSizeChanged', s => setBannerHeight(bannerShown ? s.height : 0));
+      A.addListener('interstitialAdDismissed', () => { interLoaded = false; preloadInter(); });
+      A.addListener('interstitialAdFailedToShow', () => { interLoaded = false; preloadInter(); });
+      A.addListener('onRewardedVideoAdReward', () => { rewardGot = true; });
+      A.addListener('onRewardedVideoAdDismissed', () => finishReward());
+      A.addListener('onRewardedVideoAdFailedToShow', () => finishReward());
+
+      preloadInter(); preloadReward();
+      if (wantBanner) banner(true);
+      notify();
+    } catch (e) { console.warn('[Ads] init', e); }
+  }
+
+  async function preloadInter() {
+    if (!ready || !ID.interstitial) return;
+    try { await A.prepareInterstitial({ adId: ID.interstitial, isTesting: !!CFG.testing }); interLoaded = true; }
+    catch (e) { interLoaded = false; setTimeout(preloadInter, 30000); }
+  }
+  async function preloadReward() {
+    if (!ready || !ID.rewarded) return;
+    try { await A.prepareRewardVideoAd({ adId: ID.rewarded, isTesting: !!CFG.testing }); rewardLoaded = true; notify(); }
+    catch (e) { rewardLoaded = false; notify(); setTimeout(preloadReward, 30000); }
+  }
+
+  const noAds = () => !!(window.Store && Store.has('noads'));
+  async function banner(on) {
+    if (noAds()) on = false;
+    if (!native) { mockBanner(on); return; }
+    wantBanner = on;
+    if (!ready || !ID.banner) return;
+    try {
+      if (on && !bannerShown) {
+        if (bannerAlive) await A.resumeBanner();
+        else {
+          await A.showBanner({ adId: ID.banner, adSize: 'ADAPTIVE_BANNER', position: 'BOTTOM_CENTER', margin: 0, isTesting: !!CFG.testing });
+          bannerAlive = true;
+        }
+        bannerShown = true;
+      } else if (!on && bannerShown) {
+        await A.hideBanner(); bannerShown = false; setBannerHeight(0);
+      }
+    } catch (e) { console.warn('[Ads] banner', e); }
+  }
+
+  /* 웹 테스트 모드: 앱과 같은 자리에 '배너 광고 자리'를 보여 줘 화면 배치를 미리 확인 (실제 광고 아님) */
+  function mockBanner(on) {
+    const el = document.getElementById('adMock'); if (!el) return;
+    on = on && typeof Karma !== 'undefined' && Karma.testMode();
+    if (el.classList.contains('on') === on) return;
+    el.classList.toggle('on', on); setBannerHeight(on ? 50 : 0);
+  }
+
+  /* 엔딩으로 넘어갈 때 호출. 광고가 닫히면 done() 실행 (광고를 안 띄우면 바로 실행) */
+  async function maybeInterstitial(done) {
+    endings++;
+    if (!native) {
+      const gapOk0 = (Date.now() - lastInter) / 1000 >= (CFG.interstitialMinGapSec || 0);
+      if (noAds() || !window.WebAds || !WebAds.on || endings % (CFG.interstitialEveryNEndings || 2) !== 0 || !gapOk0) { done && done(); return; }
+      lastInter = Date.now(); WebAds.interstitial(done); return;
+    }
+    const gapOk = (Date.now() - lastInter) / 1000 >= (CFG.interstitialMinGapSec || 0);
+    if (noAds() || !ready || !interLoaded || endings % (CFG.interstitialEveryNEndings || 2) !== 0 || !gapOk) { done && done(); return; }
+    let fired = false;
+    const fin = () => { if (fired) return; fired = true; done && done(); };
+    const h = await A.addListener('interstitialAdDismissed', () => { h.remove(); fin(); });
+    try { await banner(false); lastInter = Date.now(); await A.showInterstitial(); }
+    catch (e) { h.remove(); fin(); }
+    setTimeout(fin, 60000);
+  }
+
+  function canReward() {
+    if (!native) return !!(window.WebAds && WebAds.on && WebAds.canReward() && rewardsLeft() > 0);
+    return ready && rewardLoaded && rewardsLeft() > 0;
+  }
+  /* cb(보상받음:true/false) — 광고가 닫힐 때 호출 */
+  async function showReward(onGranted) {
+    if (!canReward()) { onGranted && onGranted(false); return false; }
+    if (!native) { WebAds.showReward(got => { if (got) countReward(); onGranted && onGranted(got); notify(); }); return true; }
+    rewardCb = onGranted; rewardGot = false; rewardLoaded = false; notify();
+    try { await A.showRewardVideoAd(); } catch (e) { finishReward(); }
+    return true;
+  }
+  function finishReward() {
+    const cb = rewardCb, got = rewardGot;
+    if (got) countReward();
+    if (cb) { try { cb(got) } catch (e) {} }
+    rewardCb = null; rewardGot = false; preloadReward(); notify();
+  }
+
+  async function privacyOptions() {
+    if (!native) return;
+    try { await A.showPrivacyOptionsForm(); } catch (e) {}
+  }
+
+  return {
+    native, platform: plat, init, banner, maybeInterstitial, showReward, canReward, rewardsLeft,
+    privacyOptions, get privacyRequired() { return privacyRequired },
+    onChange(f) { listeners.add(f) },
+  };
+})();
+
+/* 앱 기능: 진동·공유·시작 화면·상태바 */
+/* 공유 문구에 서비스 주소를 붙여, 받은 사람이 바로 들어올 수 있게 */
+const SHARE_URL = 'https://morogohi.github.io/fortune-lab/life/';
+function withLink(t) { t = String(t || ''); return t.includes('morogohi.github.io') ? t : `${t}\n\n🔮 운명 연구소에서 나도 보기 👉 ${SHARE_URL}`; }
+
+window.Native = (() => {
+  const C = window.Capacitor, native = !!(C && C.isNativePlatform && C.isNativePlatform());
+  return {
+    vibrate(ms) {
+      if (native && C.Plugins.Haptics) {
+        const strong = Array.isArray(ms) || ms >= 60;
+        C.Plugins.Haptics.impact({ style: strong ? 'HEAVY' : ms >= 25 ? 'MEDIUM' : 'LIGHT' }).catch(() => {});
+      } else { try { navigator.vibrate && navigator.vibrate(ms) } catch (e) {} }
+    },
+    async share(text) {
+      text = withLink(text);
+      if (native && C.Plugins.Share) { await C.Plugins.Share.share({ title: '프로젝트 80억', text }); return 'shared'; }
+      if (navigator.share) { await navigator.share({ text }); return 'shared'; }
+      await navigator.clipboard.writeText(text); return 'copied';
+    },
+    /* 인생 카드 이미지 저장·공유: 앱은 공유 시트, 웹은 공유(지원 시) 또는 다운로드 */
+    async shareImage(dataUrl, text, mode) {
+      text = withLink(text);
+      const b64 = dataUrl.split(',')[1];
+      if (native && C.Plugins.Filesystem && C.Plugins.Share) {
+        const w = await C.Plugins.Filesystem.writeFile({ path: 'life-card.png', data: b64, directory: 'CACHE' });
+        await C.Plugins.Share.share({ title: '프로젝트 80억 인생 카드', text, files: [w.uri] });
+        return 'shared';
+      }
+      const blob = await (await fetch(dataUrl)).blob(), file = new File([blob], 'life-card.png', { type: 'image/png' });
+      if (mode === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return 'shared'; }
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'life-card.png'; document.body.appendChild(a); a.click(); a.remove();
+      return 'downloaded';
+    },
+    hideSplash() { if (native && C.Plugins.SplashScreen) C.Plugins.SplashScreen.hide().catch(() => {}); },
+    statusBar() {
+      if (native && C.Plugins.StatusBar) {
+        if (window.Theme) { Theme.apply(); return; }
+        C.Plugins.StatusBar.setStyle({ style: 'DARK' }).catch(() => {});
+      }
+    },
+  };
+})();
