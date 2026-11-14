@@ -226,6 +226,20 @@ const Detail = (() => {
     T: ['논리로 판단하는 일(데이터·법·엔지니어링)', '성과 기준이 분명한 조직'], F: ['사람을 돕는 일(상담·인사·서비스·교육)', '서로 배려하는 분위기의 팀'], J: ['계획과 마감이 있는 일(프로젝트 관리·재무·행정)', '일정이 예측 가능한 환경'], P: ['변화가 많은 일(현장·창작·스타트업·프리랜스)', '유연한 시간과 자율성'] };
   const OPP = { E: 'I', I: 'E', S: 'N', N: 'S', T: 'F', F: 'T', J: 'P', P: 'J' };
   const GROW = { E: '하루 30분 혼자 생각을 정리하는 시간', I: '일주일에 한 번 먼저 말을 거는 연습', S: '“만약에?”라는 질문으로 다른 가능성 떠올리기', N: '아이디어마다 첫 단계 행동 하나 정하기', T: '결론 전에 “상대는 어떻게 느낄까?” 한 번 묻기', F: '감정과 사실을 나눠 적어 보기', J: '계획에 일부러 빈칸을 두고 즉흥을 허락하기', P: '하루 세 가지만 마감 정해 끝내기' };
+  // 궁합을 본 사람들(최대 3명)과의 MBTI 관계 궁합 — 나를 볼 땐 등록한 사람들, 다른 사람을 볼 땐 나와의 궁합
+  function mbtiRelList(q) {
+    const me = Hub.me(); if (!me || !me.date) return [];
+    const L = q.self ? (Hub.people() || []).filter(x => x && x.date) : [me];
+    return L.slice(0, 3).map(x => { const b = Hub.analyze(x); if (!b) return null; const t = Fun.mbti(b).type; return { x, t, rel: q.self ? relOf(x.rel) : relOf(q.rel) }; }).filter(Boolean);
+  }
+  function mbtiRelCard(q, m) {
+    try {
+      const L = mbtiRelList(q); if (!L.length) return '';
+      const who = q.self ? '나' : esc(q.name);
+      return card('💞 MBTI 관계 궁합', L.map(o => `<h4>${RELN[o.rel][0]} ${q.self ? esc(o.x.name) : '나'} · ${o.t} <small>(${RELN[o.rel][1]})</small></h4>` + mbtiPairHTML(who, q.self ? esc(o.x.name) : '나', m.type, o.t, o.rel)).join('')
+        + `<p class="sjnote">궁합 메뉴에 등록한 사람 최대 3명까지 보여 줘요. 오행·띠·연애 성향까지 함께 보려면 궁합 상세를 열어 보세요.</p>`);
+    } catch (e) { return ''; }
+  }
   function mbtiExtra(m, a) {
     const L = [...m.type], weakest = (() => { const ax = m.ax || []; let k = 0, lo = 999; ax.forEach((o, i) => { const v = o.pick === o.x ? o.p : 100 - o.p; if (v < lo) { lo = v; k = i; } }); return L[k]; })();
     return card('🎯 어울리는 일 · 환경', `<div class="sjtxt">${L.map(c => `<p><b>${c}</b> — ${JOBENV[c][0]} · ${JOBENV[c][1]}</p>`).join('')}<p>💡 네 글자를 합치면 <b>${JOBENV[L[1]][0].split('(')[0]}</b>을 <b>${JOBENV[L[3]][1]}</b>에서 할 때 가장 오래, 즐겁게 일할 수 있어요.</p></div>`)
@@ -243,6 +257,76 @@ const Detail = (() => {
     const days = Array.from({ length: 7 }, (_, d) => { const x = cards[d % cards.length], A = ELA[x.c.el]; return `<div class="cm-row"><b>${d + 1}일째</b><span>「${x.c.ko}」 · ${A[d % A.length]}${x.rev && d % 2 === 0 ? ' (서두르지 말고 확인하며)' : ''}</span></div>`; }).join('');
     return card('❓ 스스로에게 물어볼 질문', `<div class="sjtxt">${qs}<p class="sjnote">카드가 답을 주기보다 좋은 질문을 줄 때 리딩이 오래 남아요. 답을 짧게 적어 보세요.</p></div>`)
       + card('🗓️ 7일 실천 캘린더', `<div class="cm one">${days}</div><p class="sjnote">카드의 원소에 맞춘 작은 행동이에요. 하루 하나씩 해 보고 마음의 변화를 돌아보세요.</p>`);
+  }
+
+
+  /* ---------- 관계 유형 · MBTI 관계 궁합 · 관계 유지 가이드 ---------- */
+  const RELN = { love: ['💕', '연인'], family: ['🏠', '가족'], friend: ['🤝', '친구'], work: ['💼', '동료'] };
+  const relOf = r => RELN[r] ? r : 'love';
+  // MBTI 두 유형의 궁합 점수 (재미용 모델: 서로 끌리는 짝 + 같은 인식 축(S/N) + 보완 축)
+  function mbtiPair(t1, t2, rel) {
+    if (!t1 || !t2) return null;
+    let sc = 58; const same = i => t1[i] === t2[i];
+    if ((MATCH[t1] || []).includes(t2)) sc = 92;
+    else if (t1 === t2) sc = 76;
+    else { if (same(1)) sc += 14; if (!same(0)) sc += 5; if (!same(2)) sc += 4; if (same(3)) sc += 5; if (rel === 'work' && same(3)) sc += 4; if (rel === 'family' && same(2)) sc += 3; }
+    sc = Math.max(50, Math.min(95, sc));
+    const word = sc >= 88 ? '서로 끌리는 짝' : sc >= 76 ? '잘 통하는 사이' : sc >= 66 ? '맞춰 가면 좋은 사이' : '다름을 배우는 사이';
+    return { mbtiPair, mbtiRelList, s: sc, word, diff: [0, 1, 2, 3].filter(i => !same(i)) };
+  }
+  // 관계 유형 × 다른 축 → [조심할 점, 이렇게 해 보세요]
+  const MBAX = {
+    love: [['한 사람은 만나서 충전, 한 사람은 쉬면서 충전해요. 주말 약속 횟수로 서운해지기 쉬워요.', '주말 중 하루는 함께, 하루는 각자 쉬는 날로 정해 보세요.'],
+      ['한 사람은 지금의 현실, 한 사람은 앞날의 그림을 봐요. 데이트·미래 계획 이야기가 엇갈리기 쉬워요.', '큰 그림은 직관형이, 구체적인 일정은 감각형이 맡아 보세요.'],
+      ['한 사람은 해결책을, 한 사람은 공감을 원해요. “그래서 어쩌라고”와 “내 마음도 모르고”로 다투기 쉬워요.', '고민을 들을 땐 먼저 “많이 힘들었겠다” 한마디, 해결책은 그다음에.'],
+      ['한 사람은 계획대로, 한 사람은 그때그때가 편해요. 약속 시간·여행 계획에서 부딪혀요.', '중요한 일정만 미리 정하고, 나머지는 즉흥에 맡기는 규칙을 만드세요.']],
+    family: [['조용히 쉬고 싶은 가족과 북적이는 걸 좋아하는 가족이 함께 살아요.', '집 안에 각자 쉬는 공간과 시간을 인정해 주세요.'],
+      ['현실적인 잔소리와 이상적인 꿈이 부딪혀요. 진로·돈 이야기에서 특히 그래요.', '꿈을 먼저 들어 준 뒤 현실적인 첫걸음을 함께 정해 보세요.'],
+      ['옳고 그름을 따지는 말과 서운한 마음이 엇갈려요. 명절·경조사 때 상처가 남기 쉬워요.', '“네 말이 맞아”보다 “그렇게 느꼈구나”를 먼저 말해 보세요.'],
+      ['정리·일정을 챙기는 쪽과 느긋한 쪽이 집안일로 부딪혀요.', '집안일은 “언제까지”만 정하고 방식은 맡겨 주세요.']],
+    friend: [['연락 빈도와 만나는 횟수에 대한 기대가 달라요.', '연락이 뜸해도 서운해하지 않기로 서로 말해 두세요.'],
+      ['대화 주제가 현실 이야기와 상상 이야기로 갈려요.', '서로의 관심사를 한 번씩 번갈아 깊게 들어 주세요.'],
+      ['솔직한 조언이 상처가 되거나, 배려가 답답함이 될 수 있어요.', '조언 전에 “지금 조언이 필요해, 아니면 들어 주기만 할까?” 물어보세요.'],
+      ['약속을 정하는 방식이 달라 계획이 자꾸 엎어져요.', '만날 날짜는 계획형이, 할 일은 인식형이 정해 보세요.']],
+    work: [['회의에서 말하는 쪽과 생각을 정리해 오는 쪽이 갈려요. 조용한 쪽의 의견이 묻히기 쉬워요.', '회의 전에 안건을 공유하고, 글로 의견을 받는 시간을 두세요.'],
+      ['세부 실행을 보는 사람과 큰 방향을 보는 사람이에요. “디테일이 없다” vs “그림이 없다”로 부딪혀요.', '기획은 직관형, 점검표는 감각형으로 역할을 나누세요.'],
+      ['성과·논리로 말하는 피드백이 상대에겐 차갑게 들릴 수 있어요.', '피드백은 사실 → 영향 → 부탁 순서로, 좋은 점 하나를 먼저 말하세요.'],
+      ['마감을 미리 끝내려는 쪽과 막판 집중형이 함께 일해요.', '중간 마감을 하나 더 두면 둘 다 편해져요.']] };
+  const MBSAME = { love: '네 축이 모두 같아 편하지만, 둘 다 못 보는 부분이 같아요. 반대 성향 친구의 의견을 가끔 들어 보세요.', family: '성향이 같아 말하지 않아도 통하지만 고집도 같이 세요. 서로 양보할 차례를 정해 두세요.', friend: '취향이 꼭 닮은 친구예요. 함께 새로운 경험을 일부러 늘려 보세요.', work: '일하는 방식이 같아 빠르지만 같은 실수를 둘 다 놓칠 수 있어요. 다른 성향 동료에게 검토를 부탁하세요.' };
+  function mbtiPairHTML(nA, nB, ta, tb, rel) {
+    const r = relOf(rel), P = mbtiPair(ta, tb, r); if (!P) return '';
+    const AXN = ['에너지(E/I)', '인식(S/N)', '판단(T/F)', '생활(J/P)'];
+    return `<div class="dscore"><b>${P.s}</b><span>${P.word} · ${nA} ${ta} × ${nB} ${tb}</span></div><div class="sjtxt">${P.diff.length ? P.diff.map(i => `<h4>${AXN[i]} · ${ta[i]} vs ${tb[i]}</h4><p>⚠️ ${MBAX[r][i][0]}</p><p>💡 ${MBAX[r][i][1]}</p>`).join('') : `<p>${MBSAME[r]}</p>`}
+      ${(MATCH[ta] || []).includes(tb) ? `<p>💫 ${ta}와 ${tb}는 서로 부족한 면을 채워 주며 끌리는 대표적인 짝이에요.</p>` : ''}</div>`;
+  }
+  // 연인: 두 사람의 연애 성향(바람기) 비교
+  function flirtPairHTML(p, a, q, b, nA, nB) {
+    try {
+      const f1 = Fun.flirt(a, p.sex !== 'f'), f2 = Fun.flirt(b, q.sex !== 'f'), hi = x => x.idx >= 60, lo = x => x.idx < 40;
+      const t = hi(f1) && hi(f2) ? '두 사람 모두 매력이 넘치고 새로운 설렘에 마음이 잘 움직여요. 서로의 이성 친구·모임에 대한 기준을 처음부터 분명히 정해 두는 게 가장 중요해요.'
+        : hi(f1) || hi(f2) ? `${hi(f1) ? nA : nB}님 쪽이 인기가 많고 표현이 자유로워 ${hi(f1) ? nB : nA}님이 불안해지기 쉬워요. 연락·귀가 시간처럼 작은 약속으로 안심을 주는 게 관계를 지키는 열쇠예요.`
+        : lo(f1) && lo(f2) ? '두 사람 모두 한 사람을 오래 지키는 타입이라 믿음이 단단해요. 대신 표현이 줄어 무뎌지기 쉬우니 기념일·작은 이벤트로 설렘을 챙기세요.'
+        : '두 사람 모두 적당한 균형을 가진 타입이에요. 서운함이 생길 때 바로 말하는 습관만 있으면 큰 흔들림 없이 이어져요.';
+      return card('💘 두 사람의 연애 성향 (바람기)', `<div class="sjtxt"><p><b>${nA}</b> ${f1.t.e} ${f1.t.n} · 바람기 지수 ${f1.idx}</p><p><b>${nB}</b> ${f2.t.e} ${f2.t.n} · 바람기 지수 ${f2.idx}</p><p>${t}</p>
+        <p>💡 ${nA}님께: ${f1.t.tip}</p><p>💡 ${nB}님께: ${f2.t.tip}</p></div>`);
+    } catch (e) { return ''; }
+  }
+  // 관계 유지 가이드: 오행 관계·띠/일지 충·MBTI 차이·연애 성향을 모아 관계 유형별로 정리
+  const KEEP = {
+    love: { base: ['한 달에 한 번은 휴대폰 없이 둘만의 대화 시간을 가지세요.', '고마움과 사과는 미루지 말고 그날 말로 하세요.', '돈·가족·미래 계획 세 가지는 미리 이야기해 기준을 맞춰 두세요.'], care: '서운함을 쌓아 두면 한 번에 터져요. 작은 서운함을 그날 짧게 말하는 것이 큰 다툼을 막아요.' },
+    family: { base: ['명절·경조사처럼 큰일의 역할을 미리 나눠 두세요.', '잔소리 대신 “~해 주면 고맙겠어” 하는 부탁의 말로 바꿔 보세요.', '한 달에 한 번 함께 식사하며 서로의 근황을 들어 주세요.'], care: '가족이라 말하지 않아도 알 거라 생각하기 쉬워요. 고마움과 서운함 모두 말로 표현해야 전해져요.' },
+    friend: { base: ['좋은 일에는 먼저 축하하고, 힘든 일에는 해결보다 곁에 있어 주세요.', '돈거래는 못 받아도 괜찮은 만큼만 하세요.', '1년에 한 번은 함께 새로운 경험(여행·전시·운동)을 해 보세요.'], care: '오래된 친구일수록 당연하게 여기기 쉬워요. 연락이 뜸해져도 서운함을 쌓지 말고 먼저 안부를 건네세요.' },
+    work: { base: ['역할·마감·결정권을 글로 정리해 두세요.', '피드백은 사람이 아니라 결과물에 대해, 사실 중심으로 하세요.', '성과를 냈을 때 서로의 기여를 사람들 앞에서 인정해 주세요.'], care: '일의 갈등이 감정으로 번지기 쉬워요. 의견이 갈리면 기준(목표·기한·비용)으로 돌아가 이야기하세요.' } };
+  function keepHTML(nA, nB, rel, r5, chung, mp) {
+    const r = relOf(rel), K = KEEP[r], care = [K.care, REL5[r5][2]];
+    if (chung) care.push('띠나 일지에 충이 있어 생활 속도·습관 차이로 부딪히기 쉬워요. 다툰 날은 결론을 내리지 말고 하루 뒤 다시 이야기하세요.');
+    if (mp && mp.diff.length >= 3) care.push(`성향이 네 축 중 ${mp.diff.length}개가 달라요. “틀린 것”이 아니라 “다른 것”이라는 말을 자주 떠올려 주세요.`);
+    const better = [...K.base];
+    if (mp && mp.diff.length) better.push(MBAX[r][mp.diff[0]][1]);
+    better.push(TALK[r5][0][2]);
+    return card(`🛠️ 관계를 오래 지키려면 · ${RELN[r][0]} ${RELN[r][1]}`, `<div class="sjtxt"><h4>⚠️ 앞으로 조심할 점</h4><ul>${care.map(x => `<li>${x}</li>`).join('')}</ul>
+      <h4>🌱 함께 개선해 볼 점</h4><ul>${better.map(x => `<li>${x}</li>`).join('')}</ul>
+      <h4>📌 이번 달 둘이 정할 약속 한 가지</h4><p>${{ love: '“서운한 일은 그날 안에 한 문장으로 말하기”', family: '“한 달에 한 번 함께 식사하기”', friend: '“한 달에 한 번 먼저 안부 묻기”', work: '“주 1회 10분 진행 상황 공유하기”' }[r]} — 작은 약속 하나를 꾸준히 지키는 것이 큰 다짐보다 관계를 오래 지켜요.</p></div>`);
   }
 
   /* ================= 3) 궁합 상세 ================= */
@@ -297,6 +381,9 @@ const Detail = (() => {
       + card('⚡ 갈등이 생기는 지점과 푸는 법', `<div class="sjtxt"><p>· ${R5[2]}</p>${ddi[0] === '충' || day[0] === '충' ? '<p>· 충이 있는 관계라 생활 속도·습관 차이로 부딪히기 쉬워요. 다툰 날은 결론을 내리지 말고 다음 날 다시 이야기하세요.</p>' : ''}<p>· ${a.dm.약점.split('.')[0]}(${nA}) / ${b.dm.약점.split('.')[0]}(${nB}) — 서로의 약점을 알고 있으면 같은 일로 다투지 않아요.</p><p>· 서운한 일은 “나는 ~해서 서운했어”처럼 내 감정으로 시작해 보세요.</p></div>`)
       + card('📅 함께하기 좋은 때 · 앞으로의 흐름', `<div class="sjtxt">${months}<p>🔭 ${future}</p></div>`)
       + compatMonths(a, b, nA, nB, love)
+      + card('🧩 MBTI 관계 궁합', (() => { try { return mbtiPairHTML(nA, nB, Fun.mbti(a).type, Fun.mbti(b).type, rel); } catch (e) { return ''; } })() + `<p class="sjnote">사주로 계산한 MBTI 기준이에요. 관계 유형(${RELN[relOf(rel)][1]})에 맞춰 조언했어요.</p>`)
+      + (love ? flirtPairHTML(p, a, q, b, nA, nB) : '')
+      + (() => { let mp = null; try { mp = mbtiPair(Fun.mbti(a).type, Fun.mbti(b).type, rel); } catch (e) { } return keepHTML(nA, nB, rel, r, ddi[0] === '충' || day[0] === '충', mp); })()
       + card('💬 상황별 대화 예시', `<div class="sjtxt">${TALK[S.mod(S.SE[b.me] - S.SE[a.me], 5)].map(([k, x, y]) => `<h4>${k}</h4><p>🙂 ${nA}님이 이렇게 — “${x}”</p><p>💡 ${y}</p>`).join('')}<p class="sjnote">두 사람의 오행 관계(${R5[0]})에 맞춘 말 걸기 예시예요. 내 말투로 바꿔 써 보세요.</p></div>`)
       + `<p class="sjnote" style="text-align:center">※ 궁합은 참고·재미용이에요. 관계는 두 사람의 노력이 만들어요.</p>`;
   }
@@ -364,6 +451,7 @@ const Detail = (() => {
       + card('🌧️ 스트레스 받을 때', `<div class="sjtxt">${part('s')}</div>`)
       + card('💞 잘 맞는 유형 · 배울 점이 많은 유형', `<div class="sjtxt"><p>💖 <b>${ms.join(' · ')}</b> — 내가 갖지 못한 면을 채워 주는 유형이에요. 처음엔 달라 보여도 함께할수록 편안해져요.</p><p>🌗 <b>${opp(m.type)}</b> — 네 축이 모두 반대라 부딪히기 쉽지만, 서로에게 가장 많이 배울 수 있는 유형이에요.</p></div>`)
       + mbtiExtra(m, a)
+      + mbtiRelCard(q, m)
       + card('☯️ 사주로 보완할 점', `<div class="sjtxt"><p>${weakT}</p><p>💪 강점: ${a.dm.강점}</p><p>⚠️ 약점: ${a.dm.약점}</p></div>`)
       + cmp
       + `<p class="sjnote" style="text-align:center">※ 오행·음양·십성을 MBTI 네 축에 대응시킨 운명 연구소의 재미용 모델이에요. 공식 MBTI 검사가 아니에요.</p>`;
@@ -443,5 +531,5 @@ const Detail = (() => {
   const openFlirt = q => { const a = Hub.analyze(q); if (!a) return; Views.openDetail('flirt', S_(q), `💘 바람기 · ${q.self ? '나' : q.name}`, () => flirt(q, a, Fun.flirt(a, q.sex !== 'f'))); };
   const openMbti = (q, real) => { const a = Hub.analyze(q); if (!a) return; Views.openDetail('mbti', S_(q), `🧩 사주 MBTI · ${q.self ? '나' : q.name}`, () => mbti(q, a, Fun.mbti(a), real)); };
   const openTarot = (D, a, ctx) => { if (!D.id) D.id = Date.now().toString(36); Views.openDetail('tarot' + D.n, 'draw:' + D.id, `🃏 타로 ${D.n}장 · ${Tarot.TOPIC[D.topic]}`, () => tarot(D, a, ctx), { title: `타로 ${D.n}장 상세 리딩` }); };
-  return { newyear, tojeong, compat, flirt, mbti, tarot, openNewyear, openTojeong, openCompat, openFlirt, openMbti, openTarot };
+  return { mbtiPair, mbtiRelList, newyear, tojeong, compat, flirt, mbti, tarot, openNewyear, openTojeong, openCompat, openFlirt, openMbti, openTarot };
 })();

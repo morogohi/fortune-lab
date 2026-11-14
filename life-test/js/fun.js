@@ -168,6 +168,8 @@ const Fun = (() => {
       <div class="mhero"><small>${who}의 사주가 말하는 성격 유형</small><div class="mtype">${[...m.type].map((c, i) => `<span style="animation-delay:${i * .12}s">${c}</span>`).join('')}</div>
         <b>${m.info[0]}</b><p>${m.info[1]}</p></div>
       <div class="fbox">${m.ax.map((o, i) => bar(`${o.x} ${nm[o.x]}`, `${nm[o.y]} ${o.y}`, o.p, cols[i][0], cols[i][1])).join('')}</div>
+      ${(() => { try { const L = Detail.mbtiRelList(q); if (!L.length) return ''; const RE = { love: '💕', family: '🏠', friend: '🤝', work: '💼' };
+        return `<div class="sjtxt"><h4>💞 MBTI 관계 궁합</h4>${L.map(o => { const P = Detail.mbtiPair(m.type, o.t, o.rel); return `<p>${RE[o.rel] || '💕'} <b>${q.self ? esc(o.x.name) : '나'}</b> ${o.t} — <b>${P.s}점</b> ${P.word}</p>`; }).join('')}<p class="sjnote">축별 조심할 점·관계 유지법은 상세 풀이에서 볼 수 있어요.</p></div>`; } catch (e) { return ''; } })()}
       <div class="lock"><b>🔒 사주 MBTI 상세</b><small>${Views.item('mbti').d}</small></div>
       <div class="sjtxt"><h4>🪞 실제 MBTI와 비교하기</h4>
         <select id="fReal"><option value="">실제 MBTI 고르기</option>${Object.keys(MBTI).map(k => `<option${k === real ? ' selected' : ''}>${k}</option>`).join('')}</select>

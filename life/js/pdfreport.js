@@ -45,7 +45,7 @@ const PdfReport = (() => {
     const me = Object.assign({}, p, { self: true });
     try { out.push({ t: 'MBTI', html: h('🧩', '4. 사주 MBTI 상세', '축별 근거 · 일·관계·연애 · 잘 맞는 유형') + Detail.mbti(me, a, Fun.mbti(a), null) }); } catch (e) { console.warn('pdf mbti', e); }
     try { out.push({ t: '바람기', html: h('💘', '5. 연애 성향(바람기) 상세', '사주 근거 · 연애 패턴 · 대운별 연애 흐름') + Detail.flirt(me, a, Fun.flirt(a, p.sex !== 'f')) }); } catch (e) { console.warn('pdf flirt', e); }
-    people.forEach((q, i) => { try { out.push({ t: '궁합 ' + q.name, html: h('💞', `6-${i + 1}. 궁합 상세 · ${esc(p.name)} × ${esc(q.name)}`, '오행·일간·띠 · 대화법 · 갈등 해법 · 함께 좋은 달') + Detail.compat(p, a, q, Hub.analyze(q), q.rel) }); } catch (e) { console.warn('pdf compat', e); } });
+    people.forEach((q, i) => { try { out.push({ t: '궁합 ' + q.name, html: h('💞', `6-${i + 1}. 궁합 상세 · ${esc(p.name)} × ${esc(q.name)}`, `오행·띠 · MBTI 관계 궁합${(q.rel || 'love') === 'love' ? ' · 연애 성향(바람기)' : ''} · 관계 유지법 · 함께 좋은 달`) + Detail.compat(p, a, q, Hub.analyze(q), q.rel) }); } catch (e) { console.warn('pdf compat', e); } });
     out.push({ t: '맺음말', html: `<div class="hcard"><h3 class="ht">🍀 맺음말</h3><div class="sjtxt"><p>사주는 정해진 운명이 아니라 타고난 기운의 지도예요. 좋은 시기는 준비한 사람에게 더 크게 오고, 조심할 시기는 미리 아는 것만으로 한결 가벼워져요.</p>
       <p>${esc(p.name)}님에게 부족한 기운은 <b>${S.EK[a.weak]}</b>이에요. ${a.dm.개운}</p></div>
       <p class="sjnote">※ 전통 명리 이론을 바탕으로 한 참고·재미용 리포트예요. 건강·법률·투자처럼 중요한 결정은 전문가와 상의하세요. · 운명 연구소</p></div>` });
