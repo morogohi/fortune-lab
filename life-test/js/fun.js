@@ -158,6 +158,7 @@ const Fun = (() => {
     const list = targets(); if (!list.length) { Hub.toast('먼저 내 생년월일을 입력해 주세요'); return; }
     const q = list[idx], a = Hub.analyze(q); if (!a) return;
     const m = mbti(a), who = q.self ? '나' : esc(q.name);
+    try { PdfReport.mark('mbti'); } catch (e) { }
     const saved = store.get('p8b_mbti', {}), key = q.date + q.name;
     real = real !== undefined ? real : saved[key] || '';
     const mt = matchMbti(m.type, real);

@@ -341,7 +341,8 @@ const Detail = (() => {
   const SAM = [[8, 0, 4], [2, 6, 10], [5, 9, 1], [11, 3, 7]];
   const pairIn = (L, x, y) => L.some(([m, n]) => (m === x && n === y) || (m === y && n === x));
   const samIn = (x, y) => x !== y && SAM.some(g => g.includes(x) && g.includes(y));
-  function compat(p, a, q, b, rel) {
+  function compat(p, a, q, b, rel, opt) {
+    opt = opt || {};
     const pc = Saju.compatPair(a, b) || { score: 60, notes: [] }, r = S.mod(S.SE[b.me] - S.SE[a.me], 5), R5 = REL5[r];
     const nA = esc(p.name), nB = esc(q.name), love = !rel || rel === 'love';
     const dd = (x, y) => pairIn(HAP6, x, y) ? ['육합', '서로 끌어당기고 마음이 잘 맞는 관계예요.'] : samIn(x, y) ? ['삼합', '목표가 같을 때 힘을 크게 모으는 관계예요.'] : pairIn(CHUNG, x, y) ? ['충', '부딪히며 자극을 주는 관계예요. 속도와 생활 방식을 맞추는 연습이 필요해요.'] : x === y ? ['같은 지지', '비슷한 생활 리듬을 가진 관계예요.'] : ['평이', '특별히 당기거나 부딪히지 않는 무난한 관계예요.'];
@@ -379,8 +380,8 @@ const Detail = (() => {
       + card('🐾 띠 · 배우자 자리', `<div class="sjtxt"><p><b>띠 (${a.ddi}띠 × ${b.ddi}띠) · ${ddi[0]}</b> — ${ddi[1]}</p><p><b>${love ? '배우자 자리' : '마음 자리'}(일지 ${S.BRK[a.p.d.b]} × ${S.BRK[b.p.d.b]}) · ${day[0]}</b> — ${day[1]} ${love ? '일지는 결혼 생활과 가장 가까운 자리라, 함께 살 때의 편안함을 보여 줘요.' : '일지는 속마음과 생활 습관을 보여 주는 자리예요.'}</p></div>`)
       + card('🧠 성격 · 성향 차이와 대화법', `<div class="sjtxt"><h4>🧭 ${nA}</h4><p>${a.dm.성격}</p><h4>🧭 ${nB}</h4><p>${b.dm.성격}</p>${love ? `<h4>💕 연애 스타일</h4><p><b>${nA}</b> ${a.dm.연애}</p><p><b>${nB}</b> ${b.dm.연애}</p>` : `<h4>✨ 강점</h4><p><b>${nA}</b> ${a.dm.강점}</p><p><b>${nB}</b> ${b.dm.강점}</p>`}${mb}</div>`)
       + card('⚡ 갈등이 생기는 지점과 푸는 법', `<div class="sjtxt"><p>· ${R5[2]}</p>${ddi[0] === '충' || day[0] === '충' ? '<p>· 충이 있는 관계라 생활 속도·습관 차이로 부딪히기 쉬워요. 다툰 날은 결론을 내리지 말고 다음 날 다시 이야기하세요.</p>' : ''}<p>· ${a.dm.약점.split('.')[0]}(${nA}) / ${b.dm.약점.split('.')[0]}(${nB}) — 서로의 약점을 알고 있으면 같은 일로 다투지 않아요.</p><p>· 서운한 일은 “나는 ~해서 서운했어”처럼 내 감정으로 시작해 보세요.</p></div>`)
-      + card('📅 함께하기 좋은 때 · 앞으로의 흐름', `<div class="sjtxt">${months}<p>🔭 ${future}</p></div>`)
-      + compatMonths(a, b, nA, nB, love)
+      + card(opt.noMonths ? '🔭 앞으로의 흐름' : '📅 함께하기 좋은 때 · 앞으로의 흐름', `<div class="sjtxt">${opt.noMonths ? '' : months}<p>🔭 ${future}</p></div>`)
+      + (opt.noMonths ? '' : compatMonths(a, b, nA, nB, love))
       + card('🧩 MBTI 관계 궁합', (() => { try { return mbtiPairHTML(nA, nB, Fun.mbti(a).type, Fun.mbti(b).type, rel); } catch (e) { return ''; } })() + `<p class="sjnote">사주로 계산한 MBTI 기준이에요. 관계 유형(${RELN[relOf(rel)][1]})에 맞춰 조언했어요.</p>`)
       + (love ? flirtPairHTML(p, a, q, b, nA, nB) : '')
       + (() => { let mp = null; try { mp = mbtiPair(Fun.mbti(a).type, Fun.mbti(b).type, rel); } catch (e) { } return keepHTML(nA, nB, rel, r, ddi[0] === '충' || day[0] === '충', mp); })()
@@ -396,7 +397,8 @@ const Detail = (() => {
     '일편단심 소나무': ['진지하고 성실하며 같은 미래를 그리는 사람', '천천히 다가가지만 한번 정하면 흔들리지 않아요. 연애보다 신뢰가 먼저예요.', '너무 신중해 표현이 부족해 보이고, 상대가 관심이 없다고 오해할 수 있어요.', '좋아하는 마음을 작은 표현(연락·선물)으로 자주 보여 주세요. 진심은 표현될 때 전해져요.'],
     '밀당의 고수': ['나와 대등하게 대화하고 서로의 공간을 존중하는 사람', '거리 조절을 잘해 상대를 계속 궁금하게 만들어요. 관계의 주도권을 쥐는 편이에요.', '밀당이 길어지면 상대가 지쳐 떠나요. 진심이 게임처럼 보일 수 있어요.', '중요한 순간(고백·사과·약속)에는 밀당을 내려놓고 솔직하게 말하세요.'],
   };
-  function flirt(q, a, f) {
+  function flirt(q, a, f, opt) {
+    opt = opt || {};
     const male = q.sex !== 'f', who = q.self ? '나' : esc(q.name), D = FLIRT_DEEP[f.t.n] || FLIRT_DEEP['밀당의 고수'];
     const lover = male ? 2 : 3, ln = male ? '재성(남성에게 이성 인연)' : '관성(여성에게 이성 인연)', age = new Date().getFullYear() - +String(q.date).slice(0, 4);
     const dy = a.dy.slice(0, 9).map(d => {
@@ -415,7 +417,7 @@ const Detail = (() => {
       + card('🚨 조심할 신호', `<div class="sjtxt"><p>${D[2]}</p>${f.dohwa >= 2 ? '<p>도화가 두 개 이상이라 오해받을 상황이 잦아요. 이성 동료·친구와의 선을 분명히 하세요.</p>' : ''}${f.swing >= 55 ? '<p>마음이 흔들리는 시기에는 결정을 미루고 지금 관계에서 아쉬운 점을 먼저 이야기해 보세요.</p>' : ''}</div>`)
       + card('📅 이성 인연이 몰리는 때', `<div class="sjtxt"><p><b>도화의 해</b> ${f.years.length ? f.years.map(y => `<b>${y}년</b>`).join(' · ') + ' — 새로운 만남이 많아지는 시기예요. 연인이 있다면 이 해에 서로를 더 챙기세요.' : '앞으로 10년 안엔 도화의 해가 없어요. 대신 꾸준하고 조용한 인연이 와요.'}</p>${yr}</div>
         <table class="dytbl"><tr><th>시기</th><th>대운</th><th>연애 흐름</th></tr>${dy}</table>`)
-      + flirtMonths(a, male) + flirtStages(f)
+      + (opt.noMonths ? '' : flirtMonths(a, male)) + flirtStages(f)
       + card('🛡️ 관계를 지키는 법', `<div class="sjtxt"><p>${D[3]}</p><p>${f.t.tip}</p><p>🍀 개운: ${a.dm.개운}</p></div>`)
       + `<p class="sjnote" style="text-align:center">※ 도화살·홍염살·십성·일지 합충으로 계산한 재미용 풀이예요. 실제 사람의 마음과 행동은 사주로 정해지지 않아요.</p>`;
   }
@@ -434,7 +436,8 @@ const Detail = (() => {
   const MATCH = { ISTJ: ['ESFP', 'ESTP'], ISFJ: ['ESFP', 'ESTP'], INFJ: ['ENFP', 'ENTP'], INTJ: ['ENFP', 'ENTP'], ISTP: ['ESFJ', 'ESTJ'], ISFP: ['ESFJ', 'ENFJ'], INFP: ['ENFJ', 'ENTJ'], INTP: ['ENTJ', 'ESTJ'],
     ESTP: ['ISFJ', 'ISTJ'], ESFP: ['ISFJ', 'ISTJ'], ENFP: ['INFJ', 'INTJ'], ENTP: ['INFJ', 'INTJ'], ESTJ: ['ISTP', 'INTP'], ESFJ: ['ISFP', 'ISTP'], ENFJ: ['INFP', 'ISFP'], ENTJ: ['INFP', 'INTP'] };
   const opp = t => t.split('').map(c => ({ E: 'I', I: 'E', S: 'N', N: 'S', T: 'F', F: 'T', J: 'P', P: 'J' }[c])).join('');
-  function mbti(q, a, m, real) {
+  function mbti(q, a, m, real, opt) {
+    opt = opt || {};
     const who = q.self ? '나' : esc(q.name), nm = { E: '외향', I: '내향', S: '감각', N: '직관', T: '사고', F: '감정', J: '판단', P: '인식' };
     const deg = o => { const v = o.pick === o.x ? o.p : 100 - o.p; return `${v}% · ${v >= 70 ? '뚜렷함' : v >= 58 ? '분명함' : '약간'}`; };
     const W = ['E/I', 'S/N', 'T/F', 'J/P'], WH = [m.why.EI, m.why.SN, m.why.TF, m.why.JP];
@@ -451,7 +454,7 @@ const Detail = (() => {
       + card('🌧️ 스트레스 받을 때', `<div class="sjtxt">${part('s')}</div>`)
       + card('💞 잘 맞는 유형 · 배울 점이 많은 유형', `<div class="sjtxt"><p>💖 <b>${ms.join(' · ')}</b> — 내가 갖지 못한 면을 채워 주는 유형이에요. 처음엔 달라 보여도 함께할수록 편안해져요.</p><p>🌗 <b>${opp(m.type)}</b> — 네 축이 모두 반대라 부딪히기 쉽지만, 서로에게 가장 많이 배울 수 있는 유형이에요.</p></div>`)
       + mbtiExtra(m, a)
-      + mbtiRelCard(q, m)
+      + (opt.noRel ? '' : mbtiRelCard(q, m))
       + card('☯️ 사주로 보완할 점', `<div class="sjtxt"><p>${weakT}</p><p>💪 강점: ${a.dm.강점}</p><p>⚠️ 약점: ${a.dm.약점}</p></div>`)
       + cmp
       + `<p class="sjnote" style="text-align:center">※ 오행·음양·십성을 MBTI 네 축에 대응시킨 운명 연구소의 재미용 모델이에요. 공식 MBTI 검사가 아니에요.</p>`;
@@ -530,6 +533,52 @@ const Detail = (() => {
   const openCompat = (p, q, rel) => { const a = Hub.analyze(p), b = Hub.analyze(q); if (!a || !b) return; Views.openDetail('compat', Views.pair(p, q), `💞 궁합 · ${p.name}·${q.name}`, () => compat(p, a, q, b, rel), { legacy: Store.ownedReal('compat') }); };
   const openFlirt = q => { const a = Hub.analyze(q); if (!a) return; Views.openDetail('flirt', S_(q), `💘 바람기 · ${q.self ? '나' : q.name}`, () => flirt(q, a, Fun.flirt(a, q.sex !== 'f'))); };
   const openMbti = (q, real) => { const a = Hub.analyze(q); if (!a) return; Views.openDetail('mbti', S_(q), `🧩 사주 MBTI · ${q.self ? '나' : q.name}`, () => mbti(q, a, Fun.mbti(a), real)); };
+
+  /* ================= 📑 종합 사주 리포트용: 주제별 · 월별 통합 구성 =================
+   * 서비스별 상세를 그대로 이어 붙이면 월별·성향 설명이 여러 번 반복되므로,
+   *   ① 한 해 총평(신년 총운 + 토정 괘 + 대운 + 분기 전략)
+   *   ② 분야별(직업·재물·연애·건강·가정/관계·학업): 2027 분야 운 + 타고난 성향 + 관련 서비스(바람기·MBTI·궁합 요약)
+   *   ③ 월별 통합(신년 월운 + 토정 신수·풀이 + 연애운 + 궁합 상대와의 흐름 + 좋은 날)
+   *   ④ 성격 유형(MBTI) ⑤ 궁합(사람마다, 월별 제외) 으로 다시 묶는다. */
+  function reportParts(p, a, people) {
+    const out = [], Y = 2027, male = p.sex !== 'f', lover = male ? 2 : 3;
+    const pp = people.map(q => ({ q, b: Hub.analyze(q) })).filter(x => x.b);
+    const nyB = pp.map(x => { try { return Fortune.newYear(x.b, Y); } catch (e) { return null; } });
+    let t = null; try { t = Tojeong.calc(p, Y); } catch (e) { }
+    const tjEx = m => m ? (TJ_EX[m.q][m.ix != null ? m.ix : 0] || '') : '';
+    const P = YearFull.parts(p, a, {
+      tjNote: tj => `<p class="yf-mt">📜 신수 풀이 — ${tjEx(tj)}</p>`,
+      monthExtra: (m, tj) => {
+        const g = S.tg10(a.me, m.s).g, hot = g === lover, hap = m.rel && m.rel.k === 'hap', ch = m.rel && m.rel.k === 'chung';
+        const love = hot && hap ? '💞 인연운 최고 — 소개·모임에 꼭 나가세요' : hot ? '💗 이성 인연이 들어오는 달' : hap ? '🤝 마음 맞는 사람과 가까워지는 달' : ch ? '⚡ 다툼·오해 주의 — 감정적인 메시지는 하루 뒤에' : g === 1 ? '🎤 매력이 돋보이는 달 — 표현해 보세요' : '🌿 잔잔한 달 — 지금 관계를 돌보세요';
+        const ppl = pp.map((x, i) => { const v = nyB[i] ? nyB[i].months[m.n].v : null; if (v == null) return ''; const both = m.v >= 66 && v >= 66, lo = m.v < 58 && v < 58;
+          return `${esc(x.q.name)} ${v}점 ${both ? '— 함께 움직이기 좋은 달' : lo ? '— 둘 다 쉬어 갈 달' : v >= 66 ? '— 상대가 이끌면 좋은 달' : m.v >= 66 ? '— 내가 이끌면 좋은 달' : '— 무난한 달'}`; }).filter(Boolean);
+        return `<p class="yf-md">💘 연애운 — ${love}</p>${ppl.length ? `<p class="yf-md">💞 함께하는 사람 — ${ppl.join(' · ')}</p>` : ''}`;
+      } });
+    // ② 한 해 총평
+    const tjYear = t ? card('📜 토정비결로 본 2027', `${Tojeong.fullHTML(t, true)}<div class="sjtxt"><p>상괘(${t.up})는 한 해의 큰 기운, 중괘(${t.mid})는 재물과 가정, 하괘(${t.low})는 사람을 대하는 방향이에요. 올해는 「${esc(t.tone)}」의 해예요. 달마다의 신수는 월별 풀이에 함께 정리했어요.</p></div>`) : '';
+    out.push({ t: '한 해 총평', sub: '총운 · 토정비결 · 10년 대운 · 분기 전략 · 개운', html: P.y_total + tjYear + P.y_luck + P.y_guide });
+    // ③ 분야별
+    const AR = YearFull.AREAS, GN = YearFull.GN, B = P.B, gA = B.gA != null ? B.gA : B.n.ts.g, gB = B.gB != null ? B.gB : B.n.tb.g;
+    let mbtiT = null; try { mbtiT = Fun.mbti(a); } catch (e) { }
+    const nat = { 0: a.dm.강점 ? `<p><b>🧭 타고난 일 성향</b> ${a.dm.강점}</p>` : '',
+      1: `<p><b>🧭 타고난 재물 성향</b> ${a.dm.재물}</p>`, 2: `<p><b>🧭 타고난 연애 성향</b> ${a.dm.연애}</p>`, 3: `<p><b>🧭 타고난 건강 성향</b> ${a.dm.건강}</p>`,
+      4: pp.length ? pp.map(x => { const sc = (Saju.compatPair(a, x.b) || {}).score; return `<p><b>${(RELN[relOf(x.q.rel)] || RELN.love)[0]} ${esc(x.q.name)}</b> 궁합 ${sc != null ? sc + '점' : ''} — 자세한 내용은 궁합 장에서 볼 수 있어요.</p>`; }).join('') : '', 5: '' };
+    const topics = AR.map((x, i) => {
+      const v = B.area[i], band = v >= 75 ? 0 : v >= 60 ? 1 : 2, d1 = AREA_DEEP[gA][i], d2 = AREA_DEEP[gB][i];
+      return P.area(i) + card(`${x[0]} ${x[1]} · 기회 · 주의 · 실천`, `<div class="sjtxt">${nat[i] || ''}<p><b>🌱 상반기 기회</b> ${d1[0]}</p>${gB !== gA ? `<p><b>🍂 하반기 기회</b> ${d2[0]}</p>` : ''}<p><b>⚠️ 주의</b> ${d1[1]}${gB !== gA ? ' ' + d2[1] : ''}</p><p><b>✅ 올해 실천</b> ${AREA_ACT[i][band]}</p></div>`)
+        + (i === 2 ? (() => { try { const f = Fun.flirt(a, male); return flirt(Object.assign({}, p, { self: true }), a, f, { noMonths: true }); } catch (e) { return ''; } })() : '')
+        + (i === 4 ? (P.y_rel && pp.length ? P.y_rel : '') : '');
+    }).join('');
+    out.push({ t: '분야별 풀이', sub: '직업 · 재물 · 연애·결혼(연애 성향 포함) · 건강 · 가정·관계 · 학업', html: topics });
+    // ④ 월별 통합
+    out.push({ t: '2027 월별 통합 풀이', sub: '월운 · 분야별 · 토정 신수와 풀이 · 연애운' + (pp.length ? ' · 함께하는 사람' : '') + ' · 좋은 날', html: P.y_month });
+    // ⑤ MBTI
+    try { if (mbtiT) out.push({ t: '성격 유형 (사주 MBTI)', sub: '축별 근거 · 일·관계·연애 · 어울리는 일 · 성장 로드맵', html: mbti(Object.assign({}, p, { self: true }), a, mbtiT, null, { noRel: true }) }); } catch (e) { }
+    // ⑥ 궁합
+    pp.forEach(x => { try { out.push({ t: `궁합 · ${x.q.name}`, sub: `오행·띠 · MBTI 관계 궁합${relOf(x.q.rel) === 'love' ? ' · 연애 성향' : ''} · 관계 유지법 · 대화 예시`, html: compat(p, a, x.q, x.b, x.q.rel, { noMonths: true }) }); } catch (e) { } });
+    return out;
+  }
   const openTarot = (D, a, ctx) => { if (!D.id) D.id = Date.now().toString(36); Views.openDetail('tarot' + D.n, 'draw:' + D.id, `🃏 타로 ${D.n}장 · ${Tarot.TOPIC[D.topic]}`, () => tarot(D, a, ctx), { title: `타로 ${D.n}장 상세 리딩` }); };
-  return { mbtiPair, mbtiRelList, newyear, tojeong, compat, flirt, mbti, tarot, openNewyear, openTojeong, openCompat, openFlirt, openMbti, openTarot };
+  return { reportParts, mbtiPair, mbtiRelList, newyear, tojeong, compat, flirt, mbti, tarot, openNewyear, openTojeong, openCompat, openFlirt, openMbti, openTarot };
 })();
