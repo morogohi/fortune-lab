@@ -36,7 +36,7 @@ window.Auth = (() => {
   }
   /* ---------- 테스트 계정 (웹 전용 · 서버 없이 기기에서 확인) ----------
    * 아이디 yangtest · 비밀번호는 코드에 해시로만 보관. 로그인하면 개인정보 양인석 프로필,
-   * 유료 상품 전체 열람, 카르마·상담권 테스트 지급. 앱(스토어 빌드)에서는 열리지 않음. */
+   * 유료 상품 전체 열람, 카르마 테스트 지급. 앱(스토어 빌드)에서는 열리지 않음. */
   const TEST = { id: 'yangtest', hash: 'f954cf0e0a8ba16f296702f44d3b51bc8c2c7fca8f1f366cfbe27dde02344e87', name: '양인석' };
   const TKEY = 'p8b_test_acct';
   const testOn = () => { if (native()) return false; try { return !!JSON.parse(localStorage.getItem(TKEY)); } catch (e) { return false; } };

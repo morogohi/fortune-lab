@@ -229,17 +229,16 @@ const Hub = (() => {
     const run = async p => { toast('로그인 화면으로 이동해요…'); const r = await Auth.login(p); if (r.error) toast(r.error === 'not-configured' ? '로그인 서버 준비 중이에요' : '로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요'); };
     $('#lgKakao').onclick = () => run('kakao'); $('#lgGoogle').onclick = () => run('google');
   }
-  /* 테스트 계정: 개인정보 운명연구소 · 유료 콘텐츠 전체 열람(Store) · 카르마/상담권 · 궁합 상대 예시 */
+  /* 테스트 계정: 개인정보 운명연구소 · 유료 콘텐츠 전체 열람(Store) · 카르마 · 궁합 상대 예시 */
   const TEST_ME = { name: '운명연구소', date: '1974-03-19', cal: 's', time: '', sex: 'm' };
   function setupTestAccount(first) {
     store.set('p8b_me', { ...TEST_ME }); rememberProfile(TEST_ME);
     { const l = people(); l.forEach(x => { if (x.name === '테스트 상대') x.name = '예시 상대(테스트용)'; }); store.set('p8b_people', l); }
     if (first) {
       if (typeof karma !== 'undefined') { karma += 500; window.KREASON = '테스트 계정 지급'; saveMeta(); }
-      if (typeof Counsel !== 'undefined') Counsel.addCredits(30);
       const list = people(); if (!list.some(x => /테스트 상대|예시 상대/.test(x.name))) { list.unshift({ name: '예시 상대(테스트용)', date: '1978-08-15', cal: 's', time: '', sex: 'f', rel: 'love' }); store.set('p8b_people', list.slice(0, 20)); }
     }
-    toast(first ? '🧪 테스트 계정 · 운명연구소 프로필, 유료 콘텐츠 전체, 카르마 500 + 가입 보너스 ' + (STORE_CONFIG.signupBonus || 0) + ', 상담권 30회' : '🧪 테스트 계정으로 로그인했어요');
+    toast(first ? '🧪 테스트 계정 · 운명연구소 프로필, 유료 콘텐츠 전체, 카르마 500 + 가입 보너스 ' + (STORE_CONFIG.signupBonus || 0) + '' : '🧪 테스트 계정으로 로그인했어요');
     topbarUI(); if ($('#hub').classList.contains('on')) render();
   }
   function openAccount() {
@@ -667,7 +666,7 @@ const Hub = (() => {
     const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) return '<div class="hcard"><p class="hsub">생년월일을 확인해 주세요.</p></div>';
     const legacy = Tojeong.opened(p, Y), good = t.months.map((m, i) => m.q === 0 ? i + 1 : 0).filter(Boolean);
     return `<div class="hhead"><small>${esc(p.name)}님 · 음력 ${t.lm}월 ${t.ld}일생</small><h2>${Y} 토정비결</h2></div>
-      <div class="hcard"><span class="vfreetag">무료 개요</span>${Tojeong.previewHTML(t)}<p class="sjtxt">🌙 좋은 달(음력): <b>${good.length ? good.map(x => x + '월').join(' · ') : '고르게 평탄'}</b></p></div>
+      <div class="hcard"><span class="vfreetag">무료 개요</span>${Tojeong.previewHTML(t)}<p class="sjtxt">🌙 좋은 달(음력): <b>${good.length ? good.map(x => x + '월').join(' · ') : '고르게 평탄'}</b></p><h4 class="tjbh">📅 월별 한눈에</h4>${Tojeong.briefHTML(t)}</div>
       <div class="hcard tjcard"><h3 class="ht">🔒 상세 풀이</h3><p class="hsub">${Views.item('tojeong').d}</p>${Views.button('tojeong', Views.subj(p) + '|' + Y, 'hTJ', legacy, '토정비결 상세 보기')}</div>`;
   }
   function bindTojeong(p) {
@@ -809,7 +808,6 @@ const Hub = (() => {
   /* ---------- 더보기 ---------- */
   const EXCH = [
     { k: 'pass2h', e: '🍀', n: '행운패스 2시간', c: 3, can: () => Ads.native && !Store.has('noads'), show: () => Ads.native, f: () => { Store.addPass(2 * 36e5); Ads.banner(false); } },
-    { k: 'counsel', e: '🤖', n: 'AI 사주상담 1회', c: 5, can: () => true, f: () => { if (typeof Counsel !== 'undefined') Counsel.addCredits(1); } },
     { k: 'karma', e: '✨', n: '카르마 20 (인생 게임)', c: 2, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 20; window.KREASON = '복주머니 교환'; window.KCAT = 'bonus'; saveMeta(); } } },
     { k: 'theme', e: '🎨', n: '오행 컬러 테마 1개', c: 10, can: () => themesOwned().length < 5, f: () => { const o = themesOwned(), nx = [0, 1, 2, 3, 4].find(i => !o.includes(i)); o.push(nx); store.set('p8b_themes', o); setTheme(nx); } },
     { k: 'fate', e: '🎛️', n: '운명 조작 팩 (인생 게임)', c: 20, can: () => !Store.has('fate'), f: () => Store.grant('fate') },

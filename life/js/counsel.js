@@ -12,18 +12,25 @@
  *   - 기본: 기기 안에서 계산 (개인정보가 기기 밖으로 나가지 않음)
  *   - AI 서버(Supabase Edge Function → Claude)가 연결돼 있고 로그인했다면, 이름·생년월일 없이
  *     사주 요약·고민만 보내 상담사의 자연어 답변을 덧붙인다 (보내기 전 동의).
- *   - 이용권: 첫 상담 1회 무료 → 이후 상담권(인앱 구매) 또는 카르마 교환
+ *   ▸ 두 가지 상담: 💬 대화 상담 · 🧭 선택 상담(고민 + 선택지 A/B/C → 선택지별 상세 비교 풀이)
+ *   - 요금: 질문(대화 1개 · 선택 상담 1회)마다 카르마 STORE_CONFIG.counsel.perQ, 처음 1개 무료. 상담권은 없앰
+ *     (예전 상담권이 남아 있으면 실제 서비스 모드에서 1장당 카르마 5로 한 번 돌려줌)
  * ===================================================================== */
 window.COUNSEL_CONFIG = window.COUNSEL_CONFIG || { fn: 'saju-counsel' };   // Supabase Edge Function 이름
 
 const Counsel = (() => {
   const CR = 'p8b_counsel_cr', FREE = 'p8b_counsel_free', HIST = 'p8b_counsel_hist';
-  const credits = () => store.get(CR, 0) + (store.get(FREE, 0) ? 0 : 1);
+  const credits = () => store.get(FREE, 0) ? 0 : 1;   // 남은 무료 질문 수 (상담권은 없앰)
   const freeLeft = () => !store.get(FREE, 0);
   // 상담 기준 연도: 11월부터는 다음 해 (토정비결·신년운세와 같은 기준) — 안내와 결과를 한 해로 통일
   const baseYear = () => { const d = new Date(); return d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getFullYear(); };
-  function useCredit() { if (freeLeft()) { store.set(FREE, 1); return true; } const c = store.get(CR, 0); if (c <= 0) return false; store.set(CR, c - 1); return true; }
-  function addCredits(n) { store.set(CR, store.get(CR, 0) + n); }
+  function addCredits() { }   // 상담권 없앰 (예전 호출 호환용)
+  // 예전 상담권 정리: 실제 서비스 모드에서는 1장당 카르마 5로 돌려주고, 테스트 모드에서는 그냥 지움
+  function migrateCredits() {
+    const n = store.get(CR, 0); if (!n) return;
+    store.set(CR, 0);
+    if (typeof Karma !== 'undefined' && Karma.mode && Karma.mode() === 'live' && typeof karma !== 'undefined') { karma += n * 5; window.KREASON = `상담권 ${n}장 → 카르마 전환`; window.KCAT = 'bonus'; saveMeta(); try { Store.notify(); } catch (e) { } }
+  }
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   const clampN = v => Math.max(0, Math.min(100, Math.round(v)));
 
@@ -107,17 +114,28 @@ const Counsel = (() => {
 
   /* ---------- 대화형 화면 ---------- */
   const CKEY = 'p8b_counsel_chat', OKKEY = 'p8b_counsel_ai_ok';
-  const PER = () => ((window.STORE_CONFIG || {}).counsel || {}).perQ || 10;
+  const PER = () => ((window.STORE_CONFIG || {}).counsel || {}).perQ || 3;
   const chat = () => store.get(CKEY, []);
   let busy = false;
   const aiOn = () => !!(window.Auth && Auth.ready() && Auth.user());
-  const price = () => freeLeft() ? '무료 (처음 1개)' : store.get(CR, 0) > 0 ? `상담권 ${store.get(CR, 0)}회` : `✨ ${PER()}`;
+  const price = () => freeLeft() ? '무료 (처음 1개)' : `✨ ${PER()}`;
   const md = t => esc(t).replace(/\*\*(.+?)\*\*/g, '<b>$1</b>').replace(/\n/g, '<br>');
   const START = ['이직을 할지 지금 회사에 남을지 고민돼요', '요즘 만나는 사람과 잘 될지 궁금해요', '올해 돈을 모으려면 어떻게 해야 할까요?', '창업을 해도 될까요?', '공부를 다시 시작할까 고민이에요', '요즘 마음이 너무 지쳐요'];
+  const TABK = 'p8b_counsel_tab';
+  const tabOf = () => store.get(TABK, 'chat') === 'pick' ? 'pick' : 'chat';
+  const tabsHTML = () => `<div class="tsel cs-tabs" id="csTabs"><button data-v="chat" class="${tabOf() === 'chat' ? 'on' : ''}">💬 대화 상담</button><button data-v="pick" class="${tabOf() === 'pick' ? 'on' : ''}">🧭 선택 상담</button></div>`;
   function pageHTML(p, a) {
+    migrateCredits();
+    return tabOf() === 'pick' ? pickHTML(p, a) : chatHTML(p, a);
+  }
+  function bind(p, a, rerender) {
+    document.querySelectorAll('#csTabs button').forEach(b => b.onclick = () => { store.set(TABK, b.dataset.v); Snd.sfx('tap'); rerender(); });
+    if (tabOf() === 'pick') bindPick(p, a, rerender); else bindChat(p, a, rerender);
+  }
+  function chatHTML(p, a) {
     const L = chat(), mode = aiOn() && store.get(OKKEY, 0) ? 'ai' : aiOn() ? 'ask' : 'local';
     const head = `<div class="hcard cs-hero"><div class="cs-ava">🤖</div><div><b>AI 사주상담</b><small>고민을 편하게 말해 주세요. ${esc(p.name)}님의 사주·대운·올해 흐름·MBTI를 바탕으로 대화하며 함께 정리해요.</small></div></div>
-      <div class="cs-mode ${mode}">${mode === 'ai' ? '🤖 AI 대화 모드 · 자연스러운 대화로 답해요' : mode === 'ask' ? '🤖 AI 대화를 쓰려면 아래에서 한 번 동의해 주세요 · 지금은 기기 안 상담' : (window.Auth && Auth.ready()) ? '📱 기기 안 상담 모드 · 로그인하면 AI와 자연스럽게 대화할 수 있어요' : '📱 기기 안 상담 모드 · 사주로 계산한 상담을 대화로 드려요 (AI 서버 연결 전)'}</div>`;
+      ${tabsHTML()}<div class="cs-mode ${mode}">${mode === 'ai' ? '🤖 AI 대화 모드 · 자연스러운 대화로 답해요' : mode === 'ask' ? '🤖 AI 대화를 쓰려면 아래에서 한 번 동의해 주세요 · 지금은 기기 안 상담' : (window.Auth && Auth.ready()) ? '📱 기기 안 상담 모드 · 로그인하면 AI와 자연스럽게 대화할 수 있어요' : '📱 기기 안 상담 모드 · 사주로 계산한 상담을 대화로 드려요 (AI 서버 연결 전)'}</div>`;
     const log = L.length ? L.map(m => `<div class="cs-msg ${m.r}"><div>${m.r === 'a' ? md(m.t) : esc(m.t)}</div>${m.r === 'u' && m.cost != null ? `<small>${m.cost ? `✨ −${m.cost}` : '무료'}</small>` : m.r === 'a' ? `<small>${m.src === 'ai' ? '🤖 AI 상담사' : '📱 기기 안 상담'}</small>` : ''}</div>`).join('')
       : `<div class="cs-msg a"><div>안녕하세요, ${esc(p.name)}님. 요즘 어떤 고민이 있으세요? 상황을 편하게 적어 주시면 사주 흐름과 함께 차근차근 이야기해 볼게요.<br><br>두 가지 중에서 고민 중이라면 “A 할까, B 할까?”처럼 적어 주시면 비교해 드려요.</div><small>📱 첫 인사는 무료</small></div>`;
     return head + `<div class="hcard cs-chat" id="csLog">${log}${busy ? '<div class="cs-msg a"><div class="cs-typing">답변을 쓰는 중…</div></div>' : ''}</div>
@@ -129,7 +147,7 @@ const Counsel = (() => {
         <p class="sjnote">질문 1개를 보낼 때마다 카르마 ${PER()}가 차감돼요 (처음 1개 무료). 대화는 이 기기에만 저장돼요.${aiOn() ? ' AI 대화 모드에서는 쓴 내용과 사주 요약(이름·생년월일 제외)이 서버를 거쳐 AI에게 전달되고, 서버에 저장하지 않아요.' : ''}</p></div>
       <p class="sjnote" style="text-align:center">※ 명리 이론을 바탕으로 한 참고·재미용 상담이에요. 건강·법률·투자처럼 중요한 결정은 전문가와 꼭 상의하세요. 마음이 많이 힘들다면 자살예방상담전화 109(24시간)에 연락해 주세요.</p>`;
   }
-  function bind(p, a, rerender) {
+  function bindChat(p, a, rerender) {
     const r = rerender;
     const send = t => { const v = (t != null ? t : ($('#csIn') || {}).value || '').trim(); if (v) ask(p, v, r); };
     const b = $('#csSend'); if (b) b.onclick = () => send();
@@ -149,12 +167,11 @@ const Counsel = (() => {
   }
   /* 질문 1개 보내기: 위기 신호 확인 → 차감 → 답변(AI 또는 기기 안) */
   const CRISIS = /(죽고\s*싶|자살|목숨|극단적|자해|사라지고\s*싶|살기\s*싫)/;
-  function charge(r, after) {
+  function charge(r, after, reason) {
     if (freeLeft()) { store.set(FREE, 1); after(0); return; }
-    const c = store.get(CR, 0); if (c > 0) { store.set(CR, c - 1); after(0, '상담권'); return; }
     const n = PER();
     if (karma < n) { try { Karma.metric('lack_shown'); } catch (e) { } Karma.openCharge(n - karma, 'AI 사주상담 질문', () => r()); return; }
-    karma -= n; window.KREASON = '🤖 AI 사주상담 질문 1개'; window.KCAT = 'spend'; saveMeta(); try { Auth.sync(); } catch (e) { } Store.notify(); after(n);
+    karma -= n; window.KREASON = reason || '🤖 AI 사주상담 질문 1개'; window.KCAT = 'spend'; saveMeta(); try { Auth.sync(); } catch (e) { } Store.notify(); after(n);
   }
   function ask(p, text, r) {
     if (busy) return;
@@ -258,6 +275,42 @@ const Counsel = (() => {
     const f = FOLLOW[tp] || FOLLOW.all; out.push(f[(turn - 1) % f.length]);
     return out.join('\n\n');
   }
+  /* ---------- 🧭 선택 상담 화면 (고민 + 선택지 → 선택지별 상세 비교) ---------- */
+  let st = { topic: 'career', q: '', opts: ['', ''], res: null, busy: false };
+  function pickHTML(p, a) {
+    const T = TOPICS.find(t => t.k === st.topic) || TOPICS[0];
+    const head = `<div class="hcard cs-hero"><div class="cs-ava">🤖</div><div><b>AI 사주상담</b><small>인생의 갈림길에서 선택지를 적어 주시면 사주 · MBTI · 인생 게임으로 선택지마다 자세히 풀어 드려요.</small></div></div>${tabsHTML()}`;
+    if (st.res) return head + st.res.html + `<div class="hcard"><button class="bigbtn wide" id="csNew2">🗂️ 다른 고민 상담하기</button></div>`;
+    return head + `<div class="hcard">
+      <h3 class="ht">무엇이 고민인가요?</h3>
+      <div class="tsel cs-top" id="csTopic">${TOPICS.map(t => `<button data-v="${t.k}" class="${t.k === st.topic ? 'on' : ''}">${t.e} ${t.n}</button>`).join('')}</div>
+      <label class="cs-l">상황을 한두 줄로 적어 주세요<textarea id="csQ" maxlength="200" rows="3" placeholder="예: 지금 회사 5년 차인데 스타트업에서 제안이 왔어요. 연봉은 비슷하고 성장 기회가 커요.">${esc(st.q)}</textarea></label>
+      <label class="cs-l">선택지 A<input id="csA" maxlength="40" value="${esc(st.opts[0])}" placeholder="예: ${T.ex[0]}"></label>
+      <label class="cs-l">선택지 B<input id="csB" maxlength="40" value="${esc(st.opts[1])}" placeholder="예: ${T.ex[1]}"></label>
+      <label class="cs-l">선택지 C <small>(선택)</small><input id="csC" maxlength="40" value="${esc(st.opts[2] || '')}" placeholder="비워 두어도 돼요"></label>
+      <div id="csErr" class="cs-err"></div>
+      <div class="cs-send"><span>보유 ✨ ${typeof karma !== 'undefined' ? karma : 0}</span><button class="bigbtn" id="csGo">🔮 상담 받기 · ${price()}</button></div>
+      <p class="sjnote">선택 상담 1회 = 질문 1개 (카르마 ${PER()}, 처음 1개 무료). 📍 이름·생년월일 같은 개인정보는 이 기기 안에서만 계산하고, 상담 기록도 이 기기에만 남아요.</p></div>
+      <div class="hcard cs-what"><h3 class="ht">무엇을 받나요?</h3>
+      <ul><li>🧭 선택지별 <b>적합도</b>와 종합 의견</li><li>🔍 선택지마다 <b>상세 풀이</b> — 사주로 본 의미, 잘 맞는 점, 조심할 점, 이 선택의 기운이 들어오는 달, 1년 뒤·3년 뒤 모습, 시작 전 준비</li>
+      <li>🔮 지금 대운 · ${baseYear()}년 세운 · 움직이기 좋은 달</li><li>🧠 MBTI로 본 나의 결정 스타일과 함정</li>
+      <li>🎲 내 생년월일로 태어난 가상 인물이 선택지마다 <b>끝까지 살아 본 결과</b> (인생 게임 엔진)</li><li>✅ 결정까지의 4주 실행 계획</li></ul>
+      <div class="row2"><button class="ghost" id="csKarma2">✨ 카르마 모으기</button></div></div>
+      ${histHTML()}`;
+  }
+  function histHTML() {
+    const h = store.get(HIST, []); if (!h.length) return '';
+    return `<div class="hcard"><h3 class="ht">지난 선택 상담 (이 기기)</h3>${h.slice(0, 5).map((x, i) => `<button class="cs-past" data-i="${i}"><b>${x.e} ${esc(x.q || x.opts.join(' vs '))}</b><small>${new Date(x.t).toLocaleDateString()} · 추천: ${esc(x.pick)}</small></button>`).join('')}</div>`;
+  }
+  function bindPick(p, a, r) {
+    const keep = () => { const q = $('#csQ'); if (q) { st.q = q.value.trim(); st.opts = [$('#csA').value.trim(), $('#csB').value.trim(), $('#csC').value.trim()]; } };
+    document.querySelectorAll('#csTopic button').forEach(b => b.onclick = () => { keep(); st.topic = b.dataset.v; Snd.sfx('tap'); r(); });
+    const go = $('#csGo'); if (go) go.onclick = () => { keep(); start(p, r); };
+    const n = $('#csNew2'); if (n) n.onclick = () => { st.res = null; r(); };
+    const k = $('#csKarma2'); if (k) k.onclick = () => Karma.openCharge(Math.max(0, PER() - karma), 'AI 사주상담', () => r());
+    document.querySelectorAll('.cs-past').forEach(b => b.onclick = () => { const x = store.get(HIST, [])[+b.dataset.i]; if (x) openOverlay(`${x.e} 지난 상담`, x.html, [{ t: '닫기' }]); });
+    bindResult();
+  }
   function buy(r) {
     if (typeof openShop === 'function') { openShop('counsel'); const un = Store.onChange(() => r && r()); }
   }
@@ -269,8 +322,11 @@ const Counsel = (() => {
     if (opts.length < 2) return err('선택지를 두 개 이상 적어 주세요');
     if (new Set(opts).size !== opts.length) return err('선택지가 서로 같아요');
     if (st.busy) return;
-    if (credits() <= 0) { Karma.spend(KARMA, 'AI 사주상담 1회', () => { addCredits(1); start(p, r); }, () => r()); return; }
     const c = ctxOf(p); if (!c) return err('내 정보를 먼저 입력해 주세요');
+    if (CRISIS.test(st.q + ' ' + opts.join(' '))) { openOverlay('💛 잠깐 이야기해요', `<div class="sjtxt"><p>많이 힘드셨겠어요. 그 마음을 혼자 견디지 않으셨으면 해요.</p><p>지금 이야기할 사람이 필요하다면 <b>자살예방상담전화 109</b>(24시간), 정신건강위기상담 <b>1577-0199</b>, 또는 가까운 사람에게 연락해 주세요. 위급하다면 <b>112·119</b>에 연락하세요.</p><p>💬 대화 상담에서 천천히 이야기를 나눌 수도 있어요. 카르마는 차감하지 않았어요.</p></div>`, [{ t: '닫기' }]); return; }
+    charge(r, cost => run(p, r, c, opts, cost), '🧭 AI 선택 상담 1회');
+  }
+  async function run(p, r, c, opts, cost) {
     st.busy = true;
     openOverlay('🤖 AI 사주상담', `<div class="fk-load"><div class="fk-reel">🔮</div><p id="csStep">사주와 올해 흐름을 살피는 중…</p><div class="fk-bar"><i id="fkBar"></i></div></div>`, []);
     const stepT = t => { const e = $('#csStep'); if (e) e.textContent = t; };
@@ -292,17 +348,117 @@ const Counsel = (() => {
         if (!sims) console.warn('counsel sim empty');
       }
       const res = compose(c, opts, groups, fits, sims);
-      if (!useCredit()) { st.busy = false; closeOverlay(); return; }
       try { Karma.metric('counsel_run'); } catch (e) { }
       st.res = res; st.busy = false;
       const h = store.get(HIST, []); h.unshift({ t: Date.now(), e: (TOPICS.find(t => t.k === st.topic) || {}).e || '🤖', q: st.q, opts, pick: res.best < 0 ? '우열 없음' : opts[res.best], html: res.html }); store.set(HIST, h.slice(0, 10));
       closeOverlay(); Snd.sfx('reveal'); r();
       askAI(c, opts, groups, fits, sims, res);
-    } catch (e) { console.warn(e); st.busy = false; closeOverlay(); Hub.toast('상담을 만들지 못했어요. 다시 시도해 주세요'); }
+    } catch (e) {
+      console.warn(e); st.busy = false; closeOverlay();
+      if (cost) { karma += cost; window.KREASON = '선택 상담 오류 환불'; window.KCAT = 'bonus'; saveMeta(); Store.notify(); } else store.set(FREE, 0);
+      Hub.toast('상담을 만들지 못했어요. 차감한 카르마는 돌려드렸어요');
+    }
   }
   const wait = ms => new Promise(r => setTimeout(r, ms));
-  const KARMA = 20;   // 예전 '갈림길 비교' 1회 (지금 화면에서는 쓰지 않음)
   const FX = [p => { p.money -= Math.round(p.money * .15); p.hap += 3; }, p => { p.hap += 4; }, null, p => { p.hap -= 1; }, p => { p.smart += 4; p.money -= Math.round(p.money * .08); }, p => { p.bond += 6; }, p => { p.hap += 2; p.bond -= 4; }];
+
+
+  /* ---------- 선택지별 상세 풀이 ---------- */
+  // 분야(그룹)별 [사주로 본 의미, 잘 맞는 점, 조심할 점, 시작 전 준비, 1년 뒤, 3년 뒤]
+  const GDEEP = {
+    0: ['비견·겁재(독립·경쟁)의 길이에요. 내 이름과 내 판단으로 서는 선택이라 자율과 성취감이 크지만, 모든 책임도 나에게 돌아와요.',
+      ['스스로 결정하는 자유가 커서 의욕이 오래가요', '경쟁이 있는 자리에서 실력이 빨리 늘어요', '잘되면 성과가 고스란히 내 것이 돼요'],
+      ['수입이 들쭉날쭉할 수 있어요', '혼자 다 하려다 지치기 쉬워요', '가까운 사람과의 돈거래·동업이 새는 구멍이 돼요'],
+      ['버틸 생활비(최소 6개월)를 먼저 떼어 두기', '3개월짜리 작은 실험으로 수요·적성 확인하기', '도움받을 사람 3명을 미리 정해 두기'],
+      '처음 몇 달은 정신없지만 내 방식이 자리를 잡아 가요. 수입보다 경험과 사람이 먼저 쌓이는 시기예요.',
+      '버텨 낸다면 나만의 영역이 생겨요. 이때부터는 혼자보다 함께할 사람을 들이는 것이 성장의 열쇠예요.'],
+    1: ['식신·상관(재능·표현)의 길이에요. 내가 가진 재주를 밖으로 꺼내 보이는 선택이라 즐거움과 몰입이 크고, 결과가 사람들 눈에 보여요.',
+      ['좋아하는 일이라 오래 지치지 않아요', '아이디어와 표현력이 빛나요', '작게 시작해도 반응을 바로 볼 수 있어요'],
+      ['즐거움만큼 수입이 바로 따라오지 않을 수 있어요', '기분에 따라 꾸준함이 흔들리기 쉬워요', '말과 표현이 앞서 구설이 생길 수 있어요'],
+      ['결과물을 정기적으로 내놓을 주기(주 1회 등) 정하기', '취미 수준과 수익 목표를 분리해 적기', '피드백을 줄 사람이나 모임 찾기'],
+      '해 본 것들이 쌓여 내 색깔이 생겨요. 처음 기대보다 느려도 꾸준히 낸 사람만 남는 시기예요.',
+      '쌓인 결과물이 포트폴리오가 되어 기회를 불러와요. 재능이 일·수입으로 이어지는 갈림길이 와요.'],
+    2: ['편재·정재(재물)의 길이에요. 돈과 실리를 직접 다루는 선택이라 결과가 숫자로 분명하게 드러나요.',
+      ['노력한 만큼 손에 잡히는 결과가 생겨요', '목표가 숫자라 계획을 세우기 쉬워요', '자산이 불어나는 재미가 있어요'],
+      ['욕심이 커지면 무리한 결정을 하기 쉬워요', '들어오는 만큼 나가는 돈도 커져요', '시장 상황처럼 내가 못 바꾸는 변수가 있어요'],
+      ['최악의 경우(수입 −20%, 금리 +2%)에도 버틸지 계산하기', '한 번에 하지 말고 나눠 실행하기', '지켜야 할 돈과 써도 되는 돈을 나누기'],
+      '첫해는 계획대로 되는지 확인하는 해예요. 숫자를 매달 기록하면 흔들릴 때 기준이 돼요.',
+      '꾸준히 관리했다면 자산의 기반이 생겨요. 이때 욕심을 줄이고 지키는 쪽으로 무게를 옮기면 오래가요.'],
+    3: ['편관·정관(직장·명예)의 길이에요. 조직과 규칙 안에서 자리를 지키고 올라가는 선택이라 안정과 인정을 얻어요.',
+      ['수입과 생활이 안정적이에요', '쌓은 경력이 그대로 평가로 이어져요', '사회적 신뢰와 이름이 올라가요'],
+      ['책임과 압박이 커질 수 있어요', '내 뜻대로 바꿀 수 있는 것이 적어요', '익숙함에 머물다 성장이 멈춘 느낌이 들 수 있어요'],
+      ['지금 자리에서 바꿀 수 있는 것(역할·연봉·근무 방식)을 먼저 요청하기', '3년 뒤 내 모습을 선배·동료에게 물어보기', '평가 기준을 정확히 알아 두기'],
+      '안정 속에서 맡은 일이 늘어요. 인정받는 만큼 책임도 커지니 체력과 마음 관리가 중요해요.',
+      '쌓아 온 신뢰가 자리와 직함으로 돌아와요. 이때 새 역할에 도전할지, 지금 자리를 다질지 다시 고민이 와요.'],
+    4: ['편인·정인(학업·귀인)의 길이에요. 배우고 준비하며 나를 키우는 선택이라 당장보다 나중에 크게 돌아와요.',
+      ['실력과 자격이 오래 남는 자산이 돼요', '스승·선배 같은 귀인을 만나기 쉬워요', '생각이 깊어지고 방향이 분명해져요'],
+      ['당장 수입이 줄거나 늦어질 수 있어요', '준비만 길어지고 실행이 늦어지기 쉬워요', '주변과 비교하며 조급해질 수 있어요'],
+      ['끝나는 날짜와 그 뒤의 계획을 먼저 정하기', '드는 비용(돈·시간)과 얻을 기회를 표로 비교하기', '2주 동안 같은 리듬으로 해 보며 지속 가능성 확인하기'],
+      '배우는 즐거움과 막막함이 함께 와요. 작은 성취(시험·수료)를 중간 목표로 두면 끝까지 가요.',
+      '배운 것이 자격과 경력으로 바뀌어 선택지가 넓어져요. 이때 만난 사람이 다음 길을 열어 줘요.'],
+    5: ['관계·가정의 길이에요. 사람과의 인연을 중심에 두는 선택이라 마음의 안정과 함께할 기쁨이 커요.',
+      ['정서적으로 든든한 버팀목이 생겨요', '함께 계획을 세우며 삶의 방향이 분명해져요', '가족·주변의 지지를 얻기 쉬워요'],
+      ['내 시간과 자유가 줄어들 수 있어요', '서로 다른 생활 방식이 부딪힐 수 있어요', '상대의 기대에 맞추다 나를 놓칠 수 있어요'],
+      ['상대와 “5년 뒤 우리 모습”을 각자 써서 바꿔 읽기', '돈·집안일·가족 행사 기준을 미리 이야기하기', '다툴 때 푸는 방식이 맞는지 확인하기'],
+      '함께하는 일상이 자리를 잡아 가요. 작은 차이를 그때그때 이야기하는 습관이 관계의 체력을 만들어요.',
+      '함께 쌓은 시간이 큰 힘이 돼요. 이 무렵 집·아이·일처럼 함께 정해야 할 큰 결정이 찾아와요.'],
+    6: ['이동·변화의 길이에요. 익숙한 곳을 떠나 새 환경으로 가는 선택이라 시야가 넓어지고 새 기회를 만나요.',
+      ['새 환경에서 새로운 나를 발견해요', '사람·일의 선택지가 넓어져요', '정체된 느낌에서 벗어날 수 있어요'],
+      ['적응 기간 동안 외로움과 피로가 커요', '이사·정착 비용이 생각보다 커요', '기존 인연과 멀어질 수 있어요'],
+      ['그곳에서 2주 이상 살아 보거나 먼저 다녀온 사람 3명에게 묻기', '주거·일·언어 중 가장 걱정되는 하나부터 해결하기', '돌아올 수 있는 조건을 미리 정해 두기'],
+      '처음 반년은 적응의 시간이에요. 새 사람을 만나는 자리에 일부러 나가면 정착이 빨라져요.',
+      '새 환경이 내 것이 되어 처음의 선택이 맞았는지 보여요. 넓어진 경험이 다음 기회의 바탕이 돼요.'],
+    '-1': ['사주로 뚜렷한 분야가 잡히지 않는 선택이에요. 이럴 때는 기운보다 조건과 마음이 더 중요해요.',
+      ['내 뜻대로 방향을 정할 여지가 커요', '정해진 틀이 없어 유연하게 바꿀 수 있어요', '해 보면서 답을 찾을 수 있어요'],
+      ['기준이 없으면 결정을 계속 미루게 돼요', '주변 의견에 쉽게 흔들릴 수 있어요', '해 보지 않으면 장단점이 보이지 않아요'],
+      ['나에게 가장 중요한 기준 하나(성장·돈·사람·시간) 정하기', '작게 먼저 해 보기', '결정할 날짜를 먼저 정하기'],
+      '해 본 만큼 판단 기준이 생겨요. 처음의 기대와 실제를 비교해 기록해 두세요.',
+      '경험이 쌓여 다음 선택이 훨씬 쉬워져요.'],
+  };
+  // 이 선택의 기운이 들어오는 달 (올해 월운 중 같은 분야)
+  function monthsFor(c, g) {
+    const M = c.ny.months, mm = x => `${x.yr !== c.Y ? x.yr + '년 ' : ''}${x.solarM}월`;
+    let L = [];
+    if (g >= 0 && g <= 4) L = M.filter(x => S_.tg10(c.a.me, x.s).g === g);
+    else if (g === 5) L = M.filter(x => x.rel && x.rel.v > 0);
+    else if (g === 6) L = M.filter(x => x.rel && x.rel.k === 'chung');
+    if (!L.length) L = [...M].sort((x, y) => y.v - x.v).slice(0, 2);
+    return L.sort((x, y) => y.v - x.v).slice(0, 3).sort((x, y) => x.yr - y.yr || x.solarM - y.solarM).map(mm);
+  }
+  const S_ = window.SAJU;
+  function deepHTML(c, opts, groups, fits, total, sims, best, tie) {
+    const m = mbtiTraits(c.mbti.type);
+    const mFit = g => g === 0 ? (m.E ? '밖으로 뻗는 E 성향이라 사람을 만나며 길을 넓히기 좋아요.' : '혼자 깊이 파는 I 성향이라 사람을 만나는 일을 일정으로 정해 두면 좋아요.')
+      : g === 1 ? (m.N ? '직관형 N이라 새로운 아이디어가 끊이지 않아요. 끝맺음만 챙기세요.' : '현실형 S라 손에 잡히는 결과물부터 만들면 오래가요.')
+      : g === 2 ? (m.T ? '숫자로 판단하는 T라 계산은 강점이에요. 마음의 만족도 함께 따져 보세요.' : '감정형 F라 돈 결정이 마음에 흔들리기 쉬워요. 숫자 기준을 미리 적어 두세요.')
+      : g === 3 || g === 4 ? (m.J ? '계획형 J라 정해진 틀 안에서 실력이 잘 쌓여요.' : '유연한 P라 틀이 답답할 수 있어요. 나만의 작은 재미를 함께 정해 두세요.')
+      : g === 5 ? (m.T ? '논리형 T라 관계에서도 옳고 그름을 따지기 쉬워요. 공감 한마디를 먼저 건네세요.' : '관계를 중시하는 F 성향이라 마음을 나누는 데 강해요. 내 마음도 챙기세요.')
+      : g === 6 ? (m.N ? '새 환경을 즐기는 N 성향이라 변화에 빨리 적응해요.' : '익숙함이 편한 S 성향이라 미리 살아 보는 준비가 특히 중요해요.')
+      : `${c.mbti.type} 성향을 살려 내가 편한 방식으로 시작해 보세요.`;
+    return opts.map((o, i) => {
+      const g = groups[i], D = GDEEP[g] || GDEEP['-1'], mo = monthsFor(c, g), sm = sims && sims[i];
+      const luckLine = g >= 0 && g <= 4 ? (c.luck && c.luck.g === g ? `지금 대운(${c.luck.name})이 바로 이 방향이라 힘을 받기 쉬워요.` : c.yearG === g ? `${c.Y}년 세운이 이 방향을 밀어 줘요. 올해 안에 시작하면 유리해요.` : c.nextD && c.nextD.g === g ? `${c.nextD.age}살부터 오는 다음 대운이 이 방향이에요. 지금은 준비하고 그때 크게 움직이는 그림이 좋아요.` : `지금 대운(${c.luck ? c.luck.name : '—'})이 이 방향을 직접 밀어 주지는 않아요. 서두르기보다 준비를 단단히 하세요.`) : '';
+      return `<div class="hcard cs-deep${i === best && !tie ? ' best' : ''}"><h3 class="ht">🔍 ${AB[i]} · ${esc(o)} <small>${total[i]}점${i === best && !tie ? ' · 추천' : ''}</small></h3>
+        <p class="cs-p"><b>사주로 본 의미</b> — ${D[0]} ${luckLine}</p>
+        ${fits[i].why.length ? `<p class="cs-p"><b>점수 근거</b> — ${fits[i].why.join(' · ')}</p>` : ''}
+        <div class="cs-two"><div><b>👍 잘 맞는 점</b><ul>${D[1].map(x => `<li>${x}</li>`).join('')}</ul></div><div><b>⚠️ 조심할 점</b><ul>${D[2].map(x => `<li>${x}</li>`).join('')}</ul></div></div>
+        <p class="cs-p"><b>🧠 내 성향과의 궁합</b> — ${mFit(g)}</p>
+        <p class="cs-p"><b>📅 이 선택의 기운이 들어오는 달</b> — ${mo.join(' · ')}. 시작·계약·발표처럼 움직이는 일을 이 달에 맞추면 힘을 받아요.</p>
+        <p class="cs-p"><b>🌱 1년 뒤</b> — ${D[4]}</p>
+        <p class="cs-p"><b>🌳 3년 뒤</b> — ${D[5]}</p>
+        ${sm ? `<p class="cs-p"><b>🎲 가상 인생</b> — 이 길을 끝까지 살아 본 결과 ${sm.grade}등급 「${esc(sm.type)}」${sm.alive10 ? ` · 10년 뒤 행복 ${sm.hap10}` : ''}</p>` : ''}
+        <div class="cs-prep"><b>🧰 이 길을 고른다면 먼저 할 일</b>${D[3].map(x => `<label><input type="checkbox"><span>${x}</span></label>`).join('')}</div></div>`;
+    }).join('');
+  }
+  function planHTML(c, opts, best, tie) {
+    const NY = c.ny, bm = [...NY.best].sort((x, y) => x.yr - y.yr || x.solarM - y.solarM).map(x => `${x.yr !== c.Y ? x.yr + '년 ' : ''}${x.solarM}월`).join('·');
+    const tgt = tie ? '두 선택지' : `‘${esc(opts[best])}’`;
+    return `<div class="hcard"><h3 class="ht">🗓️ 결정까지 4주 계획</h3><div class="cs-plan">
+      <div><b>1주차</b><span>선택지마다 좋은 점·걱정되는 점을 3개씩 적고, 가장 중요한 기준 하나에 동그라미를 쳐요.</span></div>
+      <div><b>2주차</b><span>${tgt}을 먼저 겪어 본 사람 2~3명에게 실제 모습을 물어봐요. 상상과 다른 점을 기록해요.</span></div>
+      <div><b>3주차</b><span>되돌릴 수 있는 작은 시험(체험·면담·견적·상담)을 하나 해 봐요. 해 본 뒤 마음이 더 가벼운 쪽을 확인해요.</span></div>
+      <div><b>4주차</b><span>결정하고, 실제 시작은 기운이 좋은 <b>${bm}</b>에 맞춰요. 결정한 이유를 한 줄로 적어 두면 흔들릴 때 힘이 돼요.</span></div></div></div>`;
+  }
 
   /* ---------- 상담 결과 구성 (기기 안 계산) ---------- */
   const AB = ['A', 'B', 'C'];
@@ -344,7 +500,9 @@ const Counsel = (() => {
         <p class="cs-p">📆 ${NY.year}년(${NY.gzTxt}년) 움직이기 좋은 달 <b>${bm}</b> · 조심할 달 <b>${wm}</b></p>
         <p class="cs-p">🌿 타고난 기질: ${a.dm.nm} — ${a.dm.key}</p></div>
       <div class="hcard"><h3 class="ht">🧠 ${c.mbti.sure ? 'MBTI' : '사주 MBTI'} 기반 결정 스타일 · ${c.mbti.type}</h3><p class="cs-p">${mtip}</p><p class="sjnote">기준: ${c.mbti.src}</p></div>
+      <h3 class="cs-sec">🔍 선택지별 상세 풀이</h3>${deepHTML(c, opts, groups, fits, total, sims, best, tie)}
       ${simHTML}
+      ${planHTML(c, opts, best, tie)}
       <div class="hcard"><h3 class="ht">✅ 바로 해 볼 일</h3>${acts.map(x => `<p class="cs-p">${x}</p>`).join('')}
       ${c.game ? `<p class="sjnote">🎮 지금까지 인생 게임 ${c.game.n}판 · 최고 「${esc(c.game.best.title)}」(${c.game.best.grade}) — 게임 속에서도 선택의 결과를 비교해 보세요.</p>` : ''}</div>
       <div id="csAI"></div>
@@ -398,7 +556,7 @@ const Counsel = (() => {
 
   function init() {
     Hub.register({
-      item: { k: 'counsel', g: 'saju', c: 'mint', ic: 'spark', e: '🤖', n: 'AI 사주상담', d: '고민을 대화로 · 사주 · 대운 · MBTI로 상담 · 질문당 카르마', need: 1, f: () => Hub.go('counsel') },
+      item: { k: 'counsel', g: 'saju', c: 'mint', ic: 'spark', e: '🤖', n: 'AI 사주상담', d: '대화 상담 · 선택지 비교 상담 · 질문당 카르마 3', need: 1, f: () => Hub.go('counsel') },
       after: 'tojeong', title: 'AI 사주상담',
       html: pageHTML, bind: (p, a) => bind(p, a, () => Hub.render()),
     });
