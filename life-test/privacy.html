@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>개인정보 처리방침 · 프로젝트 80억</title>
+<style>
+  body{margin:0;background:#1b1530;color:#fff7ea;font-family:system-ui,-apple-system,sans-serif;line-height:1.7;
+    padding:calc(env(safe-area-inset-top,0px) + 20px) 20px calc(env(safe-area-inset-bottom,0px) + 30px)}
+  main{max-width:640px;margin:0 auto}
+  h1{font-size:22px} h2{font-size:17px;margin-top:26px;color:#ffcc4d}
+  a{color:#5ec8ff} li{margin:4px 0} .dim{color:#b9addb;font-size:14px}
+</style>
+</head>
+<body><main>
+<p><a href="index.html">← 운명 연구소로 돌아가기</a></p>
+<h1>개인정보 처리방침</h1>
+<p class="dim">서비스: 운명 연구소 · 인생 게임 「프로젝트 80억 : 또 다른 인생」(웹·Android·iOS) · 개발자: Mysitic Cho · 시행일: 2026년 11월 14일 (회원가입 보너스 · 가입 정보 암호화 저장)</p>
+
+<h2>1. 이용자가 입력하는 정보와 저장 위치</h2>
+<p>회원가입 여부와 관계없이, 아래 정보는 모두 <b>이용자 기기 안(브라우저 저장소 또는 앱 저장소)에만</b> 저장됩니다. 개발자 서버로 전송하지 않으며, 개발자는 이 정보를 볼 수 없습니다.</p>
+<ul>
+  <li><b>내 사주 정보</b>: 이름(별명), 생년월일, 양력·음력·윤달 구분, 태어난 시간(선택), 성별 — 오늘의 운세·사주·궁합 계산에 사용</li>
+  <li><b>궁합 관계도</b>: 이용자가 입력한 상대의 이름(별명)·생년월일·태어난 시간·성별 (최대 20명) — 궁합 계산과 순위 표시에 사용</li>
+  <li><b>입력 기록</b>: 최근에 입력한 사람의 위 정보 (최대 10명) — 다시 입력하지 않고 고를 수 있도록</li>
+  <li><b>게임 기록</b>: 저장 슬롯, 지난 생애, 카르마, 출석·복주머니, 테마·설정, 사주 MBTI·MBTI 성향 검사 결과(설문 응답은 결과만 저장)</li>
+  <li><b>구매 상태</b>: 앱에서 구매한 상품과 행운패스 만료 시각 (결제 자체는 스토어가 처리)</li>
+  <li><b>AI 사주상담 기록</b>: 이용자가 적은 고민·선택지와 상담 결과(최근 10건), 남은 상담권 수 — 지난 상담 다시 보기 목적</li>
+</ul>
+<p>다른 사람의 정보를 궁합에 입력할 때는 실명 대신 별명을 쓰는 것을 권장합니다. 사주 계산에는 생년월일과 시간만 필요합니다.</p>
+
+<h2>1-1. 회원가입·로그인 (선택 · 카카오 · 구글)</h2>
+<p>회원가입은 선택 사항이며, 가입하지 않아도 모든 기능을 이용할 수 있습니다. 가입하면 계정당 1회 카르마 200을 드립니다. 가입·로그인하면 아래 정보만 서버(Supabase, 서울 리전)에 저장됩니다.</p>
+<ul>
+  <li><b>계정 정보</b>: 로그인 공급자 종류(카카오·구글)와 공급자가 주는 고유 식별자, 가입·마지막 접속 시각 — 로그인·계정 관리 목적</li>
+  <li><b>닉네임</b>: 공급자가 주는 닉네임 — 화면 표시 목적. 서버 데이터베이스에 <b>암호화(AES-256)</b>해 저장하며, 암호화 키는 별도 비밀 저장소(Supabase Vault)에 따로 보관합니다. 공급자가 보낸 이름·프로필 사진 주소·이메일은 저장 직후 평문을 지웁니다.</li>
+  <li><b>이메일(구글 로그인만)</b>: 구글 계정 식별에 필요해 로그인 서비스(Supabase Auth)가 보관합니다 — 카카오 로그인은 이메일을 받지 않습니다.</li>
+  <li><b>게임 기록 요약</b>: 인생 게임 카르마, 살아 본 인생 수, 카르마로 연 콘텐츠 목록, 가입 보너스 지급 시각 — 다른 기기에서 이어 하기 목적</li>
+  <li><b>가입 보너스 중복 방지 값</b>: 공급자 계정을 비밀 키로 일방향 변환한 값(HMAC-SHA256) — 원래 계정을 알아낼 수 없으며, 탈퇴 후 재가입 시 보너스 중복 지급을 막기 위해 탈퇴 후에도 보관합니다.</li>
+</ul>
+<p>위 1번의 이름(별명)·생년월일·태어난 시간·성별·입력 기록·궁합 관계도·상담 내용은 가입·로그인해도 <b>절대 서버로 보내지 않습니다</b>. 서버와 주고받는 모든 통신은 암호화(HTTPS/TLS)되며, 저장된 데이터는 본인만 접근할 수 있도록 행 단위 보안 규칙으로 보호됩니다. 회원 탈퇴(설정 → 계정 → 회원 탈퇴) 시 서버의 계정·닉네임·게임 기록은 즉시 삭제됩니다(위 중복 방지 값만 남음).</p>
+
+<h2>1-2. AI 사주상담의 AI 상담사 답변 (선택 · 로그인 필요)</h2>
+<p>AI 사주상담의 기본 결과는 기기 안에서 계산합니다. 이용자가 <b>‘동의하고 AI 답변 받기’</b>를 누른 경우에만 아래 정보가 서버(Supabase)를 거쳐 AI 모델 제공사(Anthropic)로 전달되어 답변을 만듭니다.</p>
+<ul>
+  <li><b>보내는 정보</b>: 고민 내용과 선택지, 고민 주제, 사주 요약(일간·오행 개수·부족한 기운·현재/다음 대운·좋은 달), MBTI 유형, 나이대(예: 50대), 기기에서 계산한 선택지 점수·게임 시뮬레이션 요약</li>
+  <li><b>보내지 않는 정보</b>: 이름(별명), 생년월일, 태어난 시간, 궁합 상대 정보</li>
+  <li><b>보관</b>: 서버는 질문·답변 내용을 저장하지 않고, 계정별 하루 이용 횟수만 기록합니다. Anthropic의 데이터 처리는 Anthropic의 개인정보 처리방침을 따릅니다.</li>
+</ul>
+<p>고민 내용에 실명·연락처 등 개인을 알아볼 수 있는 정보는 적지 않는 것을 권장합니다.</p>
+
+<h2>2. 광고 (Google AdMob · AdSense)</h2>
+<p>앱은 무료 운영을 위해 Google AdMob 광고를 표시합니다. 광고 제공 과정에서 Google은 다음 정보를 수집·이용할 수 있습니다. 위 1번의 사주·궁합 정보는 광고 회사에 전달하지 않습니다.</p>
+<ul>
+  <li>광고 식별자(Android 광고 ID, iOS IDFA — iOS는 사용자가 추적을 허용한 경우에만)</li>
+  <li>IP 주소에 기반한 대략적인 위치, 기기 정보(기종, OS 버전), 광고 상호작용 기록</li>
+</ul>
+<p><b>웹 버전</b>에서는 광고를 붙이는 경우 Google AdSense가 쿠키 및 유사 기술을 사용할 수 있으며, 유럽 등 동의가 필요한 지역에서는 Google 동의 관리 플랫폼(CMP) 메시지가 표시됩니다.</p>
+<p>자세한 내용은 <a href="https://policies.google.com/technologies/ads">Google 광고 정책</a> 및 <a href="https://policies.google.com/privacy">Google 개인정보처리방침</a>을 참고하세요.</p>
+
+<h2>3. 인앱 구매와 알림</h2>
+<p>결제는 Google Play·App Store가 처리하며 개발자는 카드 번호 등 결제 정보를 받지 않습니다. 「매일 운세 알림」은 기기 안에서 예약되는 로컬 알림이며, 알림 문구도 기기에서 만들어집니다.</p>
+
+<h2>3-1. 의견·구매 의향 설문 (구글 설문)</h2>
+<p>「의견 남기기」·구매 의향 질문을 누르면 Google 설문(Google Forms) 페이지로 이동합니다. 설문에는 이름·생년월일·궁합 상대 정보를 묻지 않으며, 이 서비스에 저장된 정보도 설문으로 자동 전송되지 않습니다. 설문 응답은 Google이 보관·처리하며 개발자는 서비스 개선 목적으로만 열람합니다. 응답 삭제를 원하시면 문의 메일로 알려 주세요.</p>
+
+<h2>4. 이용자의 선택과 삭제</h2>
+<ul>
+  <li><b>앱·사이트 안에서 삭제:</b> 더보기 → 「내 정보·기록 지우기」에서 사주·궁합 정보만, 또는 게임 기록까지 지울 수 있습니다. 궁합 관계도의 ✕ 버튼으로 한 명씩 지울 수도 있습니다.</li>
+  <li>앱을 삭제하거나 브라우저 사이트 데이터를 지우면 모든 정보가 함께 삭제됩니다.</li>
+  <li><b>iOS:</b> 첫 실행 시 추적 허용 여부를 묻습니다. 설정 → 개인정보 보호 및 보안 → 추적에서 변경할 수 있습니다.</li>
+  <li><b>Android:</b> 설정 → 개인정보 보호 → 광고에서 광고 ID를 재설정하거나 삭제할 수 있습니다.</li>
+  <li><b>유럽(EEA)·영국 등:</b> 첫 실행 시 동의 화면이 표시되며, 더보기의 「광고 개인정보 설정」에서 변경할 수 있습니다.</li>
+</ul>
+
+<h2>5. 아동의 개인정보</h2>
+<p>이 서비스는 만 13세 미만 아동을 주 대상으로 하지 않으며, 아동의 개인정보를 의도적으로 수집하지 않습니다.</p>
+
+<h2>6. 변경 및 문의</h2>
+<p>방침이 바뀌면 이 페이지에 게시합니다. 개인정보 관련 문의: <b><a href="mailto:support.um09@gmail.com">support.um09@gmail.com</a></b></p>
+
+<h2>Privacy Policy (English summary)</h2>
+<p class="dim">Signing in is optional; everything works without an account. The nickname, birth date, calendar type, birth time and sex you enter, the people you add for compatibility (up to 20), game progress and purchase status are stored only on your device and are never sent to the developer.
+The app shows ads via Google AdMob, which may collect advertising identifiers (IDFA only with your permission on iOS), approximate location from IP address and device information to serve and measure ads; your saju/compatibility data is not shared with advertisers.
+Optional Kakao/Google sign-up (one-time 200 karma bonus) stores only your provider and account identifier, your nickname encrypted with AES-256 (key kept separately in Supabase Vault; name, photo URL and email sent by the provider are removed), your email for Google sign-in only (held by Supabase Auth), a game summary (karma, number of lives, unlocked content) and a one-way HMAC value used to prevent repeat sign-up bonuses, on our server (Supabase, Seoul) over encrypted connections; birth data, partners and history never leave your device. Deleting your account (Settings → Account) erases them except the one-way value. Payments are processed by Google Play / the App Store. Feedback and purchase-intent surveys open Google Forms, which never ask for your name, birth data or partner data; responses are kept by Google. AI saju counselling runs on your device; only if you tap “동의하고 AI 답변 받기” while signed in, a saju summary (day master, element counts, luck periods, good months), MBTI type, age band, your question and options — never your name or birth data — are sent via our server to Anthropic to write the answer, and are not stored on our server (only a daily usage count). You can erase your data in More → "내 정보·기록 지우기", or by uninstalling the app or clearing site data. Contact: support.um09@gmail.com</p>
+</main></body>
+</html>
