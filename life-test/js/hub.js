@@ -360,10 +360,9 @@ const Hub = (() => {
       ${p && a
         ? `<button class="hme" id="hmMe"><span class="ddi" title="${a.ddi}띠">${DDI_E[a.p.y.b]}</span><div><b>${esc(p.name)}님 <em class="ddit">${a.ddi}띠</em></b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
-      <button class="hhero" data-item="today"><div class="hh-top"><small>오늘의 운세</small><em class="hgo">시작하기 ›</em></div>
-        <div class="hh-mid"><div><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span></div><i>☀️</i></div>
-        ${(() => { const st = store.get(DTK, {}), done = p && st.d === dtDay() && st.k === p.date && st.i != null;
-          return `<span class="hh-tarot" id="hhTarot"><i>🃏</i><span><b>${done ? '오늘의 타로 카드 다시 보기' : '오늘의 무료 타로 1장'}</b><small>${done ? '오늘 뽑은 카드와 해석을 확인해요' : '질문을 떠올리고 한 장 골라요 · 매일 무료'}</small></span><em>›</em></span>`; })()}</button>
+      <button class="hhero" data-item="today"><div class="hh-top"><small>오늘의 운세</small>${(() => { const st = store.get(DTK, {}), done = p && st.d === dtDay() && st.k === p.date && st.i != null;
+          return `<span class="hh-tarot${done ? ' done' : ''}" id="hhTarot" role="button" aria-label="${done ? '오늘 뽑은 타로 카드 보기' : '무료 타로 카드 뽑기'}"><i>🃏</i>${done ? '오늘 타로' : '무료 타로'}</span>`; })()}<em class="hgo">시작하기 ›</em></div>
+        <div class="hh-mid"><div><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span></div><i>☀️</i></div></button>
       ${sec('사주 · 운세', 'saju')}
       ${sec('궁합 · 관계', 'rel')}
       ${karmaCardHTML()}
