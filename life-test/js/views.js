@@ -1,5 +1,5 @@
 /* =====================================================================
- *  views.js — 목적별 상세 보기 · 열람할 때마다 카르마 차감
+ *  views.js — 서비스별 상세 풀이 · 열람할 때마다 카르마 차감 (개요는 각 화면에서 무료)
  *   · 서비스마다 가격(STORE_CONFIG.views.items) — 볼 때 카르마를 쓰고 열람
  *   · 결제한 날(자정까지)에는 같은 대상의 같은 서비스를 다시보기 FREE회(기본 3회) 무료
  *     → 무료 횟수를 다 쓰거나 날짜가 바뀌면 다시 결제
@@ -24,8 +24,8 @@ const Views = (() => {
   const legacy = () => Store.ownedReal && Store.ownedReal('report');
 
   /* 오늘 상태: paid(오늘 결제했나) · used(오늘 본 횟수, 결제한 열람 포함) · freeLeft(남은 무료 다시보기) */
-  function status(k, s) {
-    if (legacy()) return { legacy: true, paid: true, used: 0, freeLeft: Infinity };
+  function status(k, s, extraLegacy) {
+    if (legacy() || extraLegacy) return { legacy: true, paid: true, used: 0, freeLeft: Infinity };
     const v = all()[id(k, s)];
     if (!v || v.day !== day()) return { paid: false, used: 0, freeLeft: 0 };
     return { paid: true, used: v.n, freeLeft: Math.max(0, FREE() - (v.n - 1)) };
@@ -47,14 +47,14 @@ const Views = (() => {
 
   /* 열기: 오늘 무료 다시보기가 남았으면 무료, 아니면 카르마 결제 후 열람
    * label: 내역·영수증에 쓸 이름 (예: '💰 재물운 · 홍길동') · show: 열람 화면을 여는 함수 · back: 취소 시 */
-  function open(k, s, label, show, back) {
+  function open(k, s, label, show, back, extraLegacy) {
     const it = item(k); if (!it) return;
-    const st = status(k, s);
+    const st = status(k, s, extraLegacy);
     const go = (paid) => {
       const v = st.legacy ? null : bump(k, s, paid);
       const left = st.legacy ? Infinity : Math.max(0, FREE() - (v.n - 1));
       if (!paid && !st.legacy) Karma.note(`🔁 ${label} 다시보기 무료 (${v.n - 1}/${FREE()})`);
-      if (st.legacy) Karma.note(`📜 ${label} 열람 (상세 리포트 보유 · 무료)`);
+      if (st.legacy) Karma.note(`📜 ${label} 열람 (이전 구매 · 무료)`);
       cur = { k, s, at: Date.now() }; ret = true;
       receipt = { k, label, d: paid ? -it.k : 0, bal: Karma.bal(), freeLeft: left, at: Date.now(), legacy: !!st.legacy, again: !paid };
       try { Karma.metric(paid ? 'view_paid' : 'view_free'); } catch (e) { }
@@ -73,7 +73,7 @@ const Views = (() => {
   function receiptHTML() {
     if (!receipt || Date.now() - receipt.at > 30 * 60e3) return '';
     const r = receipt, it = item(r.k) || {};
-    const left = r.legacy ? '이전 리포트 보유 · 계속 무료' : r.freeLeft > 0 ? `오늘 무료 다시보기 <b>${r.freeLeft}회</b> 남음 (자정까지)` : '오늘 무료 다시보기를 다 썼어요 · 다음 열람은 다시 차감';
+    const left = r.legacy ? '이전 구매로 계속 무료' : r.freeLeft > 0 ? `오늘 무료 다시보기 <b>${r.freeLeft}회</b> 남음 (자정까지)` : '오늘 무료 다시보기를 다 썼어요 · 다음 열람은 다시 차감';
     return `<div class="hcard vrec" id="vRec"><div class="vrh"><b>🧾 방금 본 상세</b><button class="vrx" id="vRecX" aria-label="닫기">✕</button></div>
       <div class="vrr"><span>${esc(r.label)}</span><em class="${r.d < 0 ? 'm' : 'z'}">${r.d < 0 ? `✨ −${-r.d}` : r.legacy ? '무료' : '다시보기 무료'}</em></div>
       <small>${left} · 남은 카르마 <b>✨ ${Karma.bal()}</b></small>
@@ -85,9 +85,9 @@ const Views = (() => {
     const h = document.getElementById('vRecH'); if (h) h.onclick = () => Karma.openHistory('spend');
   }
   /* 서비스 칩: 가격 또는 오늘 상태 */
-  function chip(k, s) {
-    const it = item(k), st = status(k, s);
-    if (st.legacy) return '<em class="vch own">무료 (리포트 보유)</em>';
+  function chip(k, s, extraLegacy) {
+    const it = item(k), st = status(k, s, extraLegacy);
+    if (st.legacy) return '<em class="vch own">무료 (이전 구매)</em>';
     if (st.paid && st.freeLeft > 0) return `<em class="vch on">오늘 열람 · 다시보기 ${st.freeLeft}회 무료</em>`;
     if (st.paid) return `<em class="vch">무료 소진 · ✨ ${it.k}</em>`;
     return `<em class="vch">✨ ${it.k}</em>`;
@@ -96,5 +96,35 @@ const Views = (() => {
   function shiftDay() { const m = all(), y = day(Date.now() - 864e5); Object.keys(m).forEach(x => m[x].day = y); store.set(SKEY, m); }
   function reset() { store.set(SKEY, {}); cur = null; receipt = null; }
 
-  return { takeReturn, item, list, subj, pair, status, open, leave, viewing, receiptHTML, bindReceipt, chip, FREE, shiftDay, reset, cur: () => cur, receipt: () => receipt, day };
+  /* ---------- 상세 풀이 화면 (공통) ----------
+   * openDetail(k, s, label, html, opt): 결제/무료 다시보기 → 'detail' 화면에 html() 결과를 보여 줌
+   * opt.legacy: 이전 구매로 무료인지 · opt.back: 취소 시 · opt.title: 화면 제목 */
+  let page = null;   // { k, s, label, html }
+  function openDetail(k, s, label, html, opt = {}) {
+    const from = Hub.cur ? Hub.cur() : 'home';
+    open(k, s, label, () => { page = { k, s, label, html, from: from === 'detail' ? 'home' : from }; if (document.getElementById('overlay').classList.contains('on')) closeOverlay(true); Hub.register({ page: 'detail', title: opt.title || item(k).n, html: detailHTML, bind: bindDetail }); Hub.go('detail'); }, opt.back, opt.legacy);
+  }
+  // 상세 버튼: 가격 또는 오늘 다시보기 상태를 함께 표시
+  function button(k, s, id, extraLegacy, label) {
+    const it = item(k), st = status(k, s, extraLegacy);
+    const tail = st.legacy ? '무료 (이전 구매)' : st.paid && st.freeLeft > 0 ? `오늘 다시보기 ${st.freeLeft}회 무료` : `✨ ${it.k}`;
+    return `<button class="bigbtn wide vdet" id="${id}">🔓 ${label || '상세 풀이 보기'} <small>${tail}</small></button>`;
+  }
+  function detailHTML() {
+    if (!page || !viewing(page.k, page.s)) return `<div class="hcard"><p class="sjtxt" style="margin:0">상세 풀이는 각 서비스 화면에서 「상세 풀이 보기」를 눌러 열 수 있어요.</p><button class="bigbtn wide" id="vHome">🏠 홈으로</button></div>`;
+    const st = status(page.k, page.s), it = item(page.k);
+    const left = st.legacy ? '이전 구매 · 무료' : st.freeLeft > 0 ? `오늘 무료 다시보기 ${st.freeLeft}회 남음` : '오늘 무료 다시보기를 다 썼어요';
+    let body = ''; try { body = page.html(); } catch (e) { console.warn(e); body = '<div class="hcard"><p class="hsub">풀이를 만들지 못했어요. 정보를 확인해 주세요.</p></div>'; }
+    return `<div class="hhead"><small>${esc(page.label.replace(/^\S+\s/, ''))}</small><h2>${it.e} ${it.n}</h2></div>
+      <div class="vbar"><span>${left}</span><b>✨ ${Karma.bal()}</b></div>${body}
+      <button class="bigbtn wide" id="vBack">← 돌아가기 · 사용 내역 보기</button>`;
+  }
+  function bindDetail() {
+    const b = document.getElementById('vBack'); if (b) b.onclick = () => { leave(); Hub.go(page && page.from || 'home'); };
+    const h = document.getElementById('vHome'); if (h) h.onclick = () => Hub.go('home');
+    try { page && page.bind && page.bind(); } catch (e) { }
+    document.querySelectorAll('#hubBody details.dfold').forEach(d => d.open = true);
+  }
+
+  return { openDetail, button, takeReturn, item, list, subj, pair, status, open, leave, viewing, receiptHTML, bindReceipt, chip, FREE, shiftDay, reset, cur: () => cur, receipt: () => receipt, day };
 })();

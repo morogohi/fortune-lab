@@ -1,6 +1,6 @@
 /* =====================================================================
- *  yearfull.js — 목적별 상세 운세 (볼 때마다 카르마 · 결제한 날 다시보기 3회 무료 — views.js)
- *   예전: 상세 사주 리포트 한 덩어리(카르마 50·영구) → 지금: 서비스별로 나눠 열람 (예전 구매자는 모두 무료)
+ *  yearfull.js — 2027 신년운세 상세의 계산 엔진 (섹션별 HTML: parts) — 화면은 detail.js 「신년운세 상세」
+ *   예전: 상세 사주 리포트 한 덩어리(카르마 50·영구) → 지금: 신년운세 상세(볼 때마다 · 다시보기 3회 무료), 예전 구매자는 무료
  *   무료: 신년운세·토정비결 간략 버전 (기존 화면)
  *   무료 화면 아래에 '무료 vs 상세'를 내 데이터 일부로 보여 주고, 카르마로 열면 기간 제한 없이 열람
  *   구성: 한눈에 보는 한 해 · 나의 사주 바탕 · 2027년이 나에게 오는 방식 · 분야별 상세 6개
@@ -219,61 +219,5 @@ const YearFull = (() => {
       tojeong: B.t ? `<div class="hcard"><h3 class="ht">📜 2027 토정비결 전체</h3>${Tojeong.fullHTML(B.t)}</div>` : '',
     };
   }
-  /* ---------- 목적별 상세: 메뉴 · 열람 ---------- */
-  const SVC = ['y_total', 'y_work', 'y_money', 'y_love', 'y_health', 'y_family', 'y_study', 'y_month', 'y_luck', 'y_guide', 'y_rel', 'tojeong', 'compat'];
-  let vk = null;            // 지금 여는 서비스
-  function sectionOf(k, P) { const it = Views.item(k); return it && it.area != null ? P.area(it.area) : P[k] || ''; }
-  // 서비스 열기 (메뉴·다른 화면 공통): 결제/무료 다시보기 → 열람 화면
-  function openView(k, p) {
-    p = p || Hub.me(); if (!p || !Hub.analyze(p)) { Hub.go('yearfull'); return; }
-    if (k === 'compat') { Hub.go('compat'); Hub.toast('궁합 탭에서 상대를 골라 「상세 풀이 보기」를 누르세요'); return; }
-    const it = Views.item(k);
-    Views.open(k, Views.subj(p), `${it.e} ${it.n} · ${p.name}`, () => { vk = k; Hub.go('yfview'); });
-  }
-  function menuHTML(p, a) {
-    if (!a) return '<div class="hcard"><p class="hsub">생년월일을 먼저 입력해 주세요.</p></div>';
-    const s = Views.subj(p), groups = {};
-    SVC.forEach(k => { const it = Views.item(k); if (it) (groups[it.g] = groups[it.g] || []).push(k); });
-    const legacy = Store.ownedReal('report');
-    return `<div class="hhead"><small>${esc(p.name)}님 · 2027</small><h2>목적별 상세 운세</h2></div>
-      ${Views.receiptHTML()}
-      <div class="hcard vintro"><p class="sjtxt" style="margin:0">궁금한 것만 골라 보세요. <b>볼 때 카르마</b>를 쓰고, 결제한 날은 자정까지 같은 풀이를 <b>${Views.FREE()}번 더 무료</b>로 다시 볼 수 있어요.${legacy ? '<br>📜 예전에 상세 사주 리포트를 열어서 <b>모두 무료</b>예요.' : ''}</p>
-        <div class="kbal sm"><span>보유 카르마</span><b>✨ ${Karma.bal()}</b><small>오늘 사용 −${Karma.today().spend}</small></div></div>
-      <button class="vfree" id="vSaju"><span>📜</span><div><b>사주풀이 <em class="vch free">무료</em></b><small>타고난 성격·강점·약점·연애·재물·건강 성향·개운법</small></div><i>›</i></button>
-      ${Object.keys(groups).map(g => `<h4 class="kh">${g}</h4>` + groups[g].map(k => { const it = Views.item(k);
-        return `<button class="vsvc" data-yv="${k}"><span>${it.e}</span><div><b>${it.n}</b><small>${it.d}</small></div>${k === 'compat' ? '<em class="vch">✨ ' + it.k + ' · 상대마다</em>' : Views.chip(k, s)}</button>`; }).join('')).join('')}
-      <p class="sjnote">※ 대상(생년월일)이 바뀌면 따로 결제해요. 다시보기 무료 횟수는 서비스·대상별로 세요. 전통 명리·토정비결 이론을 바탕으로 한 참고·재미용 풀이예요.</p>`;
-  }
-  function viewHTML(p, a) {
-    if (!a || !vk || !Views.viewing(vk, Views.subj(p))) return menuHTML(p, a);
-    const it = Views.item(vk), P = parts(p, a), st = Views.status(vk, Views.subj(p));
-    try { Karma.metric('view_' + vk); } catch (e) { }
-    const left = st.legacy ? '예전 리포트 보유 · 무료' : st.freeLeft > 0 ? `오늘 무료 다시보기 ${st.freeLeft}회 남음` : '오늘 무료 다시보기를 다 썼어요';
-    return `<div class="hhead"><small>${esc(p.name)}님 · 2027</small><h2>${it.e} ${it.n}</h2></div>
-      <div class="vbar"><span>${left}</span><b>✨ ${Karma.bal()}</b></div>
-      ${sectionOf(vk, P) || '<div class="hcard"><p class="hsub">이 풀이를 만들 수 없어요. 생년월일을 확인해 주세요.</p></div>'}
-      <button class="bigbtn wide" id="vBack">← 목록으로 · 사용 내역 보기</button>`;
-  }
-  // 신년운세·토정비결·내 사주 화면 아래 붙는 작은 카드
-  function ctaHTML(p) {
-    const s = Views.subj(p), pick = ['y_total', 'y_money', 'y_love', 'y_month'];
-    return `<div class="hcard yf-cta"><b>🔎 목적별 상세 보기</b><small>궁금한 것만 골라 보세요 · 1회 ✨5~10 · 결제한 날 다시보기 ${Views.FREE()}회 무료</small>
-      <div class="vmini">${pick.map(k => { const it = Views.item(k); return `<button data-yv="${k}"><span>${it.e}</span><b>${it.n}</b>${Views.chip(k, s)}</button>`; }).join('')}</div>
-      <button class="ghost wide" id="yfGo">전체 상세 메뉴 보기 ›</button></div>`;
-  }
-  function bind(p, a) {
-    const root = document.getElementById('hubBody');
-    root.querySelectorAll('[data-yv]').forEach(b => b.onclick = () => openView(b.dataset.yv, p));
-    const g = document.getElementById('yfGo'); if (g) g.onclick = () => Hub.go('yearfull');
-    const sj = document.getElementById('vSaju'); if (sj) sj.onclick = () => Hub.go('saju');
-    const vb = document.getElementById('vBack'); if (vb) vb.onclick = () => { Views.leave(); Hub.go('yearfull'); };
-    Views.bindReceipt(() => Hub.render());
-  }
-  function init() {
-    Hub.register({ page: 'yearfull', title: '목적별 상세 운세', html: (p, a) => menuHTML(p, a), bind: (p, a) => bind(p, a) });
-    Hub.register({ page: 'yfview', title: '상세 보기', html: (p, a) => viewHTML(p, a), bind: (p, a) => bind(p, a) });
-    Store.onChange(() => { if (document.getElementById('hub').classList.contains('on')) try { Hub.render(); } catch (e) { } });
-  }
-  init();
-  return { unlocked, ctaHTML, bind, build, parts, openView, menuHTML };
+  return { unlocked, build, parts, AREAS, GN };
 })();

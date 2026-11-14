@@ -55,10 +55,14 @@ function shopListHTML(page) {
     return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${own ? `<small style="color:var(--money)">${Store.why(k)}</small>` : ''}</div>
       <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`; };
   const main = Store.contents().filter(k => !Store.item(k).game), game = Store.contents().filter(k => Store.item(k).game);
-  const vw = typeof Views !== 'undefined' ? Views.list().map(Views.item) : [], vk = vw.map(x => x.k);
-  const cont = (vw.length ? `<div class="shopitem"><span class="se">🔎</span><div><b>목적별 상세 운세 ${vw.length}종</b><small>2027 종합·재물·연애·직업·건강·12개월·대운·궁합·토정비결 · 볼 때 차감 · 결제한 날 다시보기 ${Views.FREE()}회 무료 · 사주풀이는 무료</small></div><button data-go="yearfull">✨ ${Math.min(...vk)}~${Math.max(...vk)}/회</button></div>` : '')
-    + main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>인생의 갈림길 고민 — 선택지별 적합도·대운·MBTI·가상 인생 비교 · 첫 회 무료</small></div><button data-go="counsel">✨ 20/회</button></div>`
-    + `<h4 class="kh">☕ 가볍게</h4><div class="shopitem"><span class="se">🔮</span><div><b>타로 사주 심층 풀이</b><small>뽑은 카드를 내 사주·대운·올해·이번 달과 엮은 주제별 상담 · 매일 1회 무료 (리포트 보유 시 3회)</small></div><button data-go="tarot">✨ 10/회</button></div>`
+  // 서비스별 상세 풀이 가격 (개요는 무료 · 볼 때 차감 · 결제한 날 다시보기 3회 무료)
+  const SV = [['newyear', 'newyear'], ['tojeong', 'tojeong'], ['compat', 'compat'], ['flirt', 'flirt'], ['mbti', 'mbti']];
+  const vrow = (k, go) => { const it = Views.item(k); return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small></div><button data-go="${go}">✨ ${it.k}/회</button></div>`; };
+  const cont = `<p class="sjnote" style="margin:4px 0 8px">📜 사주풀이는 무료 · 각 서비스의 개요는 무료로 보고, 더 자세한 풀이만 볼 때 카르마를 써요 (결제한 날 자정까지 다시보기 ${Views.FREE()}회 무료).</p>`
+    + SV.map(([k, g]) => vrow(k, g)).join('')
+    + `<div class="shopitem"><span class="se">🃏</span><div><b>타로 상세 리딩</b><small>${Views.item('tarot5').d}</small></div><button data-go="tarot">1장 ✨${Views.item('tarot1').k} · 3장 ✨${Views.item('tarot3').k} · 5장 ✨${Views.item('tarot5').k}</button></div>`
+    + main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>고민을 대화로 상담 · 사주·대운·MBTI를 바탕으로 답해요 · 처음 질문 1개 무료</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 10}/질문</button></div>`
+    + ''
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
   const charge = `<h4 class="kh">✨ 카르마 모으기 · 구매</h4>` + Karma.chargeHTML(0, '', page);
@@ -91,11 +95,11 @@ function reportHTML(name, a, age) {
     <div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
     <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
     <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div>
-    <p class="sjnote" style="text-align:center">📜 사주풀이는 무료예요 · 2027 운세·12개월·대운은 목적별 상세 보기에서 골라 볼 수 있어요.<br>※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
+    <p class="sjnote" style="text-align:center">📜 사주풀이는 무료예요 · 2027 운세·12개월·대운은 신년운세 상세에서 볼 수 있어요.<br>※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
 }
 function showReport(name, a, age, fromGame) {
   openOverlay(`📜 ${name}의 사주풀이`, reportHTML(name, a, age), [
-    ...(fromGame ? [] : [{ t: '🔎 목적별 상세 운세 보기', pri: 1, f: () => Hub.go('yearfull') }]),
+    ...(fromGame ? [] : [{ t: '🧧 2027 신년운세 보기', pri: 1, f: () => Hub.go('newyear') }]),
     { t: '닫기' }]);
 }
 function myReport() {

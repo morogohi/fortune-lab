@@ -1,7 +1,7 @@
 /* =====================================================================
  *  karma.js — 카르마 하나로 단순화한 유료 모델
  *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · AI 사주상담(1회 20, 첫 회 무료)
- *   · 가벼운 상품: 타로 사주 심층 풀이(1회 10, 매일 1회 무료 · 리포트 보유 시 3회) / 게임 아이템은 별도
+ *   · 상세 풀이: 서비스별 5~15 · 타로 1/3/5장 5/10/15 · AI 상담 질문당 10 (views.js·detail.js·counsel.js) / 게임 아이템은 별도
  *   · 카르마 모으기: 📺 광고 1번 +5 (3분 간격 · 하루 10번) · 🎲 인생 게임 엔딩 5~15 · 게임 중간 광고 휴식 +3
  *   · 💳 카르마는 돈으로도 살 수 있다 (100 · 330 · 1,200)
  *   · 🧪 테스트 모드(테스트 페이지·테스트 계정): 광고·결제를 실제 없이 가상으로 처리
@@ -131,10 +131,10 @@ const Karma = (() => {
       <div class="kway"><i>🎁</i><span><b>복주머니 교환 +20</b><small>출석·미션으로 모은 복주머니 2개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>
       <h4 class="kh">어디에 쓰나요?</h4>
-      <div class="kway"><i>🔎</i><span><b>목적별 상세 보기 1회 5~10</b><small>재물·연애·직업·건강·12개월·대운·궁합 상세·토정비결 등 · 결제한 날 자정까지 다시보기 ${(STORE_CONFIG.views || {}).free || 3}회 무료</small></span></div>
+      <div class="kway"><i>🔓</i><span><b>서비스별 상세 풀이 5~15</b><small>신년운세 15 · 토정비결 10 · 궁합 10 · 바람기 5 · 사주 MBTI 5 · 개요는 무료 · 결제한 날 자정까지 다시보기 ${(STORE_CONFIG.views || {}).free || 3}회 무료</small></span></div>
+      <div class="kway"><i>🃏</i><span><b>타로 상세 리딩</b><small>1장 5 · 3장 10 · 5장 15 · 카드 뒤집기와 요약은 무료</small></span></div>
       <div class="kway"><i>📜</i><span><b>사주풀이는 무료</b><small>타고난 성격·강점·약점·연애·재물·건강 성향·개운법</small></span></div>
-      <div class="kway"><i>🤖</i><span><b>AI 사주상담 1회 20</b><small>첫 회 무료</small></span></div>
-      <div class="kway"><i>🔮</i><span><b>타로 사주 심층 풀이 1회 10</b><small>매일 1회 무료</small></span></div>
+      <div class="kway"><i>🤖</i><span><b>AI 사주상담 질문 1개 ${(STORE_CONFIG.counsel || {}).perQ || 10}</b><small>대화로 고민 상담 · 처음 질문 1개 무료</small></span></div>
       <div class="kway"><i>🎮</i><span><b>인생 게임 아이템</b><small>다시 태어나기 15 · 기적 40 · 운명 조작 팩 30 · 갈림길 미리 보기 3</small></span></div>
       <p class="sjnote">카르마는 쓰면 없어지는 소모성 재화예요. 이 기기에 저장되며, 앱을 지우면 남은 카르마도 사라질 수 있어요 (로그인하면 계정에 함께 저장돼요). 카르마는 현금으로 바꾸거나 환불할 수 없어요 — 구매 환불은 스토어 정책을 따라요.</p></div>`;
   }
@@ -144,8 +144,8 @@ const Karma = (() => {
   }
   // 다음 목표: 아직 안 연 대표 상품까지 남은 카르마 (홈 카드용)
   function nextGoal() {
-    const it = typeof Views !== 'undefined' && Views.item('y_total');
-    if (it) return { e: it.e, n: it.n + ' 상세', need: Math.max(0, it.k - bal()), k: it.k };
+    const it = typeof Views !== 'undefined' && Views.item('newyear');
+    if (it) return { e: it.e, n: it.n, need: Math.max(0, it.k - bal()), k: it.k };
     return { e: '🤖', n: 'AI 사주상담 1회', need: Math.max(0, 20 - bal()), k: 20 };
   }
 
@@ -168,7 +168,7 @@ const Karma = (() => {
       <h4 class="kh">카르마 구매</h4>
       ${Store.packs().map(k => { const it = Store.item(k); return `<button class="kopt" data-pack="${k}"><i>${it.e}</i><span><b>${it.n}</b><small>${it.d}</small></span><em>${testMode() ? `<s>${Store.price(k)}</s> 무료` : Store.native ? Store.price(k) : '앱'}</em></button>`; }).join('')}
       ${ledgerHTML()}
-      <p class="sjnote">카르마로 여는 것: 📜 상세 사주 리포트 50 · 🤖 AI 사주상담 1회 20 (첫 회 무료) · 🔮 타로 사주 심층 풀이 1회 10 (매일 1회 무료) · 🎮 게임 아이템</p>`;
+      <p class="sjnote">카르마로 여는 것: 🔓 서비스별 상세 풀이 5~15 · 🃏 타로 상세 1장 5·3장 10·5장 15 · 🤖 AI 상담 질문 1개 10 (처음 1개 무료) · 🎮 게임 아이템 · 📜 사주풀이는 무료</p>`;
   }
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   function openCharge(need, label, back) {

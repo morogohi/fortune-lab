@@ -155,11 +155,18 @@ window.Tarot = (() => {
     return `<div class="tpop"><div class="tpopimg"><img src="${img(C)}" class="${x.rev ? 'rev' : ''}" alt="${C.ko}"></div>
       <p class="tpos" style="text-align:center;margin:8px 0 2px">${k + 1}번째 · ${pos[0]} — ${pos[1]}</p>
       <h4 class="tpopn">${C.ko} <small>${C.en}</small></h4>
-      <div class="tpoptags"><span>${x.rev ? '역방향' : '정방향'}</span><span>${C.el}의 원소</span>${C.major ? '<span>메이저</span>' : ''}<span>${yesno(x)}</span></div>
-      <div class="sjtxt"><h4>${C.kw}</h4><p>${x.rev ? C.rev : C.up}</p>
-        ${tk ? `<h4>${TOPIC[D.topic]}</h4><p>${C[tk]}${x.rev ? (pol(x) > 0 ? ` 역방향이라 지금은 ‘${C.rev.replace(/\.$/, '')}’ 쪽으로 읽어요.` : ' 다만 역방향이라 이 흐름이 늦거나 약하게 나타나요.') : ''}</p>` : ''}
-        <h4>조언</h4><p>${advice(x)}</p>
-        <h4>그림 읽기</h4><p>${C.pic}</p></div></div>`;
+      <div class="tpoptags"><span>${x.rev ? '역방향' : '정방향'}</span><span>${C.el}의 원소</span>${C.major ? '<span>메이저</span>' : ''}</div>
+      <div class="sjtxt"><h4>${C.kw}</h4><p>${(x.rev ? C.rev : C.up).split('.')[0]}.</p>
+        <p class="sjnote">🔒 ${TOPIC[D.topic]} 풀이 · 그림 읽기 · 자리별 의미 · 조언 · 예/아니오는 상세 리딩에서 볼 수 있어요.</p></div></div>`;
   }
-  return { pol, meaning, draw, spreadHTML, readingHTML, cardHTML, shuffled, cardAt, fromCards, img, fromPicks, TBACK, SPREADS, TOPIC, DECK };
+  // 무료 개요: 뽑은 카드와 키워드, 한 줄 흐름
+  function summaryHTML(D) {
+    const pos = SPREADS[D.n], v = D.cards.reduce((s, x) => s + pol(x), 0), rev = D.cards.filter(x => x.rev).length;
+    const line = D.n === 1 ? (v > 0 ? '좋은 흐름의 카드예요.' : v < 0 ? '조심하고 점검하라는 카드예요.' : '좋고 나쁨이 함께 있는 카드예요.')
+      : `${v > 0 ? '전체적으로 밝은 흐름이에요.' : v < 0 ? '막힌 부분을 먼저 풀어야 하는 흐름이에요.' : '좋고 어려운 기운이 섞여 있어요.'} 역방향 ${rev}장.`;
+    return `<div class="hcard"><span class="vfreetag">무료 개요</span><h3 class="ht">🃏 뽑은 카드 · ${TOPIC[D.topic]}</h3>
+      <div class="tsum">${D.cards.map((x, k) => `<div><img src="${img(x.c)}" class="${x.rev ? 'rev' : ''}" alt="${x.c.ko}"><small>${pos[k][0]}</small><b>${x.c.ko}</b><em>${x.c.kw}${x.rev ? ' (역방향)' : ''}</em></div>`).join('')}</div>
+      <p class="sjtxt" style="margin:0">${line}</p></div>`;
+  }
+  return { summaryHTML, pol, meaning, draw, spreadHTML, readingHTML, cardHTML, shuffled, cardAt, fromCards, img, fromPicks, TBACK, SPREADS, TOPIC, DECK };
 })();
