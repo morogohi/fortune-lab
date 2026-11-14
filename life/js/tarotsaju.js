@@ -163,7 +163,7 @@ const TarotSaju = (() => {
     return `<div class="hcard tsaju"><h3 class="ht">🔮☯️ 사주 × 타로 심층 풀이 · ${tn}</h3>
       <p class="sjnote">뽑은 카드를 ${nm}님의 사주(일간·오행·대운·올해·이번 달)와 엮어 풀었어요. 계산은 이 기기에서만 해요.</p>
       ${secA}${secB}${secC}${secD}${secE}${secF}
-      <button class="hbtn" id="tsCounsel">🤖 이 고민, 사주 자동 상담으로 두 선택지 비교하기</button></div>`;
+      <button class="hbtn" id="tsCounsel">🤖 이 고민, 사주 상담으로 두 선택지 비교하기</button></div>`;
   }
   return { html, teaser };
 })();

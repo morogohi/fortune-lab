@@ -1,5 +1,5 @@
 /* =====================================================================
- *  counsel.js — 사주 자동 상담 (대화형 · 질문 1개마다 카르마, 처음 1개 무료)
+ *  counsel.js — 사주 상담 (대화형 · 질문 1개마다 카르마, 처음 1개 무료)
  *   ▸ AI 대화 모드: 로그인 + 서버(Supabase Edge Function → Claude) 연결 시, 이름·생년월일 없이
  *     사주 요약 + 대화 내용을 보내 자연스러운 대화로 답함 (보내기 전 1회 동의)
  *   ▸ 기기 안 상담 모드: 서버가 없거나 실패하면 이 기기에서 사주(대운·세운·좋은 달)·MBTI·주제·선택지를
@@ -134,7 +134,7 @@ const Counsel = (() => {
   }
   function chatHTML(p, a) {
     const L = chat(), mode = aiOn() && store.get(OKKEY, 0) ? 'ai' : aiOn() ? 'ask' : 'local';
-    const head = `<div class="hcard cs-hero"><div class="cs-ava">🤖</div><div><b>사주 자동 상담</b><small>고민을 편하게 말해 주세요. ${esc(p.name)}님의 사주·대운·올해 흐름·MBTI를 바탕으로 대화하며 함께 정리해요.</small></div></div>
+    const head = `<div class="hcard cs-hero"><div class="cs-ava">🤖</div><div><b>사주 상담</b><small>고민을 편하게 말해 주세요. ${esc(p.name)}님의 사주·대운·올해 흐름·MBTI를 바탕으로 대화하며 함께 정리해요.</small></div></div>
       ${tabsHTML()}<div class="cs-mode ${mode}">${mode === 'ai' ? '🤖 AI 대화 모드 · 자연스러운 대화로 답해요' : mode === 'ask' ? '🤖 AI 대화를 쓰려면 아래에서 한 번 동의해 주세요 · 지금은 기기 안 상담' : (window.Auth && Auth.ready()) ? '📱 기기 안 상담 모드 · 로그인하면 AI와 자연스럽게 대화할 수 있어요' : '📱 기기 안 상담 모드 · 사주로 계산한 상담을 대화로 드려요 (AI 서버 연결 전)'}</div>`;
     const log = L.length ? L.map(m => `<div class="cs-msg ${m.r}"><div>${m.r === 'a' ? md(m.t) : esc(m.t)}</div>${m.r === 'u' && m.cost != null ? `<small>${m.cost ? `✨ −${m.cost}` : '무료'}</small>` : m.r === 'a' ? `<small>${m.src === 'ai' ? '🤖 AI 상담사' : '📱 기기 안 상담'}</small>` : ''}</div>`).join('')
       : `<div class="cs-msg a"><div>안녕하세요, ${esc(p.name)}님. 요즘 어떤 고민이 있으세요? 상황을 편하게 적어 주시면 사주 흐름과 함께 차근차근 이야기해 볼게요.<br><br>두 가지 중에서 고민 중이라면 “A 할까, B 할까?”처럼 적어 주시면 비교해 드려요.</div><small>📱 첫 인사는 무료</small></div>`;
@@ -154,7 +154,7 @@ const Counsel = (() => {
     const ta = $('#csIn'); if (ta) ta.onkeydown = e => { if (e.key === 'Enter' && !e.shiftKey && !e.isComposing) { e.preventDefault(); send(); } };
     document.querySelectorAll('.cs-chips [data-q]').forEach(x => x.onclick = () => send(x.dataset.q));
     const n = $('#csNew'); if (n) n.onclick = () => { store.set(CKEY, []); store.set(CTXK, null); Snd.sfx('tap'); r(); };
-    const k = $('#csKarma'); if (k) k.onclick = () => Karma.openCharge(Math.max(0, PER() - karma), '사주 자동 상담', () => r());
+    const k = $('#csKarma'); if (k) k.onclick = () => Karma.openCharge(Math.max(0, PER() - karma), '사주 상담', () => r());
     const ok = $('#csAIok'); if (ok) ok.onclick = () => consent(r);
     const lg = $('#csLog'); if (lg) lg.scrollTop = lg.scrollHeight;
     setTimeout(() => { const m = document.querySelectorAll('.cs-msg'); if (m.length > 1) m[m.length - 1].scrollIntoView({ block: 'end' }); }, 30);
@@ -170,8 +170,8 @@ const Counsel = (() => {
   function charge(r, after, reason) {
     if (freeLeft()) { store.set(FREE, 1); after(0); return; }
     const n = PER();
-    if (karma < n) { try { Karma.metric('lack_shown'); } catch (e) { } Karma.openCharge(n - karma, '사주 자동 상담 질문', () => r()); return; }
-    karma -= n; window.KREASON = reason || '🤖 사주 자동 상담 질문 1개'; window.KCAT = 'spend'; saveMeta(); try { Auth.sync(); } catch (e) { } Store.notify(); after(n);
+    if (karma < n) { try { Karma.metric('lack_shown'); } catch (e) { } Karma.openCharge(n - karma, '사주 상담 질문', () => r()); return; }
+    karma -= n; window.KREASON = reason || '🤖 사주 상담 질문 1개'; window.KCAT = 'spend'; saveMeta(); try { Auth.sync(); } catch (e) { } Store.notify(); after(n);
   }
   function ask(p, text, r) {
     if (busy) return;
@@ -367,7 +367,7 @@ const Counsel = (() => {
   let st = { topic: 'career', q: '', opts: ['', ''], cond: '', res: null, busy: false };
   function pickHTML(p, a) {
     const T = TOPICS.find(t => t.k === st.topic) || TOPICS[0];
-    const head = `<div class="hcard cs-hero"><div class="cs-ava">🤖</div><div><b>사주 자동 상담</b><small>인생의 갈림길에서 선택지를 적어 주시면 사주 · MBTI · 인생 게임으로 선택지마다 자세히 풀어 드려요.</small></div></div>${tabsHTML()}`;
+    const head = `<div class="hcard cs-hero"><div class="cs-ava">🤖</div><div><b>사주 상담</b><small>인생의 갈림길에서 선택지를 적어 주시면 사주 · MBTI · 인생 게임으로 선택지마다 자세히 풀어 드려요.</small></div></div>${tabsHTML()}`;
     if (st.res) return head + st.res.html + `<div class="hcard"><button class="bigbtn wide" id="csNew2">🗂️ 다른 고민 상담하기</button></div>`;
     return head + `<div class="hcard">
       <h3 class="ht">무엇이 고민인가요?</h3>
@@ -397,7 +397,7 @@ const Counsel = (() => {
     document.querySelectorAll('#csTopic button').forEach(b => b.onclick = () => { keep(); st.topic = b.dataset.v; Snd.sfx('tap'); r(); });
     const go = $('#csGo'); if (go) go.onclick = () => { keep(); start(p, r); };
     const n = $('#csNew2'); if (n) n.onclick = () => { st.res = null; r(); };
-    const k = $('#csKarma2'); if (k) k.onclick = () => Karma.openCharge(Math.max(0, PER() - karma), '사주 자동 상담', () => r());
+    const k = $('#csKarma2'); if (k) k.onclick = () => Karma.openCharge(Math.max(0, PER() - karma), '사주 상담', () => r());
     document.querySelectorAll('.cs-past').forEach(b => b.onclick = () => { const x = store.get(HIST, [])[+b.dataset.i]; if (x) openOverlay(`${x.e} 지난 상담`, x.html, [{ t: '닫기' }]); });
     bindResult();
   }
@@ -418,7 +418,7 @@ const Counsel = (() => {
   }
   async function run(p, r, c, opts, cost) {
     st.busy = true;
-    openOverlay('🤖 사주 자동 상담', `<div class="fk-load"><div class="fk-reel">🔮</div><p id="csStep">사주와 올해 흐름을 살피는 중…</p><div class="fk-bar"><i id="fkBar"></i></div></div>`, []);
+    openOverlay('🤖 사주 상담', `<div class="fk-load"><div class="fk-reel">🔮</div><p id="csStep">사주와 올해 흐름을 살피는 중…</p><div class="fk-bar"><i id="fkBar"></i></div></div>`, []);
     const stepT = t => { const e = $('#csStep'); if (e) e.textContent = t; };
     try {
       const groups = opts.map(groupOf);
@@ -643,14 +643,14 @@ const Counsel = (() => {
     const luck = Saju.luckAt(P.saju, P.age), opts = ev.ch.slice(0, R.length).map(x => String(x.t).replace(/<[^>]+>/g, '').trim());
     const sc = R.map((r, i) => { const g = groupOf(opts[i]); let s = r.total; if (g >= 0 && g <= 4 && luck && luck.g === g) s += 8; if (g >= 0 && g <= 4 && P.saju.dom === g) s += 5; return clampN(s); });
     const b = sc.indexOf(Math.max(...sc));
-    return `<div class="cs-game"><b>🤖 사주 자동 상담 한마디</b><p>${P.name}의 지금 대운은 <b>${luck.e} ${luck.name}</b>. ${luck.desc} 사주 흐름과 미리 살아 본 결과를 함께 보면 <b>${AB[b]} · ${opts[b]}</b> 쪽이 조금 더 맞아요.</p>
-      <small>실제 내 인생의 고민은 홈 → 🤖 사주 자동 상담에서 물어볼 수 있어요.</small></div>`;
+    return `<div class="cs-game"><b>🤖 사주 상담 한마디</b><p>${P.name}의 지금 대운은 <b>${luck.e} ${luck.name}</b>. ${luck.desc} 사주 흐름과 미리 살아 본 결과를 함께 보면 <b>${AB[b]} · ${opts[b]}</b> 쪽이 조금 더 맞아요.</p>
+      <small>실제 내 인생의 고민은 홈 → 🤖 사주 상담에서 물어볼 수 있어요.</small></div>`;
   }
 
   function init() {
     Hub.register({
-      item: { k: 'counsel', g: 'saju', c: 'mint', ic: 'spark', e: '🧭', n: '사주 자동 상담', d: `대화 상담 · 선택지 비교 상담 · ${CounselPrice.text()}`, need: 1, f: () => Hub.go('counsel') },
-      after: 'tojeong', title: '사주 자동 상담',
+      item: { k: 'counsel', g: 'saju', c: 'mint', ic: 'spark', e: '🧭', n: '사주 상담', d: '대화 상담 · 선택지 비교 상담', need: 1, f: () => Hub.go('counsel') },
+      after: 'tojeong', title: '사주 상담',
       html: pageHTML, bind: (p, a) => bind(p, a, () => Hub.render()),
     });
   }
