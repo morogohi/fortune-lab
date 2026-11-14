@@ -186,7 +186,7 @@ const Hub = (() => {
     $('#sPriv').onclick = () => { closeOverlay(true); openPrivacy(); };
   }
   function openWipe() {
-    const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day', 'p8b_auth', 'p8b_launch_gift']);   // 구매·패스·광고 제한·선지급 받은 기록은 유지
+    const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day', 'p8b_auth', 'p8b_events']);   // 구매·패스·광고 제한·이벤트 받은 기록은 유지
     const wipe = all => {
       const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i));
       ks.filter(k => all ? (k.startsWith('p8b_') && !KEEP.has(k)) : ['p8b_me', 'p8b_people', 'p8b_mbti', 'p8b_profiles', 'p8b_mbti_test', 'p8b_records', 'p8b_counsel_hist', 'p8b_game_me'].includes(k)).forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
@@ -196,20 +196,20 @@ const Hub = (() => {
     openOverlay('🗑️ 내 정보·기록 지우기', `<div class="sjtxt"><p>이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요.</p>
       <h4>① 내 사주·궁합 정보만</h4><p>내 이름(별명)·생년월일·시간·성별, 최근 입력 기록(${profiles().length}명), 궁합 관계도(${people().length}명), 사주 MBTI 결과</p>
       <h4>② 게임 기록까지 모두</h4><p>①에 더해 저장 슬롯·지난 생애·카르마·출석/복주머니·테마·알림 설정·소리 설정</p>
-      <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한·출시 기념 선지급 받은 기록. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
+      <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한·무상 카르마 이벤트 받은 기록. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
       { t: '내 사주·궁합 정보만 지우기', f: () => wipe(false) },
       { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
   }
   function openPrivacy() {
     openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대는 <b>이 기기 안에만</b> 저장돼요. 로그인해도 서버로 보내지 않아요.</p>
-      <p>로그인하면 서버에는 계정 정보(로그인 공급자·닉네임)와 게임 기록 요약(카르마·살아 본 인생 수)만 저장돼요.</p></div>`,
+      <p>회원가입(카카오·구글 로그인)을 하면 서버에는 <b>암호화한 닉네임</b>·로그인 공급자·가입/접속 시각과 게임 기록 요약(카르마·인생 수·연 콘텐츠)만 저장돼요. 사주 정보는 로그인해도 보내지 않아요.</p></div>`,
       [{ t: '🗑️ 내 정보·기록 지우기', f: openWipe }, { t: '📄 개인정보 처리방침', f: () => { location.href = 'privacy.html'; } }, { t: '닫기' }]);
   }
   const KAKAO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>';
   const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
   function openLogin() {
     const ok = Auth.ready(), nat = Auth.native();
-    openOverlay('👤 로그인', `<p class="sjnote" style="text-align:center">로그인하면 인생 게임의 카르마 기록이 계정에 저장돼<br>다른 기기에서도 이어서 할 수 있어요.</p>
+    openOverlay('👤 로그인 · 회원가입', `<div class="kbal sm" style="justify-content:center"><b>🎉 회원가입하면 카르마 +${(STORE_CONFIG.signupBonus || 0)}</b><small style="text-align:center">계정당 1번 · 카르마와 연 콘텐츠가 계정에 저장돼 다른 기기에서도 이어서 할 수 있어요</small></div>
       <button class="sso kakao" id="lgKakao" ${ok && !nat ? '' : 'disabled'}>${KAKAO_SVG}<span>카카오 로그인</span></button>
       <button class="sso google" id="lgGoogle" ${ok && !nat ? '' : 'disabled'}>${GOOGLE_SVG}<span>Google 계정으로 로그인</span></button>
       ${!ok ? '<p class="sjnote" style="text-align:center">로그인 서버 연결을 준비하고 있어요. 곧 열려요!</p>' : nat ? '<p class="sjnote" style="text-align:center">앱 로그인은 다음 업데이트에서 지원해요. 지금은 웹에서 로그인할 수 있어요.</p>' : ''}
@@ -217,7 +217,7 @@ const Hub = (() => {
         <input id="tlId" autocomplete="username" placeholder="아이디" maxlength="30"><input id="tlPw" type="password" autocomplete="current-password" placeholder="비밀번호" maxlength="40">
         <div id="tlErr" class="cs-err"></div><button class="bigbtn wide" id="tlGo">테스트 계정 로그인</button>
         <p class="sjnote">검수·시범 테스트 전용 계정이에요. 로그인하면 테스트 프로필과 모든 유료 콘텐츠가 열려요.${window.P8B_COMMERCIAL ? ' 이 테스트 페이지에서는 아이디 <b>1</b> · 비밀번호 <b>1</b>로도 로그인할 수 있어요.' : ''}</p></details>`}
-      <p class="sjnote" style="text-align:center">생년월일 등 개인정보는 서버로 보내지 않고 이 기기에만 저장돼요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
+      <p class="sjnote" style="text-align:center">🔒 이름·생년월일·태어난 시간·성별·궁합 상대는 <b>서버로 보내지 않고</b> 이 기기에만 저장돼요.<br>가입할 때 받는 닉네임은 서버에서 <b>암호화</b>해 보관하고, 탈퇴하면 바로 지워요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
     const tg = $('#tlGo'); if (tg) tg.onclick = async () => {
       const r = await Auth.loginTest($('#tlId').value, $('#tlPw').value);
       if (!r.ok) { $('#tlErr').textContent = r.error === 'id' ? '아이디를 확인해 주세요' : r.error === 'pw' ? '비밀번호가 맞지 않아요' : '이 환경에서는 테스트 로그인을 쓸 수 없어요'; Snd.sfx('bad'); return; }
@@ -236,7 +236,7 @@ const Hub = (() => {
       if (typeof Counsel !== 'undefined') Counsel.addCredits(30);
       const list = people(); if (!list.some(x => /테스트 상대|예시 상대/.test(x.name))) { list.unshift({ name: '예시 상대(테스트용)', date: '1978-08-15', cal: 's', time: '', sex: 'f', rel: 'love' }); store.set('p8b_people', list.slice(0, 20)); }
     }
-    toast(first ? '🧪 테스트 계정 · 운명연구소 프로필, 유료 콘텐츠 전체, 카르마 500, 상담권 30회' : '🧪 테스트 계정으로 로그인했어요');
+    toast(first ? '🧪 테스트 계정 · 운명연구소 프로필, 유료 콘텐츠 전체, 카르마 500 + 가입 보너스 ' + (STORE_CONFIG.signupBonus || 0) + ', 상담권 30회' : '🧪 테스트 계정으로 로그인했어요');
     topbarUI(); if ($('#hub').classList.contains('on')) render();
   }
   function openAccount() {

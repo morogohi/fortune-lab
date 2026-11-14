@@ -3,15 +3,23 @@
 코드는 모두 준비돼 있고, 아래 계정·키만 만들어 `life/js/auth-config.js`의 두 값을 채우면 로그인이 열립니다.
 값이 비어 있는 동안 로그인 버튼은 「준비 중」으로 보이고 나머지 기능은 그대로 동작합니다.
 
-서버에 저장되는 것: 회원(로그인 공급자·닉네임), 게임 기록 요약(카르마·살아 본 인생 수)
-서버에 저장하지 않는 것: 이름(별명)·생년월일·태어난 시간·성별·입력 기록·궁합 상대 → 기기에만 보관
+서버에 저장되는 것: 회원(로그인 공급자 · **암호화한 닉네임** · 가입/접속 시각 · 가입 보너스 지급 시각), 게임 기록 요약(카르마·인생 수·연 콘텐츠)
+서버에 저장하지 않는 것: 이름(별명)·생년월일·태어난 시간·성별·입력 기록·궁합 상대·상담 내용 → 기기에만 보관
+
+**개인정보 보호 구조 (docs/supabase.sql)**
+- 앱은 `members` 테이블에 직접 읽고 쓰지 못합니다. 서버 함수(`touch_member`·`my_nickname`·`claim_signup_bonus`)만 부르며, 인자로 개인정보를 보내지 않습니다.
+- 가입·로그인 때 DB 트리거가 공급자 닉네임을 **pgcrypto AES-256으로 암호화**해 `members.nickname_enc`에 넣고, `auth.users`의 이름·이메일·사진 주소 평문을 지웁니다. 암호화 키는 **Supabase Vault**(`member_enc_key`)에만 있습니다.
+- 회원가입 보너스 200: `claim_signup_bonus()`가 계정당 1번만 true. 탈퇴 후 같은 카카오·구글 계정으로 재가입해도 다시 주지 않도록 공급자 계정의 HMAC 해시만 남깁니다.
+- 남는 것: 구글 로그인 이메일은 `auth.users.email`에 Supabase가 보관(로그인 동작에 필요, 디스크 AES-256·TLS). 카카오는 이메일 동의항목을 켜지 않으면 받지 않습니다.
+- 법적 기준 메모: 「개인정보의 안전성 확보조치 기준」상 저장 시 암호화가 의무인 것은 비밀번호·고유식별정보·계좌/카드번호·생체정보이고, 닉네임·이메일은 의무 대상은 아니지만 여기서는 닉네임까지 암호화합니다. 전송 구간은 HTTPS로 암호화됩니다. 출시 전 개인정보처리방침과 실제 설정이 같은지 한 번 더 확인하세요(법률 자문은 아님).
 
 ---
 
 ## 1. Supabase 프로젝트 (약 5분, 무료)
 1. https://supabase.com → GitHub 계정(morogohi)으로 가입 → **New project**
    - Name: `fortune-lab` · Region: **Northeast Asia (Seoul)** · DB 비밀번호는 따로 보관
-2. **SQL Editor** → `docs/supabase.sql` 내용 붙여 넣기 → **Run**
+2. **SQL Editor** → `docs/supabase.sql` 내용 붙여 넣기 → **Run** → 파일 맨 아래 「점검 쿼리」 3개로 평문이 없는지 확인
+   (Vault·pgcrypto는 Supabase에 기본 포함. 키는 처음 실행할 때 자동으로 만들어짐 — **키를 지우면 저장된 닉네임을 읽을 수 없게 되니 지우지 말 것**)
 3. **Project Settings → API**에서 두 값 복사
    - Project URL → `supabaseUrl`
    - `anon` `public` key → `supabaseAnonKey` (공개용 키라 저장소에 넣어도 됨. `service_role` 키는 절대 넣지 말 것)
@@ -26,8 +34,8 @@
 2. **앱 키**의 **REST API 키** → Supabase Kakao 설정의 **Client ID**
 3. 카카오 로그인 → **활성화 ON**, **Redirect URI**에 1-5의 Callback URL 등록
 4. 카카오 로그인 → 보안 → **Client Secret 코드 생성 + 활성화** → Supabase Kakao의 **Client Secret**
-5. 카카오 로그인 → **동의항목**: 닉네임(profile_nickname)·프로필 사진(profile_image) 「필수 또는 선택 동의」
-   - 이메일(account_email)은 비즈 앱만 가능 → 받지 않는다면 Supabase Kakao 설정에서 **Allow users without an email**을 켤 것
+5. 카카오 로그인 → **동의항목**: 닉네임(profile_nickname)만 「필수 동의」 — 프로필 사진·이메일은 받지 않음(최소 수집)
+   - Supabase Kakao 설정에서 **Allow users without an email**을 켤 것
 6. 플랫폼 → Web 사이트 도메인: `https://morogohi.github.io`
 7. Supabase → Authentication → Providers → **Kakao Enabled** → 키 입력 → Save
 

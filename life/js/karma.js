@@ -6,7 +6,7 @@
  *   · 💳 카르마는 돈으로도 살 수 있다 (100 · 330 · 1,200)
  *   · 🧪 테스트 모드(테스트 페이지·테스트 계정): 광고·결제를 실제 없이 가상으로 처리
  *   · 📒 사용 내역: 모으기(광고·게임·보너스) · 구매 · 사용을 나눠 기록하고 필터·요약으로 보여 줌
- *   · 🎉 출시 기념 선지급: STORE_CONFIG.launchGift 기간에 처음 실행하면 1회 +100 (새 사용자는 시작 20 대신 100)
+ *   · ✨ 기본 지급 100 (STORE_CONFIG.startKarma) · 🧧 무상 이벤트 (STORE_CONFIG.events: 신년 200, 2026-12-31까지 1회)
  *   · ❓ 카르마 안내: 무엇인지 · 어떻게 모으는지 · 어디에 쓰는지 (홈·상점의 ? 버튼)
  * ===================================================================== */
 const Karma = (() => {
@@ -116,7 +116,9 @@ const Karma = (() => {
       <h4 class="kh">어떻게 모으나요?</h4>
       <div class="kway"><i>📺</i><span><b>광고 보기 +${AD_K}</b><small>3분 간격 · 하루 ${AD_DAY}번 (최대 ${AD_K * AD_DAY})</small></span></div>
       <div class="kway"><i>🎲</i><span><b>인생 게임 엔딩 +5~15</b><small>한 판을 끝까지 살면 점수에 따라 지급 · 10살마다 광고 휴식 +${BREAK_K}</small></span></div>
-      ${(() => { const g = launchInfo(); if (!g) return ''; const got = store.get(GKEY, null); return `<div class="kway"><i>🎉</i><span><b>출시 기념 선지급 +${g.karma}</b><small>${g.until.slice(0, 4)}년 ${+g.until.slice(5, 7)}월 ${+g.until.slice(8)}일까지 처음 실행하면 1회 · ${got ? '받았어요 ✅' : '곧 지급돼요'}</small></span></div>`; })()}
+      <div class="kway"><i>✨</i><span><b>처음 시작 +${START()}</b><small>처음 앱을 열면 기본으로 드려요</small></span></div>
+      ${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 생년월일 등 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
+      ${events().map(g => `<div class="kway"><i>${g.e}</i><span><b>${esc(g.n)} +${g.karma}</b><small>${fmtD(g.until)}까지 앱을 열면 1회 · ${gotEvent(g.id) ? '받았어요 ✅' : '곧 지급돼요'}</small></span></div>`).join('')}
       <div class="kway"><i>🎁</i><span><b>복주머니 교환 +20</b><small>출석·미션으로 모은 복주머니 2개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>
       <h4 class="kh">어디에 쓰나요?</h4>
@@ -139,7 +141,7 @@ const Karma = (() => {
 
   // 테스트 모드: 전환 기록 보기
   function openMetrics() {
-    const m = store.get(MKEY, {}), N = { ad_start: '광고 시작', ad_done: '광고 완료', ad_fail: '광고 중단·실패', lack_shown: '카르마 부족 안내', pay_start: '결제 시작', pay_cancel: '결제 취소', pay_done: '결제 완료', pay_fail: '결제 실패', spend: '카르마 사용', unlock_report: '상세 리포트 해제', unlock_fate: '운명 조작 해제', unlock_tarot: '타로 심층 (카르마)', tarot_free: '타로 심층 (무료)', report_view: '상세 리포트 열람', counsel_run: '상담 실행', launch_gift: '출시 기념 선지급' };
+    const m = store.get(MKEY, {}), N = { ad_start: '광고 시작', ad_done: '광고 완료', ad_fail: '광고 중단·실패', lack_shown: '카르마 부족 안내', pay_start: '결제 시작', pay_cancel: '결제 취소', pay_done: '결제 완료', pay_fail: '결제 실패', spend: '카르마 사용', unlock_report: '상세 리포트 해제', unlock_fate: '운명 조작 해제', unlock_tarot: '타로 심층 (카르마)', tarot_free: '타로 심층 (무료)', report_view: '상세 리포트 열람', counsel_run: '상담 실행', event_newyear2027: '신년 이벤트 지급' };
     const rate = (a, b) => m[b] ? Math.round((m[a] || 0) / m[b] * 100) + '%' : '—';
     openOverlay('📈 전환 기록 (이 기기)', `<p class="sjnote">${m._since ? new Date(m._since).toLocaleDateString('ko-KR') + '부터' : '아직 기록 없음'} · 서버로 보내지 않아요</p>
       ${Object.keys(N).map(k => `<div class="kledr"><b>${N[k]}</b><em>${m[k] || 0}</em></div>`).join('')}
@@ -187,16 +189,27 @@ const Karma = (() => {
     openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">카르마 구매는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.<br>웹에서는 광고 체험과 인생 게임으로 카르마를 모아 보세요.</p>`, [{ t: '돌아가기', f: () => after && after() }]);
   }
 
-  /* ---------- 🎉 출시 기념 선지급 (기기당 1회) ---------- */
-  const GKEY = 'p8b_launch_gift';
-  function launchInfo() { const g = (window.STORE_CONFIG || {}).launchGift; return g && g.karma > 0 && localDay() <= g.until ? g : null; }
-  function launchGift() {
-    const g = launchInfo(); if (!g || store.get(GKEY, null)) return false;
-    const isNew = localStorage.getItem('p8b_karma') == null && !log().length;
-    if (isNew) { karma = 0; store.set('p8b_karma', 0); }      // 새 사용자: 기본 20 대신 선지급 100으로 시작
-    store.set(GKEY, { t: Date.now(), k: g.karma, isNew });
-    add(g.karma, '🎉 출시 기념 선지급', 'bonus'); metric('launch_gift');
-    return true;
+  /* ---------- ✨ 기본 지급 · 🧧 무상 카르마 이벤트 ---------- */
+  const EKEY = 'p8b_events';                      // 받은 이벤트 {id: 받은 시각} — '기록 지우기'에도 남김
+  const START = () => (window.STORE_CONFIG || {}).startKarma || 100;
+  const events = () => ((window.STORE_CONFIG || {}).events || []).filter(g => g.karma > 0 && localDay() <= g.until && (!g.from || localDay() >= g.from));
+  const gotEvent = id => !!store.get(EKEY, {})[id];
+  const fmtD = d => `${d.slice(0, 4)}년 ${+d.slice(5, 7)}월 ${+d.slice(8)}일`;
+  function grants() {
+    const out = [];
+    // 처음 시작: 내역에 '기본 지급'으로 남김 (잔액 0에서 시작해 +100)
+    if (localStorage.getItem('p8b_karma') == null && !log().length) {
+      karma = 0; store.set('p8b_karma', 0);
+      add(START(), '첫 시작 기본 지급', 'bonus'); out.push(START());
+    }
+    events().forEach(g => {
+      if (gotEvent(g.id)) return;
+      const r = store.get(EKEY, {}); r[g.id] = Date.now(); store.set(EKEY, r);
+      window.KREASON = `${g.e} ${g.n}`; window.KCAT = 'bonus'; karma += g.karma; saveMeta();
+      try { Auth.sync(); } catch (e) { } Store.notify(); metric('event_' + g.id); out.push(g.karma);
+      setTimeout(() => Hub.toast(`${g.e} ${g.n} +${g.karma} · ${fmtD(g.until)}까지`), out.length > 1 ? 2600 : 0);
+    });
+    return out;
   }
 
   /* ---------- 인생 게임 중간 광고 휴식 (10살마다) ---------- */
@@ -214,7 +227,7 @@ const Karma = (() => {
     };
   }
   init();
-  setTimeout(launchGift, 600);   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
+  setTimeout(grants, 600);   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
   return { metric, openMetrics, spend, unlock, openCharge, chargeHTML, bindCharge, adReward, showAd, testMode, add, bal, buyPack, AD_K, BREAK_K, AD_DAY,
-    openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, launchGift, launchInfo };
+    openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, grants, events };
 })();

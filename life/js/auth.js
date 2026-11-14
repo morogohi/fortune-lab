@@ -1,12 +1,14 @@
-/* 로그인 (카카오 · 구글) — Supabase Auth
- * 서버로 보내는 것: 로그인 계정(공급자 고유 ID·닉네임), 게임 기록 요약(카르마·살아 본 인생 수)
- * 보내지 않는 것: 이름(별명)·생년월일·태어난 시간·성별·궁합 상대 — 이런 정보는 기기에만 저장
+/* 로그인 · 회원가입 (카카오 · 구글) — Supabase Auth
+ * 사주 개인정보(이름(별명)·생년월일·태어난 시간·성별·궁합 상대·입력 기록·상담 내용)는 절대 서버로 보내지 않음 — 기기에만 저장
+ * 서버로 가는 것: 게임 기록 요약(카르마·인생 수·해제 목록)과 함수 호출뿐. 앱은 회원 테이블에 직접 쓰지 않음
+ * 회원가입 정보(공급자 닉네임)는 서버 DB 함수가 받아 암호화(pgcrypto, 키는 Supabase Vault)해 저장하고 평문은 지움 — docs/supabase.sql
+ * 🎉 회원가입 보너스: 서버 함수 claim_signup_bonus()가 계정당 1번만 true → 카르마 +200
  * 앱(Capacitor)에서는 구글이 앱 내 웹뷰 로그인을 막으므로 다음 버전에서 시스템 브라우저 방식으로 지원 */
 window.Auth = (() => {
   const C = window.AUTH_CONFIG || {};
   const ready = () => !!(C.supabaseUrl && C.supabaseAnonKey);
   const native = () => !!(window.Capacitor && Capacitor.isNativePlatform && Capacitor.isNativePlatform());
-  let sb = null, user = null, loading = null, syncing = false;
+  let sb = null, user = null, loading = null, syncing = false, nick = '', welcoming = null;
   const subs = [];
   const emit = () => subs.forEach(f => { try { f(user || (testOn() ? TUSER : null)); } catch (e) {} });
 
@@ -21,13 +23,13 @@ window.Auth = (() => {
     loading = loadLib().then(async () => {
       sb = window.supabase.createClient(C.supabaseUrl, C.supabaseAnonKey, { auth: { persistSession: true, detectSessionInUrl: true, flowType: 'pkce', storageKey: 'p8b_auth' } });
       sb.auth.onAuthStateChange((ev, session) => {
-        const was = user; user = session ? session.user : null; emit();
-        if (ev === 'SIGNED_IN' && !was) { touch(); sync(); }
+        const was = user; user = session ? session.user : null; if (!user) nick = ''; emit();
+        if (ev === 'SIGNED_IN' && !was) welcome();
       });
       const { data } = await sb.auth.getSession(); user = data.session ? data.session.user : null; emit();
       // 로그인 후 돌아온 주소(?code=...)를 깔끔하게 정리
       if (/[?&]code=/.test(location.search)) history.replaceState(history.state, '', location.pathname + location.hash);
-      if (user) { touch(); sync(); }
+      if (user) welcome();
       return sb;
     }).catch(() => { loading = null; return null; });
     return loading;
@@ -50,9 +52,12 @@ window.Auth = (() => {
     const first = !localStorage.getItem(TKEY + '_granted');
     localStorage.setItem(TKEY, JSON.stringify({ id: TEST.id, at: Date.now() }));
     if (first) localStorage.setItem(TKEY + '_granted', '1');
+    // 테스트 계정도 첫 로그인 때 회원가입 보너스를 똑같이 받아 흐름을 확인 (서버 없이 기기에서만)
+    if (first && SIGNUP() && typeof Karma !== 'undefined') Karma.add(SIGNUP(), '🎉 회원가입 보너스 (테스트 계정)', 'bonus');
     emit(); return { ok: true, first };
   }
-  const name = u => { const m = (u && u.user_metadata) || {}; return m.nickname || m.name || m.full_name || m.preferred_username || (u && u.email ? u.email.split('@')[0] : '회원'); };
+  // 닉네임: 서버가 암호화해 둔 값을 본인만 복호화해 받아 화면에만 씀 (기기에 저장하지 않음)
+  const name = u => { if (u && u === user && nick) return nick; const m = (u && u.user_metadata) || {}; return m.nickname || m.name || m.full_name || m.preferred_username || '회원'; };
   const provider = u => (u && u.app_metadata && u.app_metadata.provider) || '';
   const avatar = u => { const m = (u && u.user_metadata) || {}; return m.avatar_url || m.picture || ''; };
 
@@ -65,10 +70,27 @@ window.Auth = (() => {
   }
   async function logout() { if (testOn()) { localStorage.removeItem(TKEY); emit(); return; } const c = await client(); if (c) await c.auth.signOut(); user = null; emit(); }
 
-  // 회원 정보(닉네임·공급자·마지막 접속)
+  // 마지막 접속 시각만 갱신 (개인정보 전송 없음 — 닉네임 암호화 저장은 서버 트리거가 처리)
   async function touch() {
     if (!user || !sb) return;
-    try { await sb.from('members').upsert({ id: user.id, nickname: name(user), provider: provider(user), last_seen_at: new Date().toISOString() }); } catch (e) {}
+    try { await sb.rpc('touch_member'); } catch (e) {}
+    try { const { data } = await sb.rpc('my_nickname'); if (data) { nick = String(data).slice(0, 20); emit(); } } catch (e) {}
+  }
+  const SIGNUP = () => ((window.STORE_CONFIG || {}).signupBonus) || 0;
+  // 회원가입 보너스: 서버가 '처음'이라고 답할 때만 지급 (실패·예전 서버면 아무것도 안 함)
+  async function claimSignup() {
+    if (!user || !sb || !SIGNUP() || typeof Karma === 'undefined') return false;
+    try {
+      const { data, error } = await sb.rpc('claim_signup_bonus');
+      if (error || data !== true) return false;
+      Karma.add(SIGNUP(), '🎉 회원가입 보너스', 'bonus'); return true;
+    } catch (e) { return false; }
+  }
+  // 로그인 직후 한 번: 접속 기록 → 계정 카르마 합치기 → 가입 보너스 → 다시 저장
+  function welcome() {
+    if (welcoming) return welcoming;
+    welcoming = (async () => { await touch(); await sync(); if (await claimSignup()) await sync(); })().finally(() => { welcoming = null; });
+    return welcoming;
   }
   // 게임 기록 동기화: 카르마는 큰 값, 인생 수는 큰 값으로 합침 (개인정보 없음)
   async function sync() {
@@ -105,5 +127,5 @@ window.Auth = (() => {
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sync(); });
 
   const cur = () => user || (testOn() ? TUSER : null);
-  return { ready, native, login, loginTest, isTest: testOn, logout, sync, deleteAccount, user: cur, name: () => name(cur()), provider: () => provider(cur()), avatar: () => avatar(cur()), on: f => subs.push(f), client };
+  return { ready, native, login, loginTest, isTest: testOn, logout, sync, welcome, deleteAccount, user: cur, name: () => name(cur()), provider: () => provider(cur()), avatar: () => avatar(cur()), on: f => subs.push(f), client };
 })();

@@ -12,14 +12,15 @@ const M=x=>Math.round(x*P.mult); // 선진국 기준 금액 → 출생국 물가
 
 /* ================= 저장(가능할 때만) ================= */
 const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let karma=store.get('p8b_karma',20);
+const KSTART=(window.STORE_CONFIG&&STORE_CONFIG.startKarma)||100;   // 처음 시작 카르마
+let karma=store.get('p8b_karma',KSTART);
 let hist=store.get('p8b_hist',[]);
 // 카르마가 바뀔 때마다 거래 내역에 남김 (이유는 window.KREASON에 직전 동작이 적어 둠, 없으면 추정)
-const saveMeta=()=>{const before=store.get('p8b_karma',20);store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20));
+const saveMeta=()=>{const before=store.get('p8b_karma',KSTART);store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20));
   const d=karma-before;if(d){const why=window.KREASON||(d>0?'인생 게임 보상':'게임에서 사용');const c=d<0?'spend':(window.KCAT||null);window.KREASON=null;window.KCAT=null;const l=store.get('p8b_klog',[]);l.unshift(c?{t:Date.now(),d,why,bal:karma,c}:{t:Date.now(),d,why,bal:karma});store.set('p8b_klog',l.slice(0,200))}};
 /* 다른 탭에서 카르마·기록이 바뀌면 이 탭도 따라감 (예전 값으로 덮어쓰는 것 방지) */
 function syncMeta(repaint){
-  karma=store.get('p8b_karma',20);hist=store.get('p8b_hist',[]);
+  karma=store.get('p8b_karma',KSTART);hist=store.get('p8b_hist',[]);
   if(!repaint)return;
   const on=id=>{const e=document.getElementById(id);return e&&e.classList.contains('on')};
   if(on('title')&&typeof renderTitle==='function')renderTitle();
