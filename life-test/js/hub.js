@@ -802,14 +802,12 @@ const Hub = (() => {
       <div class="hcard"><h3 class="ht">📜 사주풀이 <em class="vch free">무료</em></h3><div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
         <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
         <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>
-      <div class="hmenu">
-        <button id="hRep"><span>🧧</span><b>2027 신년운세</b><small>올해의 흐름 개요는 무료 · 분야별·12개월·대운 상세 풀이</small></button>
-        <button id="hPdf" class="${PdfReport.ready() ? '' : 'pdf-off'}"><span>📑</span><b>종합 사주 리포트 PDF</b><small>모든 풀이를 주제별·월별로 묶어 한 권으로 · ✨ ${Views.item('pdf').k}</small></button>
+      <div class="hmenu one">
+        <button id="hPdf" class="${PdfReport.ready() ? '' : 'pdf-off'}"><span>📑</span><div><b>종합 사주 리포트 PDF</b><small>모든 풀이를 주제별·월별로 묶어 한 권으로 · ✨ ${Views.item('pdf').k}</small></div></button>
         ${PdfReport.noteHTML()}
       </div>`;
   }
   function bindSaju(p, a) {
-    $('#hRep').onclick = () => go('newyear');
     const hp = $('#hPdf'); if (hp) hp.onclick = () => PdfReport.open(p);
   }
   function newYearHTML(p, a) {
