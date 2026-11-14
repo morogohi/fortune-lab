@@ -186,7 +186,7 @@ const Hub = (() => {
     $('#sPriv').onclick = () => { closeOverlay(true); openPrivacy(); };
   }
   function openWipe() {
-    const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day', 'p8b_auth']);   // 구매·패스·광고 제한은 유지
+    const KEEP = new Set(['p8b_owned', 'p8b_pass_until', 'ads_reward_day', 'p8b_auth', 'p8b_launch_gift']);   // 구매·패스·광고 제한·선지급 받은 기록은 유지
     const wipe = all => {
       const ks = []; for (let i = 0; i < localStorage.length; i++) ks.push(localStorage.key(i));
       ks.filter(k => all ? (k.startsWith('p8b_') && !KEEP.has(k)) : ['p8b_me', 'p8b_people', 'p8b_mbti', 'p8b_profiles', 'p8b_mbti_test', 'p8b_records', 'p8b_counsel_hist', 'p8b_game_me'].includes(k)).forEach(k => { try { localStorage.removeItem(k); } catch (e) {} });
@@ -196,7 +196,7 @@ const Hub = (() => {
     openOverlay('🗑️ 내 정보·기록 지우기', `<div class="sjtxt"><p>이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요.</p>
       <h4>① 내 사주·궁합 정보만</h4><p>내 이름(별명)·생년월일·시간·성별, 최근 입력 기록(${profiles().length}명), 궁합 관계도(${people().length}명), 사주 MBTI 결과</p>
       <h4>② 게임 기록까지 모두</h4><p>①에 더해 저장 슬롯·지난 생애·카르마·출석/복주머니·테마·알림 설정·소리 설정</p>
-      <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
+      <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한·출시 기념 선지급 받은 기록. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
       { t: '내 사주·궁합 정보만 지우기', f: () => wipe(false) },
       { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
   }
@@ -312,7 +312,7 @@ const Hub = (() => {
     return `<div class="hkarma">
       <div class="hkt"><span>✨ 내 카르마</span><button class="hkq" id="hkHelp" aria-label="카르마가 뭔가요?">?</button><button class="hklog" id="hkHist">사용 내역 ›</button></div>
       <div class="hkrow"><b class="hkbal">${b.toLocaleString()}</b><small>오늘 모음 <em class="p">+${t.earn + t.buy}</em> · 사용 <em class="m">−${t.spend}</em><br>광고 보상 ${Karma.AD_DAY - t.adLeft}/${Karma.AD_DAY}회</small></div>
-      <div class="hkgoal"><small>${g.need ? `${g.e} ${esc(g.n)}까지 <b>${g.need}</b> 남음 · 광고 약 ${Math.ceil(g.need / Karma.AD_K)}번` : `${g.e} ${esc(g.n)}을(를) 열 수 있어요!`}</small>${bar(pct, 'var(--hap)')}</div>
+      <div class="hkgoal"><small>${g.need ? `${g.e} ${esc(g.n)}까지 <b>${g.need}</b> 남음 · 광고 약 ${Math.ceil(g.need / Karma.AD_K)}번` : `${g.e} ${esc(g.n)} 열 카르마가 모였어요!`}</small>${bar(pct, 'var(--hap)')}</div>
       <div class="hkbtns"><button id="hkAd">📺 광고 +${Karma.AD_K}</button><button id="hkGame">🎲 인생 게임</button>${inShop ? '<button id="hkHist2" class="pri">📒 사용 내역</button>' : '<button id="hkShop" class="pri">🛍️ 상점</button>'}</div>
     </div>`;
   }
