@@ -9,7 +9,8 @@
  * ===================================================================== */
 const PdfReport = (() => {
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
-  const libBase = () => new URL('lib/', document.baseURI).href;   // 테스트 페이지(<base href="../life/">)도 공용 lib 사용
+  // 이 스크립트 위치 기준 ../lib/ (운영 life/js → life/lib, 테스트 스냅숏 life-test/js → life-test/lib)
+  const libBase = () => { const sc = [...document.scripts].find(x => /\/js\/pdfreport\.js(\?|$)/.test(x.src)); return sc ? new URL('../lib/', sc.src).href : new URL('lib/', document.baseURI).href; };
   const loadJs = src => new Promise((ok, no) => { if ([...document.scripts].some(x => x.src === src)) return ok(); const s = document.createElement('script'); s.src = src; s.onload = ok; s.onerror = () => no(new Error('load ' + src)); document.head.appendChild(s); });
   async function libs() {
     const b = libBase();

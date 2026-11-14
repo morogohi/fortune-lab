@@ -29,12 +29,14 @@ out = src.replace(CS, inject, 1)
 out = out.replace("<title>운명 연구소 · 프로젝트 80억</title>", "<title>[상업용 테스트] 운명 연구소 · 프로젝트 80억</title>", 1)
 (root / "life-test").mkdir(exist_ok=True)
 snap = "--snapshot" in sys.argv
-for d in ("js",):
+for d in ("js", "lib"):
     t = root / "life-test" / d
     if t.exists(): shutil.rmtree(t)
 if (root / "life-test/privacy.html").exists() and not snap: (root / "life-test/privacy.html").unlink()
 if snap:
     shutil.copytree(root / "life/js", root / "life-test/js")
+    # PDF 도구처럼 스크립트가 필요할 때 불러오는 lib 은 life-test/lib 사본에서 (pdfreport.js 는 자기 위치 기준 ../lib/)
+    shutil.copytree(root / "life/lib", root / "life-test/lib", ignore=shutil.ignore_patterns("lunar.js", "supabase.js", "LICENSE-lunar.txt"))
     shutil.copy2(root / "life/privacy.html", root / "life-test/privacy.html")
     n = len(re.findall(r'<script src="js/', out))
     out = out.replace('<script src="js/', '<script src="../life-test/js/').replace('<a href="privacy.html">', '<a href="../life-test/privacy.html">')
