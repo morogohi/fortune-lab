@@ -86,6 +86,7 @@ window.AUTH_CONFIG = {
    - 선택: `ANTHROPIC_MODEL`(기본 `claude-sonnet-5-5`), `COUNSEL_DAILY_LIMIT`(기본 5)
 3. 배포합니다: `supabase functions deploy saju-counsel` (코드: `supabase/functions/saju-counsel/index.ts`)
 
-앱은 이름·생년월일 없이 사주 요약(일간·오행·대운·좋은 달)·MBTI·나이대·고민·선택지·기기 안 계산 점수만 보냅니다.
+AI 사주상담은 **대화형**이에요. 로그인한 사용자가 한 번 동의하면 질문마다 `mode: 'chat'`으로 최근 대화 12개와 사주 요약(일간·오행·대운·올해 흐름·좋은 달)·MBTI·나이대만 보내고, 이름·생년월일·태어난 시간은 보내지 않습니다.
+앱은 질문 1개마다 카르마 10을 차감하고(처음 1개 무료), 서버는 하루 질문 수를 `COUNSEL_DAILY_LIMIT`(기본 30)로 제한합니다. 서버가 없거나 실패하면 기기 안 상담 엔진이 대신 답합니다.
 서버는 질문과 답변을 저장하지 않고, 사용자별 하루 이용 횟수만 기록합니다.
 연결 전에도 상담 자체(기기 안 계산)는 그대로 동작합니다.

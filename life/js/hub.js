@@ -466,35 +466,30 @@ const Hub = (() => {
     }
     return `<div class="hhead"><small>마음속 질문을 떠올리고 카드를 섞어 보세요</small><h2>타로카드</h2></div>
       ${tPhase === 'shuffle' || tPhase === 'pick' ? '' : setup}${stage}
-      ${done && tPhase === 'reveal' ? Tarot.readingHTML(D, a ? a.el : null) + tarotSajuHTML(D, p, a) : ''}`;
+      ${done && tPhase === 'reveal' ? Tarot.summaryHTML(D) + tarotLockHTML(D, p, a) : ''}`;
   }
   function startShuffle() {
     tPhase = 'shuffle'; tarotD = null; tPicks = []; tCards = []; tOrder = null; tBusy = false; stopShuffleLoop();
     tTimer = setInterval(() => { if (tab !== 'tarot') { stopShuffleLoop(); return; } Snd.sfx('riffle'); }, 900);   // 먼저 켜야 render 중 '섞기 중단'으로 오인하지 않음
     render(); Snd.sfx('riffle');
   }
-  // 타로 심층 풀이 과금: 매일 무료 1회(상세 리포트 보유 시 3회), 이후 1회 카르마 10. 한 번 열면 그 카드 묶음의 모든 주제가 열림
-  const TD_COST = 10, TD_KEY = 'p8b_tdeep';
-  const tdDay = () => new Date().toLocaleDateString('sv');
-  function tdFree() { const o = store.get(TD_KEY, {}), lim = Store.has('report') ? 3 : 1; return Math.max(0, lim - (o.d === tdDay() ? o.n : 0)); }
-  function tdUseFree() { const o = store.get(TD_KEY, {}); store.set(TD_KEY, { d: tdDay(), n: (o.d === tdDay() ? o.n : 0) + 1 }); }
-  function openDeep() {
-    const D = tarotD; if (!D || D.deep) return;
-    const done = () => { D.deep = true; Snd.sfx('fanfare'); keepRender(); setTimeout(() => { const el = document.querySelector('.tsaju'); if (el) el.scrollIntoView({ block: 'start', behavior: 'smooth' }); }, 60); };
-    if (tdFree() > 0) { tdUseFree(); try { Karma.metric('tarot_free'); } catch (e) { } done(); return; }
-    Karma.spend(TD_COST, '🔮 타로 사주 심층 풀이', () => { try { Karma.metric('unlock_tarot'); } catch (e) { } done(); }, () => keepRender());
-  }
-  // 사주 × 타로 상담: 일간·대운·올해·이번 달·MBTI·연인 궁합을 엮어 주제별로 풀이 (기기 안에서만 계산)
-  function tarotSajuHTML(D, p, a) {
-    if (!a || typeof TarotSaju === 'undefined') return a ? '' : '<div class="hcard"><p class="sjtxt" style="margin:0">☯️ 내 정보(생년월일)를 넣으면 카드를 사주와 엮은 <b>주제별 상담 풀이</b>를 볼 수 있어요.</p></div>';
+  // 타로 상세 리딩: 펼친 장 수마다 가격(1장 5 · 3장 10 · 5장 15) · 같은 카드 묶음은 결제한 날 다시보기 3회 무료
+  function tarotCtx(p, a) {
+    if (!a) return null;
     try {
       const mt = store.get('p8b_mbti_test', null), mbti = (mt && MbtiTest.settled(mt)) || (store.get('p8b_mbti', {})[p.date + p.name]) || (Fun.mbti(a) || {}).type || '';
       const partners = people().filter(x => !x.rel || x.rel === 'love').map(x => ({ name: x.name, a: analyzeP(x) })).filter(x => x.a);
-      const age = new Date().getFullYear() - +String(p.date).slice(0, 4);
-      const ctx = { a, p, age, mbti: typeof mbti === 'string' ? mbti : '', partners };
-      return D.deep ? TarotSaju.html(D, ctx) : TarotSaju.teaser(D, ctx, { free: tdFree(), cost: TD_COST });
-    } catch (e) { return ''; }
+      return { a, p, age: new Date().getFullYear() - +String(p.date).slice(0, 4), mbti: typeof mbti === 'string' ? mbti : '', partners };
+    } catch (e) { return null; }
   }
+  function tarotLockHTML(D, p, a) {
+    if (!D.id) D.id = Date.now().toString(36);
+    const k = 'tarot' + D.n, it = Views.item(k);
+    return `<div class="hcard tjcard"><h3 class="ht">🔒 ${it.n}</h3><p class="hsub">${it.d}${a ? '' : ' · 생년월일을 입력하면 사주와 엮은 풀이도 함께 볼 수 있어요'}</p>
+      <div class="tprice">${[1, 3, 5].map(n => `<span class="${n === D.n ? 'on' : ''}">${n}장 ✨${Views.item('tarot' + n).k}</span>`).join('')}</div>
+      ${Views.button(k, 'draw:' + D.id, 'tsOpen', false, `타로 ${D.n}장 상세 리딩 보기`)}</div>`;
+  }
+  function openDeep() { const D = tarotD; if (!D) return; const p = getMe(), a = analyzeP(p); Detail.openTarot(D, a, tarotCtx(p, a)); }
   function bindTarot(p, a) {
     const tc = $('#tsCounsel'); if (tc) tc.onclick = () => { Snd.sfx('tap'); go('counsel'); };
     const to = $('#tsOpen'); if (to) to.onclick = openDeep;
@@ -670,23 +665,13 @@ const Hub = (() => {
   /* ---------- 토정비결: 인생 게임에서 모은 카르마로 열기 ---------- */
   function tojeongHTML(p) {
     const Y = Tojeong.year(), t = Tojeong.calc(p, Y); if (!t) return '<div class="hcard"><p class="hsub">생년월일을 확인해 주세요.</p></div>';
-    const open = Tojeong.opened(p, Y) || (Y === 2027 && Store.ownedReal('report')), k = karma, need = Math.max(0, Tojeong.COST - k);
-    const tv = Y === 2027 && typeof Views !== 'undefined' ? Views.item('tojeong') : null;
+    const legacy = Tojeong.opened(p, Y), good = t.months.map((m, i) => m.q === 0 ? i + 1 : 0).filter(Boolean);
     return `<div class="hhead"><small>${esc(p.name)}님 · 음력 ${t.lm}월 ${t.ld}일생</small><h2>${Y} 토정비결</h2></div>
-      ${open ? `<div class="hcard">${Tojeong.fullHTML(t)}</div>`
-      : `<div class="hcard">${Tojeong.previewHTML(t)}</div>
-         ${tv ? `<div class="hcard tjcard"><h3 class="ht">🔒 상·중·하괘 · 월별 신수 · 재물 · 처세</h3><p class="hsub">볼 때 카르마 ${tv.k} · 결제한 날 다시보기 ${Views.FREE()}회 무료</p><button class="bigbtn" data-yv="tojeong">🏮 토정비결 전체 보기 ${Views.chip('tojeong', Views.subj(p))}</button></div>` : Y === 2027 ? '' : `<div class="hcard tjcard"><h3 class="ht">🔒 월별 신수 · 재물 · 처세</h3><p class="hsub">카르마 ${Tojeong.COST}으로 전체 풀이를 열 수 있어요.</p><button class="bigbtn" id="hTJ">✨ 카르마 ${Tojeong.COST}으로 열기</button></div>`}`}
-      ${Y === 2027 && typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
+      <div class="hcard"><span class="vfreetag">무료 개요</span>${Tojeong.previewHTML(t)}<p class="sjtxt">🌙 좋은 달(음력): <b>${good.length ? good.map(x => x + '월').join(' · ') : '고르게 평탄'}</b></p></div>
+      <div class="hcard tjcard"><h3 class="ht">🔒 상세 풀이</h3><p class="hsub">${Views.item('tojeong').d}</p>${Views.button('tojeong', Views.subj(p) + '|' + Y, 'hTJ', legacy, '토정비결 상세 보기')}</div>`;
   }
   function bindTojeong(p) {
-    if (typeof YearFull !== 'undefined') YearFull.bind(p, analyzeP(p));
-    const b = $('#hTJ'); if (!b) return;
-    b.onclick = () => {
-      const Y = Tojeong.year();
-      if (karma < Tojeong.COST) { go('game'); return; }
-      openOverlay(`📜 ${Y} 토정비결 열기`, `<p class="sjtxt">카르마 <b>${Tojeong.COST}</b>를 쓰면 ${esc(p.name)}님의 ${Y}년 토정비결 전체가 열려요.</p><p class="sjnote">보유 카르마 ${karma} → ${karma - Tojeong.COST}</p>`,
-        [{ t: `✨ 카르마 ${Tojeong.COST} 쓰고 열기`, pri: 1, f: () => { karma -= Tojeong.COST; window.KREASON = `토정비결 ${Y}`; saveMeta(); Tojeong.open(p, Y); Snd.sfx('fanfare'); Auth.sync(); render(); } }, { t: '나중에' }]);
-    };
+    const b = $('#hTJ'); if (b) b.onclick = () => Detail.openTojeong(p, Tojeong.year());
   }
   function openTojeong() { if (!analyzeP(getMe())) { openItem('tojeong'); return; } go('tojeong'); }
   function passCard(pass) {
@@ -736,26 +721,24 @@ const Hub = (() => {
         <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
         <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>
       <div class="hmenu">
-        <button id="hRep"><span>🔎</span><b>목적별 상세 운세</b><small>2027 종합·재물·연애·직업·건강·12개월·대운·토정비결 · 1회 ✨5~10</small></button>
-      </div>
-      ${typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
+        <button id="hRep"><span>🧧</span><b>2027 신년운세</b><small>올해의 흐름 개요는 무료 · 분야별·12개월·대운 상세 풀이</small></button>
+      </div>`;
   }
   function bindSaju(p, a) {
-    $('#hRep').onclick = () => go('yearfull');
-    if (typeof YearFull !== 'undefined') YearFull.bind(p, a);
+    $('#hRep').onclick = () => go('newyear');
   }
   function newYearHTML(p, a) {
     const n = Fortune.newYear(a, 2027);
     const mm = m => `${m.yr !== 2027 ? '이듬해 ' : ''}${m.solarM}월`;
     const months = n.months.map(m => `<tr><td>${mm(m)}<small>${S.BRK[m.b]}월</small></td><td>${S.STK[m.s]}${S.BRK[m.b]}<small>${m.ten}</small></td><td><b style="color:${gColor(m.v)}">${m.v}</b></td><td>${m.txt}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</td></tr>`).join('');
     return `<div class="hhead"><small>${esc(p.name)}님 · ${n.gzHan}년</small><h2>2027 ${n.gzTxt}년 신년운세</h2></div>
-      <div class="hcard"><div class="sjtxt">
+      <div class="hcard"><span class="vfreetag">무료 개요</span><div class="sjtxt">
       <h4>🌟 한 해 총운 · ${n.ts.n}의 해</h4><p>${n.sx.총운}</p>
       ${n.yrel ? `<p>🐑 내 띠와 올해 양띠는 <b>${n.yrel.n}</b> — ${n.yrel.d.replace('날', '해')}</p>` : ''}
       <p>📈 좋은 달: <b>${n.best.map(mm).join(', ')}</b> · 조심할 달: <b>${mm(n.worst)}</b></p>
       <h4>📅 12개월 흐름 (간략)</h4><table class="dytbl hmonth"><tr><th>달</th><th>점수</th><th>한마디</th></tr>${n.months.map(m => `<tr><td>${mm(m)}</td><td><b style="color:${gColor(m.v)}">${m.v}</b></td><td>${m.txt}</td></tr>`).join('')}</table>
-      <p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터). ※ 분야별 상세·달마다 좋은 날·10년 대운·궁합·MBTI 전략은 아래 목적별 상세 보기에서 골라 볼 수 있어요.</p></div></div>
-      ${typeof YearFull !== 'undefined' ? YearFull.ctaHTML(p) : ''}`;
+      <p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터). </p></div></div>
+      <div class="hcard tjcard"><h3 class="ht">🔒 2027 신년운세 상세</h3><p class="hsub">${Views.item('newyear').d}</p>${Views.button('newyear', Views.subj(p), 'hNYD', false, '신년운세 상세 보기')}</div>`;
   }
   function openNewYear() { go('newyear'); }
   function openLearn() {
@@ -809,23 +792,16 @@ const Hub = (() => {
     work: { e: '💼', n: '동료', yk: '직업', yn: '일 흐름', how: '역할·마감을 글로 정리해 두고, 피드백은 사실 중심으로',
       tip: ['손발이 잘 맞는 동료예요. 한 사람은 기획, 한 사람은 실행으로 나누면 성과가 커요.', '일하는 속도와 방식이 조금 달라요. 중간 점검을 자주 하면 시너지가 나요.', '의견이 자주 갈릴 수 있어요. 결정 기준을 미리 합의하면 오히려 꼼꼼한 팀이 돼요.'] },
   };
-  function showCompat(p, a, q, b, viewing) {
+  function showCompat(p, a, q, b) {
     Snd.sfx('love');
-    const R = REL[q.rel] || REL.love, love = R === REL.love;
-    const vs = typeof Views !== 'undefined', pk = vs ? Views.pair(p, q) : '', cst = vs ? Views.status('compat', pk) : {};
-    const open = viewing || Store.ownedReal('compat') || Store.ownedReal('report') || !vs, yg = S.yearGz(new Date().getFullYear());
-    const cv = vs ? Views.item('compat') : null;
-    const yl = x => S.SEUN[S.tg10(x.me, yg.s).g][love ? '연애' : R.yk];
+    const R = REL[q.rel] || REL.love;
+    const pk = Views.pair(p, q), cst = Views.status('compat', pk, Store.ownedReal('compat')), cv = Views.item('compat');
     const pc = Saju.compatPair(a, b), band = pc ? (pc.score >= 80 ? 0 : pc.score >= 65 ? 1 : 2) : 1;
     const relBox = `<div class="relbox"><b>${R.e} ${R.n}로서의 궁합</b><p>${R.tip[band]}</p><small>💡 ${R.how}</small></div>`;
-    const detail = open ? `<div class="sjtxt"><h4>🧭 ${esc(p.name)}의 성격</h4><p>${a.dm.성격}</p><h4>🧭 ${esc(q.name)}의 성격</h4><p>${b.dm.성격}</p>
-        ${love ? `<h4>💕 ${esc(p.name)}의 연애 스타일</h4><p>${a.dm.연애}</p><h4>💕 ${esc(q.name)}의 연애 스타일</h4><p>${b.dm.연애}</p>`
-          : `<h4>✨ ${esc(p.name)}의 강점</h4><p>${a.dm.강점}</p><h4>✨ ${esc(q.name)}의 강점</h4><p>${b.dm.강점}</p>`}
-        <h4>📅 올해 두 사람의 ${R.yn}</h4><p><b>${esc(p.name)}</b> ${yl(a)}</p><p><b>${esc(q.name)}</b> ${yl(b)}</p></div>`
-      : `<div class="lock"><b>🔒 궁합 상세 풀이</b><small>두 사람의 성격·${love ? '연애 스타일' : '강점'}·올해 ${R.yn} · 볼 때 ✨${cv.k} (상대마다) · 결제한 날 다시보기 ${Views.FREE()}회 무료</small></div>`;
-    openOverlay(`${R.e} 궁합 결과 · ${R.n}`, Saju.compatHTML(esc(p.name), a, esc(q.name), b, q.rel || 'love') + relBox + detail + '<p class="sjnote" style="text-align:center">※ 궁합은 참고·재미용이에요. 관계는 서로의 노력이 만들어요.</p>',
-      [...(open ? [] : [{ t: cst.paid && cst.freeLeft > 0 ? `🔁 상세 풀이 다시 보기 (오늘 무료 ${cst.freeLeft}회)` : `🔓 상세 풀이 보기 (✨ ${cv.k})`, pri: 1, keep: true,
-         f: () => Views.open('compat', pk, `💑 궁합 상세 · ${p.name}·${q.name}`, () => showCompat(p, a, q, b, true), () => showCompat(p, a, q, b)) }]),
+    const lock = `<div class="lock"><b>🔒 궁합 상세 풀이</b><small>${cv.d} · 볼 때 ✨${cv.k} · 결제한 날 다시보기 ${Views.FREE()}회 무료</small></div>`;
+    const tail = cst.legacy ? '무료 (이전 구매)' : cst.paid && cst.freeLeft > 0 ? `오늘 다시보기 ${cst.freeLeft}회 무료` : `✨ ${cv.k}`;
+    openOverlay(`${R.e} 궁합 결과 · ${R.n}`, '<span class="vfreetag">무료 개요</span>' + Saju.compatHTML(esc(p.name), a, esc(q.name), b, q.rel || 'love') + relBox + lock + '<p class="sjnote" style="text-align:center">※ 궁합은 참고·재미용이에요. 관계는 서로의 노력이 만들어요.</p>',
+      [{ t: `🔓 궁합 상세 보기 · ${tail}`, pri: 1, keep: true, f: () => Detail.openCompat(p, q, q.rel) },
        { t: '🧮 두 사람 계산 과정 보기', f: () => { const pq = birthOf(q); openOverlay('🧮 궁합 계산 과정', `<iframe class="hlearn" src="learn.html?embed=1&d=${p.date}&cal=${p.cal || 's'}&sx=${p.sex}${p.time ? '&t=' + p.time : ''}&d2=${q.date}&cal2=${q.cal}&sx2=${q.sex}${q.time ? '&t2=' + q.time : ''}"></iframe>`, [{ t: '닫기', f: () => { if (viewing) render(); } }]); } },
        { t: '닫기' }]);
   }
@@ -934,11 +910,11 @@ const Hub = (() => {
     else if (tab === 'mbtitest') { body.innerHTML = mbtiTestHTML(p, a); bindMbtiTest(p, a); }
     else if (tab === 'tojeong') { body.innerHTML = tojeongHTML(p); bindTojeong(p); }
     else if (PAGES[tab]) { body.innerHTML = PAGES[tab].html(p, a); PAGES[tab].bind(p, a); }
-    else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); body.innerHTML = newYearHTML(p, a); if (typeof YearFull !== 'undefined') YearFull.bind(p, a); }
+    else if (tab === 'newyear') { setTimeout(() => mission('newyear'), 0); body.innerHTML = newYearHTML(p, a); { const d = $('#hNYD'); if (d) d.onclick = () => Detail.openNewyear(p); } }
     body.insertAdjacentHTML('afterbegin', navHTML(tab)); bindNav(); fitTitles(body);
     if (typeof Views !== 'undefined') {
-      if (tab !== 'yfview') Views.leave();
-      if (tab !== 'yfview' && tab !== 'yearfull' && Views.takeReturn()) { const nv = body.querySelector('.hnav'); if (nv) { nv.insertAdjacentHTML('afterend', Views.receiptHTML()); Views.bindReceipt(() => { const r = $('#vRec'); if (r) r.remove(); }); } }
+      if (tab !== 'detail') Views.leave();
+      if (tab !== 'detail' && Views.takeReturn()) { const nv = body.querySelector('.hnav'); if (nv) { nv.insertAdjacentHTML('afterend', Views.receiptHTML()); Views.bindReceipt(() => { const r = $('#vRec'); if (r) r.remove(); }); } }
     }
     if (!body.dataset.keep) body.scrollTop = 0;
     syncTabs();
@@ -974,6 +950,6 @@ const Hub = (() => {
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openLogin };
+  return { cur: () => tab, init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openLogin };
 })();
 Hub.init();
