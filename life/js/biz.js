@@ -49,8 +49,8 @@ function doBuy(k, after) {
     else if (err && !/cancel/i.test(err)) openOverlay('결제하지 못했어요', `<p class="sjtxt" style="text-align:center">${Store.errText(err)}</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
   });
 }
-function openShop(focus, full) {
-  if (focus && !full && Store.item(focus)) return openProduct(focus);
+// 상점 목록 (팝업 상점과 하단 「상점」 탭이 함께 씀)
+function shopListHTML(page) {
   const row = k => { const it = Store.item(k), own = Store.has(k);
     return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${own ? `<small style="color:var(--money)">${Store.why(k)}</small>` : ''}</div>
       <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`; };
@@ -59,15 +59,26 @@ function openShop(focus, full) {
     + `<h4 class="kh">☕ 가볍게</h4><div class="shopitem"><span class="se">🔮</span><div><b>타로 사주 심층 풀이</b><small>뽑은 카드를 내 사주·대운·올해·이번 달과 엮은 주제별 상담 · 매일 1회 무료 (리포트 보유 시 3회)</small></div><button data-go="tarot">✨ 10/회</button></div>`
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
+  const charge = `<h4 class="kh">✨ 카르마 모으기 · 구매</h4>` + Karma.chargeHTML(0, '', page);
+  // 상점 탭: 카르마 모으기를 먼저 (무엇을 살지보다 '어떻게 모으는지'가 첫 질문)
+  return (page ? charge : '') + `<h4 class="kh">⭐ 카르마로 여는 콘텐츠</h4>` + cont + (page ? '' : charge)
+    + (noads ? `<h4 class="kh">🚫 광고 제거</h4><div class="shopitem"><span class="se">${noads.e}</span><div><b>${noads.n}</b><small>${noads.d}</small></div><button data-buy="noads" class="${nown ? 'own' : ''}">${nown ? '보유 중' : Store.native || Karma.testMode() ? noads.price : '앱 전용'}</button></div>` : '');
+}
+function bindShopList(root, re) {
+  Karma.bindCharge(re, root);
+  root.querySelectorAll('[data-c]').forEach(b => b.onclick = () => openProduct(b.dataset.c, re));
+  root.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { if (document.getElementById('overlay').classList.contains('on')) closeOverlay(); Hub.go(b.dataset.go); });
+  root.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => doBuy(b.dataset.buy, re));
+}
+async function restoreBuys(re) { const n = await Store.restore(); re && re(); Hub.toast(n > 0 ? `구매 ${n}건을 복원했어요` : n === 0 ? '복원할 구매 내역이 없어요 (카르마는 로그인 계정으로 복원돼요)' : Store.errText(Store.lastErr())); }
+function openShop(focus, full) {
+  if (focus && !full && Store.item(focus)) return openProduct(focus);
   openOverlay('✨ 카르마 상점',
-    `<p class="sjnote" style="text-align:center;margin-top:0">유료 콘텐츠는 모두 <b>카르마</b>로 열어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요.</p>`
-    + `<h4 class="kh">⭐ 대표 상품</h4>` + cont + `<h4 class="kh">✨ 카르마</h4>` + Karma.chargeHTML(0)
-    + (noads ? `<h4 class="kh">🚫 광고 제거</h4><div class="shopitem"><span class="se">${noads.e}</span><div><b>${noads.n}</b><small>${noads.d}</small></div><button data-buy="noads" class="${nown ? 'own' : ''}">${nown ? '보유 중' : Store.native || Karma.testMode() ? noads.price : '앱 전용'}</button></div>` : ''),
-    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { const n = await Store.restore(); openShop(null, true); Hub.toast(n > 0 ? `구매 ${n}건을 복원했어요` : n === 0 ? '복원할 구매 내역이 없어요 (카르마는 로그인 계정으로 복원돼요)' : Store.errText(Store.lastErr())); } }] : []), { t: '닫기' }]);
-  Karma.bindCharge(() => openShop(null, true));
-  document.querySelectorAll('#osheet [data-c]').forEach(b => b.onclick = () => openProduct(b.dataset.c, () => openShop(null, true)));
-  document.querySelectorAll('#osheet [data-go]').forEach(b => b.onclick = () => { closeOverlay(); Hub.go(b.dataset.go); });
-  document.querySelectorAll('#osheet [data-buy]').forEach(b => b.onclick = () => doBuy(b.dataset.buy));
+    `<p class="sjnote" style="text-align:center;margin-top:0">유료 콘텐츠는 모두 <b>카르마</b>로 열어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요. <a class="kqa" data-k="help">카르마가 뭔가요?</a></p>` + shopListHTML(false),
+    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: () => restoreBuys(() => openShop(null, true)) }] : []), { t: '닫기' }]);
+  const sh = document.getElementById('osheet');
+  bindShopList(sh, () => openShop(null, true));
+  const hq = sh.querySelector('[data-k=help]'); if (hq) hq.onclick = () => Karma.openHelp(() => openShop(null, true));
 }
 
 /* ---------- 프리미엄 사주 리포트 ---------- */

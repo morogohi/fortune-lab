@@ -35,6 +35,7 @@ window.Ads = (() => {
 
   function setBannerHeight(h) {
     document.documentElement.style.setProperty('--ad-h', (h || 0) + 'px');
+    document.documentElement.classList.toggle('adon', (h || 0) > 0);   // 게임 버튼과 배너 사이 여백 (잘못 누름 방지)
     window.dispatchEvent(new Event('resize'));
   }
 
@@ -83,6 +84,7 @@ window.Ads = (() => {
   const noAds = () => !!(window.Store && Store.has('noads'));
   async function banner(on) {
     if (noAds()) on = false;
+    if (!native) { mockBanner(on); return; }
     wantBanner = on;
     if (!ready || !ID.banner) return;
     try {
@@ -97,6 +99,14 @@ window.Ads = (() => {
         await A.hideBanner(); bannerShown = false; setBannerHeight(0);
       }
     } catch (e) { console.warn('[Ads] banner', e); }
+  }
+
+  /* 웹 테스트 모드: 앱과 같은 자리에 '배너 광고 자리'를 보여 줘 화면 배치를 미리 확인 (실제 광고 아님) */
+  function mockBanner(on) {
+    const el = document.getElementById('adMock'); if (!el) return;
+    on = on && typeof Karma !== 'undefined' && Karma.testMode();
+    if (el.classList.contains('on') === on) return;
+    el.classList.toggle('on', on); setBannerHeight(on ? 50 : 0);
   }
 
   /* 엔딩으로 넘어갈 때 호출. 광고가 닫히면 done() 실행 (광고를 안 띄우면 바로 실행) */

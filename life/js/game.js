@@ -16,7 +16,7 @@ let karma=store.get('p8b_karma',20);
 let hist=store.get('p8b_hist',[]);
 // 카르마가 바뀔 때마다 거래 내역에 남김 (이유는 window.KREASON에 직전 동작이 적어 둠, 없으면 추정)
 const saveMeta=()=>{const before=store.get('p8b_karma',20);store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20));
-  const d=karma-before;if(d){const why=window.KREASON||(d>0?'인생 게임 보상':'게임에서 사용');window.KREASON=null;const l=store.get('p8b_klog',[]);l.unshift({t:Date.now(),d,why,bal:karma});store.set('p8b_klog',l.slice(0,60))}};
+  const d=karma-before;if(d){const why=window.KREASON||(d>0?'인생 게임 보상':'게임에서 사용');const c=d<0?'spend':(window.KCAT||null);window.KREASON=null;window.KCAT=null;const l=store.get('p8b_klog',[]);l.unshift(c?{t:Date.now(),d,why,bal:karma,c}:{t:Date.now(),d,why,bal:karma});store.set('p8b_klog',l.slice(0,200))}};
 /* 다른 탭에서 카르마·기록이 바뀌면 이 탭도 따라감 (예전 값으로 덮어쓰는 것 방지) */
 function syncMeta(repaint){
   karma=store.get('p8b_karma',20);hist=store.get('p8b_hist',[]);
@@ -510,7 +510,7 @@ function die(reason){
   const grade=E.grade;
   const title=lifeTitle(avg);
   const epi=pick(['"그래도 꽤 괜찮은 인생이었다."','"한 번 더 산다면, 덜 걱정하고 더 사랑할 거야."','"다음 생엔 어디서 태어날까."','"후회는 없다. 아니, 조금 있다."','"인생, 생각보다 짧더라."']);
-  const gain=Math.max(5,Math.round(score/8));karma+=gain;window.KREASON=`인생 게임 엔딩 (${grade}등급)`;
+  const gain=Math.max(5,Math.round(score/8));karma+=gain;window.KREASON=`인생 게임 엔딩 (${grade}등급)`;window.KCAT='game';
   hist.unshift({f:P.country.f,name:P.name,age:P.age,grade,title});saveMeta();
   hist[0].years=P.age;hist[0].c=P.country.n;hist[0].bk=bk;saveMeta();
   snapAlbum(true);
@@ -680,7 +680,7 @@ function drawGraph(){
 const MOOD_OF={title:'title',setup:'title',roll:'roll',end:'ending'};
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
-  Ads.banner(id!=='game');refreshAdUI();
+  Ads.banner(true);refreshAdUI();   // 인생 게임 중에도 하단 배너 (광고 제거 구매 시 없음)
   if(window.WebAds&&!Store.has('noads')){if(id==='title')WebAds.banner('webAdTitle');if(id==='end')setTimeout(()=>WebAds.banner('webAdEnd'),1600)}
   Snd.mood(id==='game'&&P?stageOf(P.age).k:(MOOD_OF[id]||'title'));
   const sb=$('#sndbar');if(id==='game'){$('#stageWrap').appendChild(sb);sb.classList.add('ingame')}else{$('#app').appendChild(sb);sb.classList.remove('ingame')}

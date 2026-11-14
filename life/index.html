@@ -916,6 +916,27 @@
   }
   #sndbar #homeTop{width:auto;height:36px;border-radius:18px;padding:0 11px 0 8px;display:flex;align-items:center;gap:3px;font-size:15px}#sndbar #homeTop span{font-size:12.5px;font-weight:700}#sndbar #homeTop[hidden]{display:none}
   .hnav+.hhead{padding-right:0}.hhead h2{white-space:nowrap;overflow:hidden}
+  /* ---- 홈·상점 카르마 카드 · 앱 버전 · 카르마 내역/안내 ---- */
+  .hbrand{position:relative}
+  .hver{position:absolute;right:0;top:44px;font-style:normal;font-size:11.5px;font-weight:600;color:var(--dim);background:var(--card2);border-radius:10px;padding:2px 8px;font-variant-numeric:tabular-nums;cursor:pointer}
+  .hkarma{background:var(--card);border-radius:18px;padding:12px 14px;margin:0 0 10px;box-shadow:inset 0 0 0 1px var(--line)}
+  .hkt{display:flex;align-items:center;gap:6px}.hkt>span{font-weight:700;font-size:14px;color:var(--ink2)}
+  .hkq{width:22px;height:22px;border-radius:50%;background:var(--card2);color:var(--ink2);font-size:13px;font-weight:800;line-height:22px;padding:0;box-shadow:inset 0 0 0 1px var(--line2)}
+  .hklog{margin-left:auto;background:none;color:var(--dim);font-size:12.5px;padding:4px 0}
+  .hkrow{display:flex;align-items:center;gap:12px;margin:4px 0 6px}.hkbal{font-size:30px;font-weight:800;letter-spacing:-.5px;color:var(--ink);font-variant-numeric:tabular-nums}
+  .hkbal::before{content:'✨';font-size:20px;margin-right:4px;vertical-align:4px}
+  .hkrow small{color:var(--dim);font-size:12px;line-height:1.5}.hkrow em{font-style:normal;font-weight:700}.hkrow em.p{color:var(--money)}.hkrow em.m{color:var(--hp)}
+  .hkgoal small{display:block;color:var(--ink2);font-size:12.5px;margin-bottom:4px}.hkgoal .hbar{display:block;height:6px}
+  .hkbtns{display:flex;gap:6px;margin-top:10px}.hkbtns button{flex:1;background:var(--card2);border-radius:12px;padding:9px 4px;font-size:12.5px;font-weight:600;color:var(--ink)}
+  .hkbtns button.pri{background:var(--accent);color:var(--onacc)}
+  .ksum{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin:8px 0}.ksum div{background:var(--card2);border-radius:12px;padding:8px;text-align:center}.ksum small{display:block;color:var(--dim);font-size:11px}.ksum b{font-size:16px}.ksum b.p{color:var(--money)}.ksum b.m{color:var(--hp)}
+  .kflt{margin:6px 0 4px}.kday{margin:12px 0 2px;font-size:12.5px;color:var(--dim)}
+  .kway{display:flex;gap:10px;align-items:center;background:var(--card2);border-radius:12px;padding:8px 12px;margin:5px 0}.kway i{font-style:normal;font-size:22px}.kway b{display:block;font-size:14px}.kway small{color:var(--dim);font-size:12px}
+  .kqa{color:var(--accent);text-decoration:underline;cursor:pointer;font-weight:700}
+  :root[data-theme=light] .kqa{color:#3a5f96}
+  .adon #game #bottom{padding-bottom:16px}
+  #adMock{position:absolute;left:0;right:0;bottom:env(safe-area-inset-bottom,0px);height:50px;display:none;align-items:center;justify-content:center;gap:6px;background:repeating-linear-gradient(45deg,var(--card2) 0 10px,var(--card) 10px 20px);border-top:1px solid var(--line2);color:var(--dim);font-size:12px;z-index:45}
+  #adMock.on{display:flex}#adMock b{background:#f2cf7a;color:#3a2f00;border-radius:4px;padding:1px 5px;font-size:10.5px}
 </style>
 </head>
 <body>
@@ -1026,13 +1047,15 @@
     <button data-t="saju"><i>📜</i><b>내 사주</b></button>
     <button data-t="compat"><i>💞</i><b>궁합</b></button>
     <button data-t="game"><i>🌏</i><b>인생 게임</b></button>
-    <button data-t="more"><i>☰</i><b>더보기</b></button>
+    <button data-t="shop"><i>🛍️</i><b>상점</b></button>
   </nav>
+  <div id="adMock" aria-hidden="true"><b>AD</b> 하단 배너 광고 자리 (테스트 모드 미리 보기)</div>
   <div id="toast"></div>
 
   <div id="overlay"><div id="osheet"></div></div>
 </div>
 
+<script src="js/version.js"></script>
 <script src="js/theme.js"></script>
 <script src="js/datewheel.js"></script>
 <script src="js/icons.js"></script>

@@ -1,6 +1,6 @@
 /* =====================================================================
  *  hub.js — 운명 연구소 앱 허브 (하단 탭 5개)
- *   오늘 · 내 사주 · 궁합 · 인생 게임 · 더보기
+ *   홈 · 내 사주 · 궁합 · 인생 게임 · 상점  (더보기는 ⚙️ 설정과 상점 아래 링크로 이동)
  *   출석·미션·복주머니 · 행운패스 · 매일 운세 알림
  * ===================================================================== */
 const Hub = (() => {
@@ -118,7 +118,7 @@ const Hub = (() => {
 
 
   /* ---------- 화면 이동: 상단 뒤로가기 바 + 브라우저·안드로이드 뒤로가기 ---------- */
-  const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', input: '내 정보 입력', tojeong: '토정비결', newyear: '신년운세', daily: '출석 · 미션', tarot: '타로카드', mbtitest: 'MBTI 성향 검사' };
+  const TITLES = { today: '오늘의 운세', saju: '내 사주', compat: '궁합', more: '더보기', shop: '상점', input: '내 정보 입력', tojeong: '토정비결', newyear: '신년운세', daily: '출석 · 미션', tarot: '타로카드', mbtitest: 'MBTI 성향 검사' };
   let ignorePop = false;
   const navHTML = t => `<div class="hnav"><button class="hnback" id="hnBack" aria-label="뒤로">${ICONS.ic('back')}</button><b>${TITLES[t] || ''}</b></div>`;
   function back() { if (history.state && history.state.t) history.back(); else go('home'); }
@@ -172,7 +172,8 @@ const Hub = (() => {
       <div class="setrow col"><span>🎨 화면</span><div class="modeseg">${[['light', '라이트'], ['dark', '다크'], ['system', '휴대폰 설정']].map(([m, n]) => `<button data-smode="${m}" class="${Theme.mode() === m ? 'on' : ''}">${n}</button>`).join('')}</div></div>
       <div class="setrow"><span>🎵 배경음악</span><div></div><button class="tgl${Snd.on.bgm ? ' on' : ''}" id="sBgm" aria-label="배경음악"><i></i></button></div>
       <div class="setrow"><span>🔊 효과음</span><div></div><button class="tgl${Snd.on.sfx ? ' on' : ''}" id="sSfx" aria-label="효과음"><i></i></button></div>
-      <div class="setrow"><span>🔔 알림 · 상점</span><div><small>매일 운세 알림, 복주머니, 상점</small></div><button id="sMore">더보기</button></div>
+      <div class="setrow"><span>☰ 더보기</span><div><small>복주머니 교환, 기록 보관함, 매일 운세 알림, 도움말</small></div><button id="sMore">열기</button></div>
+      <div class="setrow"><span>ℹ️ 앱 버전</span><div><b>${esc(appVer())}</b> <small>${Store.native ? '앱' : '웹'}</small></div><button id="sShop">상점</button></div>
       <div class="setrow"><span>🔒 개인정보</span><div><small>정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
     </div>`, [{ t: '닫기' }]);
     $('#sAcc').onclick = () => { closeOverlay(true); u ? openAccount() : openLogin(); };
@@ -181,6 +182,7 @@ const Hub = (() => {
     $('#sBgm').onclick = e => { Snd.toggle('bgm'); e.currentTarget.classList.toggle('on', Snd.on.bgm); };
     $('#sSfx').onclick = e => { Snd.toggle('sfx'); e.currentTarget.classList.toggle('on', Snd.on.sfx); Snd.sfx('tap'); };
     $('#sMore').onclick = () => { closeOverlay(); go('more'); };
+    $('#sShop').onclick = () => { closeOverlay(); go('shop'); };
     $('#sPriv').onclick = () => { closeOverlay(true); openPrivacy(); };
   }
   function openWipe() {
@@ -302,6 +304,43 @@ const Hub = (() => {
   }
   // 띠 동물 (사주 년지 기준 — 입춘 전 출생은 전년 띠)
   const DDI_E = ['🐭', '🐮', '🐯', '🐰', '🐲', '🐍', '🐴', '🐑', '🐵', '🐔', '🐶', '🐷'];
+  const appVer = () => 'v' + (window.APP_VERSION || '1.0.0');
+  /* 홈 카르마 카드: 잔액 · 오늘 모음/사용 · 다음 목표까지 · ? 안내 · 바로 모으기 */
+  function karmaCardHTML(inShop) {
+    if (typeof Karma === 'undefined') return '';
+    const b = Karma.bal(), t = Karma.today(), g = Karma.nextGoal(), pct = Math.min(100, Math.round(b / g.k * 100));
+    return `<div class="hkarma">
+      <div class="hkt"><span>✨ 내 카르마</span><button class="hkq" id="hkHelp" aria-label="카르마가 뭔가요?">?</button><button class="hklog" id="hkHist">사용 내역 ›</button></div>
+      <div class="hkrow"><b class="hkbal">${b.toLocaleString()}</b><small>오늘 모음 <em class="p">+${t.earn + t.buy}</em> · 사용 <em class="m">−${t.spend}</em><br>광고 보상 ${Karma.AD_DAY - t.adLeft}/${Karma.AD_DAY}회</small></div>
+      <div class="hkgoal"><small>${g.need ? `${g.e} ${esc(g.n)}까지 <b>${g.need}</b> 남음 · 광고 약 ${Math.ceil(g.need / Karma.AD_K)}번` : `${g.e} ${esc(g.n)}을(를) 열 수 있어요!`}</small>${bar(pct, 'var(--hap)')}</div>
+      <div class="hkbtns"><button id="hkAd">📺 광고 +${Karma.AD_K}</button><button id="hkGame">🎲 인생 게임</button>${inShop ? '<button id="hkHist2" class="pri">📒 사용 내역</button>' : '<button id="hkShop" class="pri">🛍️ 상점</button>'}</div>
+    </div>`;
+  }
+  function bindKarmaCard() {
+    const on = (id, f) => { const e = $('#' + id); if (e) e.onclick = f; };
+    on('hkHelp', () => { Snd.sfx('tap'); Karma.openHelp(); });
+    on('hkHist', () => { Snd.sfx('tap'); Karma.openHistory(); });
+    on('hkHist2', () => { Snd.sfx('tap'); Karma.openHistory(); });
+    on('hkAd', () => Karma.adReward(() => { if (tab === 'home' || tab === 'shop') render(); }));
+    on('hkGame', () => go('game'));
+    on('hkShop', () => go('shop'));
+  }
+  /* ---------- 🛍️ 상점 탭 ---------- */
+  function shopPageHTML() {
+    return `${karmaCardHTML(true)}
+      ${Karma.testMode() ? '' : TRIAL()}
+      ${shopListHTML(true)}
+      ${Store.native ? '<button class="ghost wide" id="shRestore">🔄 구매 복원</button>' : ''}
+      <div class="hmenu"><button id="shMore"><span>☰</span><b>더보기</b><small>복주머니 교환 · 기록 보관함 · 알림 · 도움말</small></button>
+        <button id="shExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개 · 2개 = 카르마 20</small></button></div>
+      <p class="sjnote" style="text-align:center">카르마는 소모성 재화예요 · 앱 ${esc(appVer())}</p>`;
+  }
+  function bindShopPage() {
+    const body = $('#hubBody'), re = () => { body.dataset.keep = '1'; const y = body.scrollTop; render(); body.scrollTop = y; delete body.dataset.keep; };
+    bindKarmaCard(); bindShopList(body, re);
+    const r = $('#shRestore'); if (r) r.onclick = () => restoreBuys(re);
+    $('#shMore').onclick = () => go('more'); $('#shExch').onclick = openExchange;
+  }
   function homeHTML(p, a) {
     const now = new Date(), wd = '일월화수목금토'[now.getDay()];
     const g = Fortune.dayGz ? Fortune.dayGz(now) : null;
@@ -309,10 +348,11 @@ const Hub = (() => {
     const tile = it => `<button class="htile${it.g === 'game' ? ' wide' : ''}" data-c="${it.c || 'lav'}" data-item="${it.k}"><i>${it.e}</i><span><b>${itemName(it)}</b><small>${it.d}</small></span></button>`;
     const sec = (t, gk) => `<h3 class="hsec">${t}</h3><div class="htiles">${ITEMS.filter(x => x.g === gk).map(tile).join('')}</div>`;
     return `<div class="hhome">
-      <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1></div>
+      <div class="hbrand"><small>${now.getMonth() + 1}월 ${now.getDate()}일 (${wd})${g ? ` · 오늘은 <b>${S.STK[g.s]}${S.BRK[g.b]}일</b>` : ''}</small><h1>운명 연구소</h1><em class="hver" id="hVer">${esc(appVer())}</em></div>
       ${p && a
         ? `<button class="hme" id="hmMe"><span class="ddi" title="${a.ddi}띠">${DDI_E[a.p.y.b]}</span><div><b>${esc(p.name)}님 <em class="ddit">${a.ddi}띠</em></b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
+      ${karmaCardHTML()}
       <button class="hhero" data-item="today"><div><small>오늘의 운세</small><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span><em class="hgo">시작하기 ›</em></div><i>☀️</i></button>
       ${sec('사주 · 운세', 'saju')}
       ${sec('궁합 · 관계', 'rel')}
@@ -325,6 +365,8 @@ const Hub = (() => {
   function bindHome() {
     document.querySelectorAll('[data-item]').forEach(b => b.onclick = () => openItem(b.dataset.item));
     const me = $('#hmMe'); if (me) me.onclick = openProfiles;
+    bindKarmaCard();
+    const v = $('#hVer'); if (v) v.onclick = () => toast(`운명 연구소 · 프로젝트 80억 ${appVer()} (${Store.native ? '앱' : '웹'})`);
   }
 
   /* ---------- 사주 정보 입력 (단계형) ---------- */
@@ -779,7 +821,7 @@ const Hub = (() => {
   const EXCH = [
     { k: 'pass2h', e: '🍀', n: '행운패스 2시간', c: 3, can: () => Ads.native && !Store.has('noads'), show: () => Ads.native, f: () => { Store.addPass(2 * 36e5); Ads.banner(false); } },
     { k: 'counsel', e: '🤖', n: 'AI 사주상담 1회', c: 5, can: () => true, f: () => { if (typeof Counsel !== 'undefined') Counsel.addCredits(1); } },
-    { k: 'karma', e: '✨', n: '카르마 20 (인생 게임)', c: 2, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 20; window.KREASON = '복주머니 교환'; saveMeta(); } } },
+    { k: 'karma', e: '✨', n: '카르마 20 (인생 게임)', c: 2, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 20; window.KREASON = '복주머니 교환'; window.KCAT = 'bonus'; saveMeta(); } } },
     { k: 'theme', e: '🎨', n: '오행 컬러 테마 1개', c: 10, can: () => themesOwned().length < 5, f: () => { const o = themesOwned(), nx = [0, 1, 2, 3, 4].find(i => !o.includes(i)); o.push(nx); store.set('p8b_themes', o); setTheme(nx); } },
     { k: 'fate', e: '🎛️', n: '운명 조작 팩 (인생 게임)', c: 20, can: () => !Store.has('fate'), f: () => Store.grant('fate') },
     { k: 'report', e: '📜', n: '프리미엄 사주 리포트', c: 60, can: () => !Store.has('report'), f: () => Store.grant('report') },
@@ -811,7 +853,7 @@ const Hub = (() => {
     return `<div class="hhead"><small>운명 연구소</small><h2>더보기</h2></div>
       <div class="hmenu">
         <button id="mExch"><span>🎁</span><b>복주머니 교환</b><small>보유 ${pouch()}개</small></button>
-        <button id="mShop"><span>🛍️</span><b>상점</b><small>${Store.item('pass7') ? '행운패스 · ' : ''}리포트 · 궁합 상세 · 신년운세</small></button>
+        <button id="mShop"><span>🛍️</span><b>상점</b><small>카르마 모으기·구매 · 리포트 · 광고 제거</small></button>
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
         ${typeof Karma !== 'undefined' && Karma.testMode() ? '<button id="mMet"><span>📈</span><b>전환 기록 (테스트)</b><small>광고·결제·해제 횟수와 비율</small></button>' : ''}
         <button id="mApp"><span>📱</span><b>${Store.native ? '도움말 · 지원' : '앱 소개 · 출시 소식'}</b><small>기능 안내 · 카르마 이용 안내 · 자주 묻는 질문</small></button>
@@ -827,7 +869,7 @@ const Hub = (() => {
         <p class="sjnote">사주 풀이·운세·궁합·인생 게임 결과는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요. 만세력 계산: lunar-javascript (MIT).</p></div>`;
   }
   function bindMore() {
-    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => openShop(); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const ma = $('#mApp'); if (ma) ma.onclick = () => window.open('https://morogohi.github.io/project8b/', '_blank', 'noopener'); const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
+    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => go('shop'); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const ma = $('#mApp'); if (ma) ma.onclick = () => window.open('https://morogohi.github.io/project8b/', '_blank', 'noopener'); const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
     document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.mode); Snd.sfx('tap'); render(); });
     $('#mWipe').onclick = openWipe;
@@ -867,12 +909,13 @@ const Hub = (() => {
   function render() {
     const body = $('#hubBody'), p = getMe(), a = analyzeP(p);
     if (tab === 'home' && !editing) { body.innerHTML = homeHTML(p, a); bindHome(); body.scrollTop = 0; syncTabs(); return; }
-    if ((!a || editing || tab === 'input') && !['more', 'daily', 'tarot', 'mbtitest'].includes(tab)) { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = navHTML(editing ? 'input' : (tab === 'input' ? 'input' : tab)) + formHTML(editing ? p : null); bindForm(); bindNav(); syncTabs(); body.scrollTop = 0; return; }
+    if ((!a || editing || tab === 'input') && !['more', 'shop', 'daily', 'tarot', 'mbtitest'].includes(tab)) { if (!a && !editing && tab !== 'input') pending = tab; body.innerHTML = navHTML(editing ? 'input' : (tab === 'input' ? 'input' : tab)) + formHTML(editing ? p : null); bindForm(); bindNav(); syncTabs(); body.scrollTop = 0; return; }
     if (tab === 'today') { attend(); body.innerHTML = todayHTML(p, a); bindToday(p, a); setTimeout(() => mission('today'), 0);
       try { const f = Fortune.today(a, keyOf(p)); addRecord({ k: 'today', uniq: 'today' + day() + keyOf(p), title: `${f.sc[0]}점 · ${f.grade}`, sub: `${p.name} · ${f.lines[0]}` }); } catch (e) { } }
     else if (tab === 'saju') { body.innerHTML = sajuHTML(p, a); bindSaju(p, a); setTimeout(() => mission('saju'), 0); }
     else if (tab === 'compat') { body.innerHTML = compatTabHTML(p, a); bindCompat(p, a); }
     else if (tab === 'more') { body.innerHTML = moreHTML(); bindMore(); }
+    else if (tab === 'shop') { body.innerHTML = shopPageHTML(); bindShopPage(); }
     else if (tab === 'daily') { attend(); body.innerHTML = dailyHTML(); bindDaily(); }
     else if (tab === 'tarot') { body.innerHTML = tarotHTML(p, a); bindTarot(p, a); }
     else if (tab === 'mbtitest') { body.innerHTML = mbtiTestHTML(p, a); bindMbtiTest(p, a); }
