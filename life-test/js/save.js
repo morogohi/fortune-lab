@@ -9,7 +9,7 @@ const Save = (() => {
   const all = () => store.get(KEY, {});
   const put = o => { try { localStorage.setItem(KEY, JSON.stringify(o)); return true; } catch (e) { return false; } };
   const pad = n => String(n).padStart(2, '0');
-  const when = t => { const d = new Date(t); return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
+  const when = t => { const d = KST.at(t); return `${d.getMonth() + 1}/${d.getDate()} ${pad(d.getHours())}:${pad(d.getMinutes())}`; };
 
   /* ---------- 직렬화: Set은 배열로, 함수는 버림, 데이터표 객체는 id로 ---------- */
   const SKIP = new Set(['bubble', 'pendingAd', 'saju', 'skipDeath']);

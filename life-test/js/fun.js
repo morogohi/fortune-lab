@@ -66,7 +66,7 @@ const Fun = (() => {
     else t = { e: '🎯', n: '밀당의 고수', d: '다가갈 때와 물러설 때를 아는 타입. 적당한 거리감이 매력이라 상대가 계속 궁금해해요.', tip: '밀당도 적당히! 중요한 순간엔 솔직함이 최고의 기술이에요.' };
     const idx = cl(charm * .45 + swing * .55, 3, 99);
     // 앞으로 10년, 도화 기운이 들어오는 해
-    const now = new Date().getFullYear(), years = [];
+    const now = KST.year(), years = [];
     for (let y = now; y < now + 10; y++) if (dSet.has(S.yearGz(y).b)) years.push(y);
     return { charm, swing, idx, t, why, years, dohwa, hong };
   }

@@ -3,7 +3,9 @@
  *   상점의 '프리미엄 사주 리포트'를 대신하는 종합 리포트. 한 사람의 모든 풀이를 한 권으로 묶어 PDF로 만든다.
  *   구성(중복 없이 주제별·월별로 다시 묶음): 표지 · 타고난 사주 · 한 해 총평 · 분야별 풀이(연애 성향 포함)
  *         → 상담 보고서 구성: 상담 요약 · 명식과 해석 기준 · 큰 흐름 · 분야별 · 월별 상담(같은 표 형식) · 사주 MBTI(압축) · 궁합 · 상담 정리
- *   - 만들기 조건: 토정비결 · 2027 신년운세 · 궁합 · 사주 MBTI를 먼저 봐야 함 (p8b_done 기록, 개요만 봐도 완료)
+ *   - 만들기 조건 없음: 내 정보만으로 바로 만듦 · 궁합 상대는 미리보기에서 선택 부록으로 넣을 수 있음
+ *   - 결제 전 안내(구성 · 조건 · 예시) → 결제(보관형: 같은 프로필 · 같은 연도 다시 열기 무료) → 미리보기 → PDF
+ *   - 실패: 추가 차감 없이 다시 시도 · 한 번도 만들지 못했으면 환불
  *   - 요금: 만들 때 카르마 (views.js 'pdf' 항목) · 결제한 날 다시 만들기 3회 무료 · 예전 상세 리포트 보유자 무료
  *   - 모두 기기 안에서 만든다 (html2canvas → jsPDF, 필요할 때만 불러옴). 개인정보를 어디로도 보내지 않음
  *   - 저장: 앱은 파일 저장 후 공유 시트(Filesystem+Share), 웹은 내려받기
@@ -19,17 +21,19 @@ const PdfReport = (() => {
     if (!(window.jspdf && window.jspdf.jsPDF)) await loadJs(b + 'jspdf.umd.min.js');
   }
   const subj = p => Views.subj(p);
-  const Y = () => { const d = new Date(); return d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getFullYear(); };
+  const Y = () => KST.fortuneYear();
 
   /* ---------- 리포트 본문 (섹션 = 카드 묶음) ---------- */
-  function sections(p) {
+  const partners = () => (Hub.people() || []).filter(q => q && q.date && Hub.analyze(q)).slice(0, 3);
+  function sections(p, opt = {}) {
     const a = Hub.analyze(p); if (!a) return null;
     const S = window.SAJU, out = [];
-    const now = new Date(), people = (Hub.people() || []).filter(q => q && q.date && Hub.analyze(q)).slice(0, 3);
+    const now = KST.now(), people = opt.appendix ? partners() : [];
     const h = (n, e, t, sub) => `<div class="pdf-h"><i>${String(n).padStart(2, '0')}</i><b>${t}</b>${sub ? `<small>${sub}</small>` : ''}</div>`;
     // 상담 보고서 구성 (detail.js reportParts): 요약 → 명식 → 큰 흐름 → 분야별 → 월별 → 성격 유형 → 궁합 → 상담 정리
     const R = Detail.reportParts(p, a, people);
-    const toc = ['상담 요약', '명식과 타고난 성향', ...R.chapters.map(x => x.t), '상담 정리'];
+    const isApp = x => /^궁합 · /.test(x.t), main = R.chapters.filter(x => !isApp(x)), apps = R.chapters.filter(isApp).map(x => Object.assign({}, x, { t: '부록 · ' + x.t }));
+    const toc = ['상담 요약', '명식과 타고난 성향', ...main.map(x => x.t), '상담 정리', ...apps.map(x => x.t)];
     const gz4 = `${S.ST[a.p.y.s]}${S.BR[a.p.y.b]}년 ${S.ST[a.p.m.s]}${S.BR[a.p.m.b]}월 ${S.ST[a.p.d.s]}${S.BR[a.p.d.b]}일${a.p.h ? ` ${S.ST[a.p.h.s]}${S.BR[a.p.h.b]}시` : ''}`;
     out.push({ t: '표지', html: `<div class="pdf-cover"><div><span class="pdf-kicker">SAJU CONSULTATION REPORT</span>
       <h1>${esc(p.name)} 님의<br>삶과 흐름</h1><span class="pdf-sub">2027 사주 상담 보고서</span>
@@ -54,41 +58,38 @@ const PdfReport = (() => {
     out.push({ t: '명식과 타고난 성향', html: h(2, '', '명식과 타고난 성향', '명식 · 해석 범위와 계산 기준 · 성격 · 강점과 약점 · 타고난 흐름') + `<div class="hcard"><h3 class="ht">명식과 해석 범위</h3>${pdfSaju}${basis}</div>
       <div class="hcard"><h3 class="ht">타고난 성격</h3><div class="sjtxt"><p>${a.dm.성격}</p><h4>강점으로 해석되는 부분</h4><p>${a.dm.강점}</p><h4>부담이 될 수 있는 부분</h4><p>${a.dm.약점}</p></div></div>
       <div class="hcard"><h3 class="ht">타고난 흐름과 보완</h3><div class="sjtxt"><p>${S.GDOM[a.dom]}</p><h4>보완할 점</h4><p>${S.GLACK[a.dom]}</p></div></div>` });
-    R.chapters.forEach((x, i) => out.push({ t: x.t, html: h(i + 3, '', x.t, x.sub) + x.html }));
-    out.push({ t: '상담 정리', html: h(R.chapters.length + 3, '', '상담 정리', '첫 90일 실천 계획 · 돌아볼 질문 · 맺음말') + R.closing + `<div class="hcard"><h3 class="ht">맺음말</h3><div class="sjtxt"><p>사주는 정해진 결과를 알려 주기보다, 타고난 기운의 지도를 보며 나에게 맞는 속도와 방향을 찾는 도구예요. 이 보고서의 해석은 명리 이론에 따른 경향이며, 건강·법률·투자처럼 중요한 결정은 전문가와 상의해 주세요.</p></div>
+    main.forEach((x, i) => out.push({ t: x.t, html: h(i + 3, '', x.t, x.sub) + x.html }));
+    out.push({ t: '상담 정리', html: h(main.length + 3, '', '상담 정리', '첫 90일 실천 계획 · 돌아볼 질문 · 맺음말') + R.closing + `<div class="hcard"><h3 class="ht">맺음말</h3><div class="sjtxt"><p>사주는 정해진 결과를 알려 주기보다, 타고난 기운의 지도를 보며 나에게 맞는 속도와 방향을 찾는 도구예요. 이 보고서의 해석은 명리 이론에 따른 경향이며, 건강·법률·투자처럼 중요한 결정은 전문가와 상의해 주세요.</p></div>
       <p class="pdf-note">운명 연구소 「인생 게임」에서 내 생년월일로 태어난 가상 인물의 한평생을 미리 살아 볼 수 있어요.</p></div>` });
+    apps.forEach((x, i) => out.push({ t: x.t, app: true, html: h(main.length + 4 + i, '', x.t, x.sub + ' · 선택 부록') + x.html }));
+    if (out.length - 1 !== toc.length || out.slice(1).some((x, i) => x.t !== toc[i])) console.warn('pdf toc mismatch');
     return out;
   }
 
-  /* ---------- 만들기 조건: 토정비결 · 2027 신년운세 · 궁합 · 사주 MBTI를 먼저 본 뒤 ---------- */
+  /* ---------- 만들기 조건 없음: 내 정보만으로 바로 만들 수 있음 (예전 방문 기록은 참고용으로만 남김) ---------- */
   const DONE = 'p8b_done';
-  const REQ = [['tojeong', '🏮', '토정비결', '토정비결 화면을 열어 올해 괘를 확인해요', () => Hub.go('tojeong')],
-    ['newyear', '🧧', '2027 신년운세', '신년운세 화면에서 올해 흐름을 확인해요', () => Hub.go('newyear')],
-    ['compat', '💞', '궁합', '궁합에 한 명 이상 등록하고 결과를 확인해요', () => Hub.go('compat')],
-    ['mbti', '🧩', '사주 MBTI', '사주 MBTI 결과를 확인해요', () => Fun.openMbti(0)]];
   const doneMap = () => { const m = store.get(DONE, {}); return m && typeof m === 'object' ? m : {}; };
   function mark(k) { const m = doneMap(); if (!m[k]) { m[k] = Date.now(); store.set(DONE, m); } }
-  const missing = () => { const m = doneMap(); return REQ.filter(r => !m[r[0]] || (r[0] === 'compat' && !(Hub.people() || []).length)); };
-  const ready = () => !missing().length;
-  // 버튼 아래 안내글
+  const missing = () => [];
+  const ready = () => true;
   function noteHTML() {
-    const miss = missing(), n = REQ.length - miss.length;
-    return `<p class="pdf-req ${miss.length ? '' : 'ok'}">${miss.length ? `📋 <b>토정비결 · 2027 신년운세 · 궁합 · 사주 MBTI</b>를 먼저 보면 만들 수 있어요 (${n}/${REQ.length} 완료${miss.length ? ` · 남은 것: ${miss.map(r => r[2]).join(', ')}` : ''})` : '✅ 필요한 서비스를 모두 봤어요. 지금 만들 수 있어요'}</p>`;
+    const it = Views.item('pdf') || {}, me = Hub.me(), own = me && Views.ownOf('pdf', subj(me));
+    return `<p class="pdf-req ok">${own ? `보관된 리포트 · ${Views.keepId('pdf', subj(me)).slice(-4)}년 기준 · 다시 열기 · 다시 내려받기 무료` : `내 정보만으로 바로 만들어요 · ✨ ${it.k || 40} · 같은 프로필 · 같은 연도는 다시 내려받기 무료`}${partners().length ? ' · 궁합 상대는 선택 부록' : ''}</p>`;
   }
-  function askMissing() {
-    const miss = missing();
-    openOverlay('📑 종합 사주 리포트 준비', `<div class="sjtxt"><p>종합 사주 리포트는 아래 서비스의 결과를 모아 만들어요. <b>아직 보지 않은 서비스</b>를 먼저 진행해 주세요.</p></div>
-      <div class="pdf-reqlist">${REQ.map(r => `<div class="${miss.includes(r) ? '' : 'ok'}"><b>${miss.includes(r) ? '⬜' : '✅'} ${r[1]} ${r[2]}</b><small>${r[3]}</small></div>`).join('')}</div>
-      <p class="sjnote">각 서비스의 개요(무료)만 봐도 완료돼요. 다 보고 나면 이 버튼으로 리포트를 만들 수 있어요.</p>`,
-      [...miss.map((r, i) => ({ t: `${r[1]} ${r[2]} 보러 가기`, pri: i === 0 ? 1 : 0, f: () => { closeOverlay(true); r[4](); } })), { t: '닫기' }]);
-  }
-
   /* ---------- 미리보기 + PDF 만들기 ---------- */
-  function previewHTML(p) {
-    const s = sections(p); if (!s) return '<p class="hsub">내 정보를 먼저 입력해 주세요.</p>';
-    return `<div class="hcard pdf-bar"><b>📑 종합 사주 리포트</b><small>${s.length}개 장 · 아래 내용을 그대로 PDF로 저장해요</small>
-      <button class="bigbtn wide" id="pdfMake">📥 PDF로 저장하기</button><div class="fk-bar pdf-prog" hidden><i id="pdfBar"></i></div><p class="sjnote" id="pdfMsg"></p></div>`
+  let withApp = false;
+  function previewHTML(p) { return `<div id="pdfWrap">${previewInner(p)}</div>`; }
+  function previewInner(p) {
+    const s = sections(p, { appendix: withApp }); if (!s) return '<p class="hsub">내 정보를 먼저 입력해 주세요.</p>';
+    const ch = s.length - 1, pp = partners();
+    return `<div class="hcard pdf-bar"><b>📑 종합 사주 리포트</b><small>표지와 ${ch}개 장${withApp && pp.length ? ` (궁합 부록 ${pp.length}개 포함)` : ''} · 아래 내용을 그대로 PDF로 저장해요</small>
+      ${pp.length ? `<label class="pdf-app"><input type="checkbox" id="pdfApp" ${withApp ? 'checked' : ''}> 궁합 부록 넣기 (${pp.map(q => esc(q.name)).join(' · ')}) <small>· 추가 비용 없음</small></label>` : ''}
+      <button class="bigbtn wide" id="pdfMake">📥 PDF로 저장하기</button><div class="fk-bar pdf-prog" hidden><i id="pdfBar"></i></div><p class="sjnote" id="pdfMsg"></p><div id="pdfFail"></div></div>`
       + s.map(x => `<div class="pdf-sec">${x.html}</div>`).join('');
+  }
+  function bindPreview(p) {
+    const b = $('#pdfMake'); if (b) b.onclick = () => make(p);
+    const c = $('#pdfApp'); if (c) c.onchange = () => { withApp = c.checked; const w = $('#pdfWrap'); if (w) { w.innerHTML = previewInner(p); bindPreview(p); } };
   }
   // 📄 PDF 보고서 템플릿 — 「프리미엄 상담형」: 아이보리 바탕 · 먹색 본문 · 남색 명조 제목 · 금색 가는 선 · 이모지 없음
   //   폭 600px 를 A4 본문 186mm 에 맞춤 → 본문 16px ≈ 14pt, 소제목 17px, 꼭지 제목 20px(명조), 장 제목 26px(명조), 메모 14px
@@ -208,7 +209,9 @@ const PdfReport = (() => {
   }
 
   async function make(p, done) {
-    const s = sections(p); if (!s) return;
+    const s = sections(p, { appendix: withApp }); if (!s) return;
+    if (make.busy) return; make.busy = true;   // 두 번 눌러도 한 번만 만듦
+    const fills = [];
     const msg = t => { const m = $('#pdfMsg'); if (m) m.textContent = t; }, bar = v => { const b = $('#pdfBar'); if (b) { b.parentNode.hidden = false; b.style.width = Math.round(v * 100) + '%'; } };
     const btn = $('#pdfMake'); if (btn) btn.disabled = true;
     try {
@@ -220,7 +223,7 @@ const PdfReport = (() => {
       let y = M, page = 1, first = true;
       const paint = () => { doc.setFillColor(247, 244, 238); doc.rect(0, 0, PW, PH, 'F'); };
       const foot = () => { if (page > 1) { doc.setDrawColor(155, 132, 87); doc.setLineWidth(0.2); doc.line(M, PH - 9, PW - M, PH - 9); doc.setFontSize(9); doc.setTextColor(120, 110, 90); doc.text(String(page), PW / 2, PH - 5, { align: 'center' }); } };
-      const newPage = () => { foot(); doc.addPage(); page++; paint(); y = M; };
+      const newPage = () => { fills.push(Math.round((y - M) / HMAX * 100)); foot(); doc.addPage(); page++; paint(); y = M; };
       paint();
       // 섹션마다 블록(제목·카드) 단위로 캡처해서 페이지에 쌓는다 (카드가 페이지보다 길면 잘라서 이어 붙임)
       msg('보고서 글꼴을 준비하는 중…'); await serifReady(s.map(x => x.html.replace(/<[^>]+>/g, ' ')).join(' ').replace(/\s+/g, ' '));
@@ -264,18 +267,31 @@ const PdfReport = (() => {
         bar((i + 1) / blocks.length); msg(`페이지를 만드는 중… ${Math.round((i + 1) / blocks.length * 100)}%`);
         if (i % 4 === 3) await new Promise(r => setTimeout(r, 0));
       }
-      foot(); box.remove();
+      fills.push(Math.round((y - M) / HMAX * 100)); foot(); box.remove();
+      if (window.__pdfFail) throw new Error('test failure');   // 테스트용: 실패 처리 확인
       const name = `종합사주리포트_${String(p.name).replace(/[^\w가-힣]/g, '')}_${Y()}.pdf`;
-      const how = await save(doc, name);
+      save.fills = fills; const how = await save(doc, name);
+      try { Views.own('pdf', subj(p), { made: Date.now(), pages: page }); } catch (e) { }
       try { Karma.metric('pdf_made'); } catch (e) { }
       msg(how === 'shared' ? `✅ ${page}쪽 PDF를 만들었어요. 공유 화면에서 저장하거나 보낼 수 있어요.` : `✅ ${page}쪽 PDF를 내려받았어요 (${name}).`);
       Hub.toast(`📑 종합 사주 리포트 PDF ${page}쪽 완성`);
       done && done(page);
-    } catch (e) { console.warn('pdf', e); msg('PDF를 만들지 못했어요. 잠시 뒤 다시 시도해 주세요. (오늘 다시 만들기는 무료예요)'); const bx = document.querySelector('.pdfdoc'); if (bx) bx.remove(); }
+    } catch (e) {
+      console.warn('pdf', e); const bx = document.querySelector('.pdfdoc'); if (bx) bx.remove();
+      const ow = Views.ownOf('pdf', subj(p)), it = Views.item('pdf') || {};
+      msg('PDF를 만들지 못했어요. 「PDF로 저장하기」를 다시 누르면 추가 차감 없이 다시 시도해요.');
+      // 한 번도 만들지 못한 카르마 결제분은 돌려받을 수 있음 (환불하면 이 리포트 보관도 함께 취소)
+      const f = $('#pdfFail');
+      if (f && ow && !ow.made && ow.v !== 'migrated' && !Store.ownedReal('report')) {
+        f.innerHTML = `<button class="ghost wide" id="pdfRefund">✨ ${it.k} 카르마 돌려받기</button><p class="sjnote">돌려받으면 이 리포트의 보관도 취소되고, 다음에 열 때 다시 결제해요.</p>`;
+        $('#pdfRefund').onclick = () => { if (!Views.ownOf('pdf', subj(p)) || Views.ownOf('pdf', subj(p)).made) return; Views.disown('pdf', subj(p)); Karma.add(it.k, '📑 종합 사주 리포트 생성 실패 환불', 'bonus'); Views.leave(); Hub.go('saju'); };
+      }
+    }
+    make.busy = false;
     if (btn) btn.disabled = false;
   }
   async function save(doc, name) {
-    window.__lastPdf = { name, pages: doc.getNumberOfPages() };   // 테스트 확인용 (내용은 담지 않음)
+    window.__lastPdf = { name, pages: doc.getNumberOfPages(), fills: save.fills || [] };   // 테스트 확인용 (내용은 담지 않음)
     const C = window.Capacitor;
     if (C && C.isNativePlatform && C.isNativePlatform() && C.Plugins.Filesystem && C.Plugins.Share) {
       const b64 = doc.output('datauristring').split(',')[1];
@@ -289,8 +305,19 @@ const PdfReport = (() => {
   /* ---------- 열기: 카르마 결제(views.js) → 미리보기 화면 → PDF 저장 ---------- */
   function open(p) {
     p = p || Hub.me(); if (!p || !Hub.analyze(p)) { Hub.toast('내 정보를 먼저 입력해 주세요'); return; }
-    if (!ready()) { askMissing(); return; }
-    Views.openDetail('pdf', subj(p), `📑 종합 사주 리포트 · ${p.name}`, () => previewHTML(p), { legacy: Store.ownedReal('report'), title: '종합 사주 리포트 (PDF)', bind: () => { const b = $('#pdfMake'); if (b) b.onclick = () => make(p); } });
+    const go = () => Views.openDetail('pdf', subj(p), `📑 종합 사주 리포트 · ${p.name}`, () => previewHTML(p), { legacy: Store.ownedReal('report'), title: '종합 사주 리포트 (PDF)', bind: () => bindPreview(p) });
+    const st = Views.status('pdf', subj(p), Store.ownedReal('report'));
+    if (st.legacy || st.owned || (st.paid && st.freeLeft > 0)) return go();
+    openOverlay('📑 종합 사주 리포트 안내', introHTML(p), [{ t: `✨ ${(Views.item('pdf') || {}).k} 카르마로 열기`, pri: 1, f: () => { closeOverlay(true); go(); } }, { t: '닫기' }]);
   }
-  return { open, make, sections, mark, missing, ready, noteHTML, toFormal };
+  // 결제 전 안내: 실제 구성에서 계산한 목차 · 조건 · 예시(상담 요약 일부)
+  function introHTML(p) {
+    const s = sections(p) || [], it = Views.item('pdf') || {}, pp = partners(), Y0 = Views.keepId('pdf', subj(p)).slice(-4);
+    let sample = ''; try { const d = document.createElement('div'); d.innerHTML = s[1].html; d.querySelectorAll('.pdf-h').forEach(e => e.remove()); const t = d.querySelector('table'); sample = t ? t.outerHTML : ''; } catch (e) { }
+    return `<div class="sjtxt"><p><b>${esc(p.name)}</b> 님의 정보만으로 만드는 ${Y0}년 기준 상담 보고서예요. 결제하면 미리보기 화면이 열리고, 거기서 PDF로 저장해요.</p></div>
+      <div class="pdf-reqlist"><div class="ok"><b>구성 · 표지와 ${s.length - 1}개 장 (약 25~30쪽)</b><small>${s.slice(1).map((x, i) => `${i + 1}. ${esc(x.t)}`).join('<br>')}</small></div>
+      <div class="ok"><b>조건</b><small>· ✨ ${it.k} 카르마 1회 결제 · 같은 프로필 · ${Y0}년 기준은 다시 열기 · 다시 내려받기 무료<br>· 다른 프로필 · 다른 연도는 따로 결제${pp.length ? `<br>· 궁합 상대(${pp.map(q => esc(q.name)).join(' · ')})는 미리보기에서 부록으로 넣을지 고를 수 있어요 (추가 비용 없음)` : ''}<br>· 만들기에 실패하면 추가 차감 없이 다시 시도할 수 있고, 한 번도 만들지 못했다면 카르마를 돌려받을 수 있어요<br>· ${Views.ownedNote}</small></div></div>
+      ${sample ? `<div class="hcard pdf-sample"><h3 class="ht">예시 · 상담 요약 첫 부분</h3>${sample}</div>` : ''}`;
+  }
+  return { open, make, sections, mark, missing, ready, noteHTML, toFormal, introHTML };
 })();

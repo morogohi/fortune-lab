@@ -58,11 +58,11 @@ function shopListHTML(page) {
   // 서비스별 상세 풀이 가격 (개요는 무료 · 볼 때 차감 · 결제한 날 다시보기 3회 무료)
   const SV = [['newyear', 'newyear'], ['tojeong', 'tojeong'], ['compat', 'compat'], ['flirt', 'flirt'], ['mbti', 'mbti']];
   const vrow = (k, go) => { const it = Views.item(k); return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small></div><button data-go="${go}">✨ ${it.k}/회</button></div>`; };
-  const cont = `<p class="sjnote" style="margin:4px 0 8px">📜 사주풀이는 무료 · 각 서비스의 개요는 무료로 보고, 더 자세한 풀이만 볼 때 카르마를 써요 (결제한 날 자정까지 다시보기 ${Views.FREE()}회 무료).</p>`
+  const cont = `<p class="sjnote" style="margin:4px 0 8px">📜 사주풀이는 무료 · 각 서비스의 개요는 무료로 보고, 더 자세한 풀이만 볼 때 카르마를 써요 (결제한 날 자정까지 다시보기 ${Views.FREE()}회 무료 · 신년운세 · 토정비결 · 종합 리포트는 같은 프로필 · 같은 연도면 다시 보기 무료, 이 기기에 보관).</p>`
     + SV.map(([k, g]) => vrow(k, g)).join('')
     + `<div class="shopitem pdfrow"><span class="se">📑</span><div><b>${Views.item('pdf').n}</b><small>${Views.item('pdf').d}</small></div><button data-pdf="1" class="${PdfReport.ready() ? '' : 'pdf-off'}">✨ ${Views.item('pdf').k}</button></div>${PdfReport.noteHTML()}`
     + `<div class="shopitem"><span class="se">🃏</span><div><b>타로 상세 리딩</b><small>${Views.item('tarot5').d}</small></div><button data-go="tarot">1장 ✨${Views.item('tarot1').k} · 3장 ✨${Views.item('tarot3').k} · 5장 ✨${Views.item('tarot5').k}</button></div>`
-    + main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>💬 대화 상담 · 🧭 선택 상담(선택지별 상세 비교) · 처음 질문 1개 무료</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 3}/질문</button></div>`
+    + main.map(row).join('') + `<div class="shopitem"><span class="se">🧭</span><div><b>사주 자동 상담</b><small>기기 안 규칙 기반 풀이 · 대화 상담 · 선택 상담 · ${CounselPrice.text()}</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 3}/질문</button></div>`
     + ''
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
@@ -114,7 +114,7 @@ function myReport() {
   const birth = { cal: me.cal || 's', y, m, d, hh: t ? +t.split(':')[0] : 12, mm: t ? +t.split(':')[1] : 0, unk: !t };
   const a = Saju.analyze(birth, me.sex !== 'f');
   if (!a) return;
-  showReport(me.name || '나', a, new Date().getFullYear() - y, false);
+  showReport(me.name || '나', a, KST.year() - y, false);
 }
 
 /* ---------- 궁합 모드: 운명의 상대 ---------- */

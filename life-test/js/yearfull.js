@@ -15,7 +15,7 @@ const YearFull = (() => {
   const keyOf = p => `${p.date}|${p.cal}|${p.time || ''}|${p.sex}`;
 
   /* ---------- 열람 권한 ---------- */
-  const endOfToday = () => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); };
+  const endOfToday = () => KST.endOfDay();
   function passOf(p) { const o = store.get(PASS, null); return o && o.k === keyOf(p) && o.until > Date.now() ? o : null; }
   const owned = () => Store.has('report');
   const unlocked = p => owned() || !!passOf(p);
@@ -205,12 +205,13 @@ const YearFull = (() => {
       const good = m.v >= 66, oc = occ[g + (good ? 'g' : 'b')] = (occ[g + (good ? 'g' : 'b')] || 0) + 1, tip = TIPG[g][(good ? 0 : 1) + ((oc - 1) % 2) * 2];
       const wt = (() => { const k = m.txt, c = seenT[k] = (seenT[k] || 0) + 1; return c === 1 ? k : WOL_ALT[g][(c - 2) % 2]; })();
       minfo.push({ m, g, tj, gd, tip, good, wt, mm: mm(m) });
-      return `<div class="yf-m ${m.v >= 74 ? 'hi' : m.v < 58 ? 'lo' : ''}"><div class="yf-mh"><b>${mm(m)}</b><span>${SAJU.STK[m.s]}${SAJU.BRK[m.b]}월 · ${m.ten}</span><em>${m.v}</em></div>
+      const F = opt && opt.fold, nowM = F ? KST.now() : null, open = F && nowM.getFullYear() === m.yr && nowM.getMonth() + 1 === m.solarM;
+      return `<${F ? `details${open ? ' open' : ''}` : 'div'} class="yf-m ${F ? 'nyfold ' : ''}${m.v >= 74 ? 'hi' : m.v < 58 ? 'lo' : ''}"><${F ? 'summary' : 'div'} class="yf-mh"><b>${mm(m)}</b><span>${SAJU.STK[m.s]}${SAJU.BRK[m.b]}월 · ${m.ten}</span><em>${m.v}</em>${F ? `<small class="yf-ms">${wt.split(/(?<=[.요다])\s/)[0]}</small>` : ''}</${F ? 'summary' : 'div'}>
         <p>${wt}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</p>
         <p class="yf-mf">🎯 이달의 초점: <b>${GN[g]}</b> — ${tip}</p>
         ${areaGrid(g, (occA[g] = (occA[g] || 0) + 1) - 1)}
         ${tj ? `<p class="yf-mt">📜 토정 신수 · 음력 ${m.n + 1}월 (${tj.s || ['기운 좋음', '보통', '조심'][tj.q]}): ${tj.a}. 실천 — ${tj.b}.</p>` : ''}${tj && opt && opt.tjNote ? opt.tjNote(tj) : ''}
-        ${gd.length ? `<p class="yf-md">📌 좋은 날: ${gd.map(d => `${m.solarM}/${d}`).join(', ')}</p>` : ''}${opt && opt.monthExtra ? opt.monthExtra(m, tj) : ''}</div>`;
+        ${gd.length ? `<p class="yf-md">📌 좋은 날: ${gd.map(d => `${m.solarM}/${d}`).join(', ')}</p>` : ''}${opt && opt.monthExtra ? opt.monthExtra(m, tj) : ''}</${opt && opt.fold ? 'details' : 'div'}>`;
     }).join('');
     const cautions = [
       `${mm(n.worst)}은 한 해 중 기운이 가장 약한 달이에요. 큰 계약·이사·투자는 피하고 점검과 휴식에 쓰세요.`,

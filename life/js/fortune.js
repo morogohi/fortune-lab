@@ -95,7 +95,7 @@ window.Fortune = (() => {
   function grade(v) { return v >= 85 ? '대길' : v >= 72 ? '길' : v >= 58 ? '평' : '주의'; }
 
   /* a = Saju.analyze 결과, key = 사람 식별 문자열 */
-  function today(a, key, d = new Date()) {
+  function today(a, key, d = KST.now()) {
     const gz = dayGz(d), me = a.me;
     const ts = S.tg10(me, gz.s), tb = S.tg10(me, S.HID[gz.b]);
     const rnd = seeded(key + '|' + ymd(d));
