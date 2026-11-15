@@ -211,14 +211,16 @@ const Karma = (() => {
   function toolsHTML() {
     if (!testMode()) return '';
     return `<div class="hcard ktools"><b>🧪 테스트 도구</b><small>테스트 모드에서만 보여요 · 실제 서비스에는 없어요</small>
-      <div class="ktbtn"><button data-kt="reset">🔄 카르마 초기화</button><button data-kt="give">✨ +1000 무료 지급</button><button data-kt="day">📅 다음 날로 넘기기</button><button data-kt="views">🧾 열람 기록 지우기</button><button data-kt="daily" class="${dailyOn() ? 'on' : ''}">🗓️ 매일 초기화 · ${dailyOn() ? '켜짐' : '꺼짐'}</button></div></div>`;
+      ${stateHTML()}
+      <div class="ktbtn"><button data-kt="reset">🔄 카르마 초기화</button><button data-kt="give">✨ +1000 무료 지급</button><button data-kt="day">📅 다음 날로 넘기기</button><button data-kt="today">↩️ 오늘로 되돌리기</button><button data-kt="views">🧾 열람 기록 지우기</button><button data-kt="daily" class="${dailyOn() ? 'on' : ''}">🗓️ 매일 초기화 · ${dailyOn() ? '켜짐' : '꺼짐'}</button></div></div>`;
   }
   function bindTools(root, re) {
     (root || document).querySelectorAll('[data-kt]').forEach(b => b.onclick = () => {
       const k = b.dataset.kt;
       if (k === 'reset') return resetAll(re);
       if (k === 'give') { if (denyLive()) return; add(1000, '🧪 테스트 무료 지급', 'bonus'); re && re(); return; }
-      if (k === 'day') { if (denyLive()) return; nextDay(); Hub.toast('📅 다음 날이 된 것으로 바꿨어요 · 오늘 열람·광고 횟수가 새로 시작돼요'); re && re(); return; }
+      if (k === 'day') { if (denyLive()) return; nextDay(); Hub.toast(`📅 가상 날짜 ${KST.ymd()} (+${KST.offsetDays()}일) · 출석·미션·매일 타로·광고·열람이 새 날로 시작돼요`); re && re(); return; }
+      if (k === 'today') { if (denyLive()) return; store.set(OFFK, 0); Hub.toast(`↩️ 실제 오늘(${KST.ymd()})로 돌아왔어요`); re && re(); return; }
       if (k === 'views') { if (denyLive()) return; Views.reset(); Hub.toast('🧾 열람·다시보기 기록을 지웠어요'); re && re(); }
       if (k === 'daily') { if (denyLive()) return; const on = !dailyOn(); store.set(DKEY, { on, last: KST.ymd() }); Hub.toast(on ? '🗓️ 매일 초기화를 켰어요 · 내일부터 하루에 한 번 처음 상태로 돌아가요' : '🗓️ 매일 초기화를 껐어요'); re && re(); }
     });
@@ -238,8 +240,17 @@ const Karma = (() => {
     } catch (e) { console.warn('dailyCheck', e); return false; }
   }
   document.addEventListener('visibilitychange', () => { if (!document.hidden) dailyCheck(); });
-  // 하루가 지난 것처럼: 상세 열람권(그날 다시보기)과 광고 횟수를 어제 것으로
-  function nextDay() { if (denyLive()) return; try { Views.shiftDay(); } catch (e) { } const o = store.get(AKEY, null); if (o) { o.d = '2000-01-01'; o.last = 0; store.set(AKEY, o); } }
+  // 하루가 지난 것처럼: 가상 날짜를 하루 앞당김 → 출석·연속 출석·데일리 미션·매일 타로·광고 횟수·당일 열람이 모두 새 날로
+  const OFFK = 'p8b_test_dayoff';
+  function nextDay() { if (denyLive()) return; window.__kstTestOK = true; store.set(OFFK, (KST.offsetDays() || 0) + 1); const o = store.get(AKEY, null); if (o) { o.last = 0; store.set(AKEY, o); } }
+  // 테스트 도구: 오늘 상태 한눈에
+  function stateHTML() {
+    let s = null; try { s = Hub.dailyState(); } catch (e) { } if (!s) return '';
+    const MN = { today: '운세', tarot: '타로', compat: '궁합', saju: '사주', newyear: '신년', mbtitest: '검사', game: '게임' };
+    return `<div class="kstate"><p><b>${s.day}</b>${s.off ? ` <em>가상 +${s.off}일</em>` : ' (실제 오늘)'}</p>
+      <p>출석 ${s.att ? '✓' : '—'} · 연속 ${s.streak}일 · 미션 ${s.ms.filter(m => m[1]).length}/${s.ms.length} (${s.ms.map(m => `${MN[m[0]] || m[0]}${m[1] ? '✓' : ''}`).join(' ')}) · 공유 ${s.shared ? '✓' : '—'}</p>
+      <p>복주머니 오늘 ${s.earned}/${s.cap} · 보유 ${s.pouch} · 매일 타로 ${s.tarot ? '뽑음' : '안 뽑음'} · 광고 ${AD_DAY - adLeft()}/${AD_DAY} · 상담 무료 ${s.counselFree ? '남음' : '사용'}</p></div>`;
+  }
   // 카르마·내역·열람 기록·이벤트·광고 횟수·카르마로 연 콘텐츠를 지우고 처음 시작 상태로 (기본 100 + 진행 중 이벤트)
   function resetAll(re, now) {
     if (denyLive()) return false;
@@ -292,7 +303,7 @@ const Karma = (() => {
     };
   }
   init();
-  setTimeout(() => { if (!dailyCheck()) grants(); }, 600);   // 매일 초기화가 돌면 그 안에서 기본 지급까지 함   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
+  setTimeout(() => { try { window.__kstTestOK = testMode(); if (!testMode()) store.set(OFFK, 0); } catch (e) { } if (!dailyCheck()) grants(); }, 600);   // 매일 초기화가 돌면 그 안에서 기본 지급까지 함   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
   return { metric, openMetrics, spend, unlock, openCharge, chargeHTML, bindCharge, adReward, showAd, testMode, add, bal, buyPack, AD_K, BREAK_K, AD_DAY,
     openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, grants, events, note, recentHTML, mode, modeBadge, modeLine, toolsHTML, bindTools, resetAll, nextDay, dailyCheck, dailyOn };
 })();
