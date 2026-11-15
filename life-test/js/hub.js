@@ -188,7 +188,7 @@ const Hub = (() => {
   function openSettings() {
     const me = getMe(), u = Auth.user();
     openOverlay('⚙️ 설정', `<div class="sets">
-      <div class="setrow"><span>👤 계정</span><div>${u ? `<b>${esc(Auth.name())}</b> <small>${Auth.provider() === 'kakao' ? '카카오' : Auth.provider() === 'google' ? '구글' : ''} 로그인</small>` : '<small>로그인하지 않음 (선택)</small>'}</div><button id="sAcc">${u ? '관리' : '로그인'}</button></div>
+      ${Auth.native() ? '' : `<div class="setrow"><span>👤 계정</span><div>${u ? `<b>${esc(Auth.name())}</b> <small>${Auth.provider() === 'kakao' ? '카카오' : Auth.provider() === 'google' ? '구글' : ''} 로그인</small>` : '<small>로그인하지 않음 (선택)</small>'}</div><button id="sAcc">${u ? '관리' : '로그인'}</button></div>`}
       <div class="setrow"><span>🙂 내 정보</span><div>${me ? `<b>${esc(me.name)}</b> <small>${pLine(me)}</small>` : '<small>입력 전</small>'}</div><button id="sMe">${me ? '바꾸기' : '입력'}</button></div>
       <div class="setrow col"><span>🎨 화면</span><div class="modeseg">${[['light', '라이트'], ['dark', '다크'], ['system', '휴대폰 설정']].map(([m, n]) => `<button data-smode="${m}" class="${Theme.mode() === m ? 'on' : ''}">${n}</button>`).join('')}</div></div>
       <div class="setrow"><span>🎵 배경음악</span><div></div><button class="tgl${Snd.on.bgm ? ' on' : ''}" id="sBgm" aria-label="배경음악"><i></i></button></div>
@@ -200,7 +200,7 @@ const Hub = (() => {
       <div class="setrow"><span>🔒 개인정보</span><div><small>사주 정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
     </div>`, [{ t: '닫기' }]);
     $('#sMe').onclick = () => { closeOverlay(true); me ? openProfiles() : openItem('today'); };
-    $('#sAcc').onclick = () => { closeOverlay(true); u ? openAccount() : openLogin(); };
+    if ($('#sAcc')) $('#sAcc').onclick = () => { closeOverlay(true); u ? openAccount() : openLogin(); };
     document.querySelectorAll('[data-smode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.smode); document.querySelectorAll('[data-smode]').forEach(x => x.classList.toggle('on', x === b)); render(); });
     $('#sBgm').onclick = e => { Snd.toggle('bgm'); e.currentTarget.classList.toggle('on', Snd.on.bgm); };
     $('#sSfx').onclick = e => { Snd.toggle('sfx'); e.currentTarget.classList.toggle('on', Snd.on.sfx); Snd.sfx('tap'); };
@@ -227,7 +227,7 @@ const Hub = (() => {
   function openPrivacy() {
     openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>로그인하지 않아도 모든 기능을 쓸 수 있어요. 이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대, 상담·성향 검사 기록, 구매 기록, 게임 저장은 모두 <b>현재 기기·브라우저에만</b> 저장되고 개발자 서버로 보내지 않아요.</p>
       <p>정보와 이용 기록은 현재 기기·브라우저에 저장됩니다. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있습니다.</p>
-      <p>👤 <b>로그인(선택)</b>: 카카오·구글로 로그인하면 <b>카르마 잔액·살아 본 인생 수·연 콘텐츠 목록</b>만 계정에 저장돼 다른 기기에서도 이어져요. 사주 정보·궁합 상대·상담 기록은 로그인해도 보내지 않아요. 탈퇴하면 서버 기록은 바로 지워져요.</p></div>`,
+      ${Auth.native() ? '' : `<p>👤 <b>로그인(선택)</b>: 카카오·구글로 로그인하면 <b>카르마 잔액·살아 본 인생 수·연 콘텐츠 목록</b>만 계정에 저장돼 다른 기기에서도 이어져요. 사주 정보·궁합 상대·상담 기록은 로그인해도 보내지 않아요. 탈퇴하면 서버 기록은 바로 지워져요.</p>`}</div>`,
       [{ t: '🗑️ 내 정보·기록 지우기', f: openWipe }, { t: '📄 개인정보 처리방침', f: () => { location.href = 'privacy.html'; } }, { t: '닫기' }]);
   }
   const KAKAO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>';
@@ -255,6 +255,7 @@ const Hub = (() => {
   }
   function topbarUI() {
     const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
+    if (Auth.native()) { b.style.display = 'none'; return; }   // 앱은 로그인 미지원(다음 업데이트) → 버튼 숨김
     const pv = Auth.provider();
     if (u) {
       const av = Auth.avatar();
