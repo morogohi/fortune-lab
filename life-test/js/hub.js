@@ -27,17 +27,18 @@ const Hub = (() => {
   const keyOf = p => `${p.date}|${p.time || ''}|${p.sex}`;
 
   /* ---------- 출석 · 미션 · 복주머니 ---------- */
-  const DAILY_CAP = 6;
+  // 하루 복주머니 한도: 출석 1 + 데일리 미션 3 + 운세 공유 4 = 8 (연속 출석 보너스 별도)
+  const SHARE_POUCH = 4, DAILY_CAP = 8;
   /* ---------- 내 기록 보관함 (이 기기에만) ---------- */
   const RKEY = 'p8b_records';
   function addRecord(r) { const l = store.get(RKEY, []); if (r.uniq && l.some(x => x.uniq === r.uniq)) return; l.unshift({ t: Date.now(), ...r }); store.set(RKEY, l.slice(0, 60)); }
   function openRecords() {
-    const l = store.get(RKEY, []), sec = (k, t, n) => { const x = l.filter(r => r.k === k).slice(0, n); return x.length ? `<h4 class="rech">${t}</h4>${x.map(r => `<div class="recr"><b>${esc(r.title)}</b><small>${new Date(r.t).toLocaleDateString('ko-KR')} · ${esc(r.sub || '')}</small></div>`).join('')}` : ''; };
+    const l = store.get(RKEY, []), sec = (k, t, n) => { const x = l.filter(r => r.k === k).slice(0, n); return x.length ? `<h4 class="rech">${t}<button class="recdel" data-rdel="${k}" aria-label="${t.replace(/^\S+\s/, '')} 기록 지우기">지우기</button></h4>${x.map(r => `<div class="recr"><b>${esc(r.title)}</b><small>${new Date(r.t).toLocaleDateString('ko-KR')} · ${esc(r.sub || '')}</small></div>`).join('')}` : ''; };
     const me0 = getMe(), mt = me0 ? MbtiTest.get(me0) : null, ch = me0 && window.Counsel && Counsel.hist ? Counsel.hist(me0) : [], gh = store.get('p8b_hist', []), pp = people();
     const body = [
       sec('today', '🔮 오늘의 운세', 7), sec('tarot', '🃏 타로', 5),
-      mt ? `<h4 class="rech">📝 MBTI 성향 검사</h4><div class="recr" data-go="mbtitest"><b>${mt.type.replace(/X/g, '·')}</b><small>${KST.at(mt.at).toLocaleDateString('ko-KR')} · 눌러서 자세히</small></div>` : '',
-      ch.length ? `<h4 class="rech">🤖 사주 상담</h4>${ch.slice(0, 5).map((x, i) => `<div class="recr" data-cs="${i}"><b>${esc(x.q || x.opts.join(' vs '))}</b><small>${KST.fmt(x.t)}${x.Y ? ` · ${x.Y}년 기준` : ''} · ${x.v === 2 ? '현실 조건 우선' : '추천'}: ${esc(x.pick)}</small></div>`).join('')}` : '',
+      mt ? `<h4 class="rech">📝 MBTI 성향 검사<button class="recdel" data-rdel="mbtitest" aria-label="MBTI 성향 검사 기록 지우기">지우기</button></h4><div class="recr" data-go="mbtitest"><b>${mt.type.replace(/X/g, '·')}</b><small>${KST.at(mt.at).toLocaleDateString('ko-KR')} · 눌러서 자세히</small></div>` : '',
+      ch.length ? `<h4 class="rech">🤖 사주 상담<button class="recdel" data-rdel="counsel" aria-label="사주 상담 기록 지우기">지우기</button></h4>${ch.slice(0, 5).map((x, i) => `<div class="recr" data-cs="${i}"><b>${esc(x.q || x.opts.join(' vs '))}</b><small>${KST.fmt(x.t)}${x.Y ? ` · ${x.Y}년 기준` : ''} · ${x.v === 2 ? '현실 조건 우선' : '추천'}: ${esc(x.pick)}</small></div>`).join('')}` : '',
       pp.length ? `<h4 class="rech">💞 궁합 관계도</h4><div class="recr" data-go="compat"><b>${pp.length}명 등록</b><small>${pp.slice(0, 4).map(x => esc(x.name)).join(', ')}${pp.length > 4 ? ' …' : ''}</small></div>` : '',
       (() => { const sv = store.get('p8b_saves', {}), ks = ['auto', 's1', 's2', 's3'].filter(k => sv[k] && sv[k].meta); return ks.length ? `<h4 class="rech">💾 저장한 인생 (이어 하기)</h4>${ks.map(k => { const m = sv[k].meta; return `<div class="recr" data-sv="${k}"><b>${m.f} ${esc(m.name)} · ${m.age}살 (${m.st})</b><small>${k === 'auto' ? '자동 저장' : '슬롯 ' + k.slice(1)} · ${m.year}년${m.job ? ' · ' + esc(m.job) : ''} · 눌러서 이어 하기</small></div>`; }).join('')}` : ''; })(),
       gh.length ? `<h4 class="rech">🎲 인생 게임 (끝난 인생)</h4>${gh.slice(0, 5).map(h => `<div class="recr"><b>${h.f} ${esc(h.name)} · ${h.grade}등급</b><small>「${esc(h.title)}」 · 향년 ${h.age}세</small></div>`).join('')}` : '',
@@ -45,6 +46,18 @@ const Hub = (() => {
     openOverlay('📂 내 기록 보관함', (body || '<p class="sjtxt" style="text-align:center">아직 저장된 기록이 없어요.<br>오늘의 운세·타로·검사·상담을 해 보면 여기에 모여요.</p>') + '<p class="sjnote" style="text-align:center">운세·타로·검사·상담·궁합·인생 게임(끝난 인생과 저장한 진행 중 인생)이 모여요 · 기록은 이 기기에만 저장돼요</p>', [{ t: '닫기' }]);
     document.querySelectorAll('#osheet [data-go]').forEach(b => b.onclick = () => { closeOverlay(); go(b.dataset.go); });
     document.querySelectorAll('#osheet [data-sv]').forEach(b => b.onclick = () => { closeOverlay(); go('game'); setTimeout(() => Save.load(b.dataset.sv), 150); });
+    // 기록 지우기: 항목별 확인 후 이 기기에서 삭제 (오늘의 운세·타로 기록 · 이 프로필의 검사·상담 기록) — 카르마·구매·게임 저장은 그대로
+    const RN = { today: '오늘의 운세', tarot: '타로', mbtitest: 'MBTI 성향 검사', counsel: '사주 상담' };
+    document.querySelectorAll('#osheet [data-rdel]').forEach(b => b.onclick = e => {
+      e.stopPropagation(); const k = b.dataset.rdel;
+      openOverlay(`🗑️ ${RN[k]} 기록 지우기`, `<p class="sjtxt">${k === 'mbtitest' || k === 'counsel' ? `${esc(me0.name)}님의 ` : ''}${RN[k]} 기록을 이 기기에서 지울까요? 지운 기록은 되돌릴 수 없어요. 카르마·구매 기록·게임 저장은 그대로예요.</p>`,
+        [{ t: '지우기', pri: 1, f: () => {
+          if (k === 'today' || k === 'tarot') store.set(RKEY, store.get(RKEY, []).filter(r => r.k !== k));
+          else if (k === 'mbtitest') { const set = MbtiTest.settled(MbtiTest.get(me0)), m = store.get('p8b_mbti', {}); if (set && m[me0.date + me0.name] === set) { delete m[me0.date + me0.name]; store.set('p8b_mbti', m); } MbtiTest.clear(me0); }
+          else if (k === 'counsel') Counsel.delHist(me0);
+          toast(`${RN[k]} 기록을 지웠어요`); openRecords();
+        } }, { t: '취소', f: openRecords }]);
+    });
     document.querySelectorAll('#osheet [data-cs]').forEach(b => b.onclick = () => { const x = ch[+b.dataset.cs]; openOverlay('🤖 지난 상담', Counsel.pastHTML ? Counsel.pastHTML(x) : x.html, [{ t: '기록으로', f: openRecords }]); });
   }
   const MPOOL = [
@@ -56,15 +69,15 @@ const Hub = (() => {
     { k: 'mbtitest', e: '📝', n: 'MBTI 성향 검사 하기', go: () => go('mbtitest') },
     { k: 'game', e: '🎲', n: '인생 게임 한 판 끝까지', go: () => go('game') },
   ];
-  // 날마다 4개: 오늘의 운세 + 타로 + (궁합·사주·신년·검사 중 하루 1개 순환) + 인생 게임(선택)
-  const MISSIONS_FOR = d => { const rot = ['compat', 'saju', 'newyear', 'mbtitest'], n = +String(d).replace(/\D/g, '') || 0; return ['today', 'tarot', rot[n % rot.length], 'game'].map(k => MPOOL.find(m => m.k === k)); };
+  // 날마다 3개: 오늘의 운세 + 타로 + (궁합·사주·신년·검사·인생 게임 중 하루 1개 순환)
+  const MISSIONS_FOR = d => { const rot = ['compat', 'saju', 'newyear', 'mbtitest', 'game'], n = +String(d).replace(/\D/g, '') || 0; return ['today', 'tarot', rot[n % rot.length]].map(k => MPOOL.find(m => m.k === k)); };
   // 테스트 도구용 오늘 상태 요약
   function dailyState() {
     const d = daily(), st = store.get('p8b_streak', { n: 0, last: '' }), p = getMe(), dt = store.get(DTK, {});
     return { day: day(), off: KST.offsetDays(), att: d.att, streak: st.n || 0, ms: MISSIONS_FOR(day()).map(m => [m.k, !!d.ms[m.k]]), shared: !!d.shared, earned: d.earned, cap: DAILY_CAP, pouch: pouch(),
       tarot: !!(p && dtToday(dt) && dt.k === p.date && dt.i != null), counselFree: !store.get('p8b_counsel_free', 0) };
   }
-  const MISSIONS = { map: f => MISSIONS_FOR(day()).map(f), find: f => MPOOL.find(f), some: f => MISSIONS_FOR(day()).some(f), filter: f => MISSIONS_FOR(day()).filter(f), get length() { return 4; } };
+  const MISSIONS = { map: f => MISSIONS_FOR(day()).map(f), find: f => MPOOL.find(f), some: f => MISSIONS_FOR(day()).some(f), filter: f => MISSIONS_FOR(day()).filter(f), get length() { return 3; } };
   function daily() {
     const d = store.get('p8b_daily', null);
     return d && d.d === day() ? d : { d: day(), att: false, ms: {}, earned: 0, shared: false };
@@ -708,7 +721,7 @@ const Hub = (() => {
         <div class="hstat"><span>🔥 연속 출석 <b>${st.n || 1}일</b></span><span>🧧 복주머니 <b>${pouch()}개</b></span><span>오늘 <b>${d.earned}/${DAILY_CAP}</b></span></div>
         <div class="hweek">${Array.from({ length: 7 }, (_, i) => `<i class="${i < ((st.n - 1) % 7) + 1 ? 'on' : ''}">${i === 6 ? '🎁' : i + 1}</i>`).join('')}</div>
         ${ms}
-        <div class="hms${d.shared ? ' done' : ''}"><span>📤 오늘의 운세 공유하기</span>${d.shared ? '<b>✓ +2</b>' : '<button id="dShare">하러 가기</button>'}</div>
+        <div class="hms${d.shared ? ' done' : ''}"><span>📤 오늘의 운세 공유하기</span>${d.shared ? `<b>✓ +${SHARE_POUCH}</b>` : `<button id="dShare">하러 가기 · +${SHARE_POUCH}</button>`}</div>
         <button class="ghost wide" id="hExch">🎁 복주머니로 보상 교환하기</button></div>
       ${passCard(pass)}`;
   }
@@ -748,7 +761,7 @@ const Hub = (() => {
     const sh = $('#hShare'); if (sh) sh.onclick = async () => {
       const f = Fortune.today(a, keyOf(p));
       // 이미지 카드 공유 창 (이름은 기본 숨김 · 생년월일 없음) → 공유하면 오늘의 미션 완료
-      TodayShare.open(p, f, () => { const d = daily(); if (!d.shared) { d.shared = true; store.set('p8b_daily', d); addPouch(2, '운세 공유'); render(); } });
+      TodayShare.open(p, f, () => { const d = daily(); if (!d.shared) { d.shared = true; store.set('p8b_daily', d); addPouch(SHARE_POUCH, '운세 공유'); render(); } });
     };
   }
   function whyFortune(p, a) {
@@ -885,7 +898,7 @@ const Hub = (() => {
     openOverlay(`🎁 복주머니 교환 · 보유 ${n}개`, EXCH.filter(x => !x.show || x.show()).map(x => `<div class="shopitem"><span class="se">${x.e}</span><div><b>${x.n}</b><small>복주머니 ${x.c}개</small></div>
       <button data-x="${x.k}" ${n >= x.c && x.can() ? '' : 'disabled'} class="${x.can() ? '' : 'own'}">${x.can() ? '교환' : '보유 중'}</button></div>`).join('')
       + (themesOwned().length ? `<div class="hthemes"><small>내 테마</small>${themesOwned().map(i => `<button data-th="${i}" style="background:${THEMES[i][Theme.current() === 'light' ? 2 : 1]};color:${Theme.current() === 'light' ? '#fff' : '#1b1d2b'}">${THEMES[i][0]}</button>`).join('')}<button data-th="-1">기본</button></div>` : '')
-      + '<p class="sjnote" style="text-align:center">복주머니는 출석·미션·공유로 하루 최대 6개(연속 출석 보너스 별도) 모을 수 있어요.</p>');
+      + '<p class="sjnote" style="text-align:center">복주머니는 출석 1 · 데일리 미션 3 · 운세 공유 4로 하루 최대 8개(연속 출석 보너스 별도) 모을 수 있어요.</p>');
     document.querySelectorAll('[data-x]').forEach(b => b.onclick = () => {
       const x = EXCH.find(e => e.k === b.dataset.x); if (pouch() < x.c || !x.can()) return;
       store.set('p8b_pouch', pouch() - x.c); x.f(); Snd.sfx('fanfare'); toast(`${x.e} ${x.n} 교환 완료!`); openExchange(); if ($('#hub').classList.contains('on')) render();
@@ -1003,6 +1016,6 @@ const Hub = (() => {
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register };
+  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openRecords };
 })();
 Hub.init();

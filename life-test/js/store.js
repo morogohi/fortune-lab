@@ -57,7 +57,7 @@ window.STORE_CONFIG = {
   signupBonus: 0,
   // 🧧 무상 카르마 이벤트: 기간 안에 앱을 열면 기기당 1회 지급 (id가 다르면 새 이벤트로 다시 지급)
   events: [
-    { id: 'newyear2027', e: '🧧', n: '신년 이벤트 무상 카르마', karma: 200, until: '2026-12-31' },
+    { id: 'newyear2027', e: '🧧', n: '신년 이벤트 무상 카르마', karma: 100, until: '2026-12-31' },   // 무료 지급 축소 (200 → 100)
   ],
   webDemoFree: [],          // 웹 체험판에서 무료로 여는 상품
   newYearFree: [],          // 신년 이벤트 무료 개방 없음 (대표 상품은 카르마로)

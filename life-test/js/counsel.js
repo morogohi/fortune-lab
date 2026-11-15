@@ -494,9 +494,12 @@ const Counsel = (() => {
   }
   const pickConds = () => { const P = parseAsk(st.q || ''); return [...new Set(splitConds([...(st.cond ? [st.cond] : []), ...P.conds]))].slice(0, 5); };
   const hist = p => pget(HIST, p, []);
+  // 지난 상담 지우기: i 를 주면 한 건, 없으면 이 프로필의 지난 선택 상담 전체 (다른 프로필 기록은 그대로)
+  function delHist(p, i) { const h = hist(p); if (i == null) h.length = 0; else h.splice(i, 1); pset(HIST, p, h); }
   function histHTML(p) {
     const h = hist(p); if (!h.length) return '';
-    return `<div class="hcard"><h3 class="ht">지난 선택 상담 (이 기기)</h3>${h.slice(0, 5).map((x, i) => `<button class="cs-past" data-i="${i}"><b>${x.e} ${esc(x.q || x.opts.join(' vs '))}</b><small>${KST.fmt(x.t)}${x.Y ? ` · ${x.Y}년 기준` : ''} · ${x.v === 2 ? '현실 조건 우선' : '추천'}: ${esc(x.pick)}</small></button>`).join('')}</div>`;
+    return `<div class="hcard"><h3 class="ht">지난 선택 상담 (이 기기)</h3>${h.slice(0, 5).map((x, i) => `<div class="cs-pastrow"><button class="cs-past" data-i="${i}"><b>${x.e} ${esc(x.q || x.opts.join(' vs '))}</b><small>${KST.fmt(x.t)}${x.Y ? ` · ${x.Y}년 기준` : ''} · ${x.v === 2 ? '현실 조건 우선' : '추천'}: ${esc(x.pick)}</small></button><button class="cs-pdel" data-del="${i}" aria-label="이 상담 기록 지우기">✕</button></div>`).join('')}
+      <button class="ghost wide" id="csHistClr">🗑️ 지난 선택 상담 모두 지우기${h.length > 5 ? ` (${h.length}건)` : ''}</button></div>`;
   }
   // 지난 상담 열기: 저장된 당시 결과(당시 프로필 · 기준 연도 · 작성일)를 그대로 보여 줌 (지금 프로필로 다시 계산하지 않음)
   function pastHTML(x) {
@@ -510,6 +513,9 @@ const Counsel = (() => {
     const n = $('#csNew2'); if (n) n.onclick = () => { st.res = null; r(); };
     const k = $('#csKarma2'); if (k) k.onclick = () => Karma.openCharge(Math.max(0, PER() - karma), '사주 상담', () => r());
     document.querySelectorAll('.cs-past').forEach(b => b.onclick = () => { const x = hist(p)[+b.dataset.i]; if (x) openOverlay(`${x.e} 지난 상담`, pastHTML(x), [{ t: '닫기' }]); });
+    document.querySelectorAll('.cs-pdel').forEach(b => b.onclick = () => { delHist(p, +b.dataset.del); Snd.sfx('tap'); Hub.toast('상담 기록 1건을 지웠어요'); r(); });
+    const hc = $('#csHistClr'); if (hc) hc.onclick = () => openOverlay('🗑️ 지난 선택 상담 지우기', `<p class="sjtxt">${esc(p.name)}님의 지난 선택 상담 ${hist(p).length}건을 이 기기에서 지울까요? 지운 기록은 되돌릴 수 없어요. (다른 사람 프로필의 기록과 카르마·구매 기록은 그대로예요)</p>`,
+      [{ t: '모두 지우기', pri: 1, f: () => { delHist(p); Hub.toast('지난 선택 상담을 모두 지웠어요'); r(); } }, { t: '취소' }]);
     bindResult();
   }
   function buy(r) {
@@ -730,6 +736,6 @@ const Counsel = (() => {
       html: pageHTML, bind: (p, a) => bind(p, a, () => Hub.render()),
     });
   }
-  return { hist: p => hist(p), pastHTML, init, credits, addCredits, forGame, ctxOf, groupOf, localReply, optionsOf, topicOf, parseAsk, askContext, classify, analyzeOpts, normOpt, splitConds };
+  return { hist: p => hist(p), delHist, pastHTML, init, credits, addCredits, forGame, ctxOf, groupOf, localReply, optionsOf, topicOf, parseAsk, askContext, classify, analyzeOpts, normOpt, splitConds };
 })();
 Counsel.init();
