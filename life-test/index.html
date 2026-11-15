@@ -901,6 +901,18 @@
   .hdt-intro{display:flex;gap:12px;align-items:center;background:var(--card2);border-radius:14px;padding:10px 12px;margin-bottom:8px}.hdt-intro small{display:block;color:var(--dim);font-size:12.5px;margin-top:4px;line-height:1.5}
   .hdt input#hDTq{width:100%;box-sizing:border-box;margin:0 0 8px;padding:10px 12px;border-radius:11px;border:1px solid var(--line);background:var(--card);color:var(--ink);font-size:14px}
   .hdt-shuf{height:170px}.hdt-row{display:flex;justify-content:center;gap:0;padding:8px 0 4px}.hdt-pc{width:54px;margin:0 -7px;padding:0;background:none;border-radius:7px;transition:transform .2s}.hdt-pc svg{display:block;width:100%}.hdt-pc:active,.hdt-pc:hover{transform:translateY(-10px)}
+/* 오늘의 타로: 고른 카드가 떠오르고 → 결과 카드가 뒤집히며 등장 */
+.hdt-pc{position:relative}
+.hdt-row.picking .hdt-pc{pointer-events:none}
+.hdt-row.picking .hdt-pc:not(.chosen){opacity:.3;transform:translateY(6px);transition:opacity .35s,transform .35s}
+.hdt-row .hdt-pc.chosen{z-index:2;transform:translateY(-34px) scale(1.18);filter:drop-shadow(0 10px 14px rgba(60,40,120,.35));transition:transform .5s cubic-bezier(.2,.8,.2,1),filter .5s}
+.hdt.reveal .hdt-open img{animation:hdtFlip .75s cubic-bezier(.2,.8,.2,1) both}
+.hdt.reveal .hdt-open img.rev{animation-name:hdtFlipR}
+.hdt.reveal .hdt-open>div,.hdt.reveal>.sjtxt,.hdt.reveal>.hdt-g{animation:hdtFade .5s ease-out .55s both}
+@keyframes hdtFlip{0%{opacity:0;transform:perspective(700px) translateY(40px) rotateY(90deg) scale(.85)}60%{opacity:1}100%{opacity:1;transform:perspective(700px) translateY(0) rotateY(0) scale(1)}}
+@keyframes hdtFlipR{0%{opacity:0;transform:perspective(700px) translateY(40px) rotateY(90deg) rotate(180deg) scale(.85)}60%{opacity:1}100%{opacity:1;transform:perspective(700px) translateY(0) rotateY(0) rotate(180deg) scale(1)}}
+@keyframes hdtFade{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.hdt-row .hdt-pc.chosen,.hdt-row.picking .hdt-pc{transition:none}.hdt.reveal .hdt-open img,.hdt.reveal .hdt-open>div,.hdt.reveal>.sjtxt,.hdt.reveal>.hdt-g{animation:none}}
   .hdt-qq{background:var(--card2);border-radius:10px;padding:7px 10px;margin:0 0 8px;font-size:14px}
   .pdf-req{font-size:12.5px;line-height:1.5;color:var(--dim);background:var(--card2);border-radius:10px;padding:8px 10px;margin:6px 0 10px}.pdf-req.ok{color:var(--money)}.pdf-off{opacity:.55}
   .ny-3{margin:4px 0 8px;padding-left:20px;line-height:1.7}.ny-3 li{margin:2px 0}

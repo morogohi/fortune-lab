@@ -93,7 +93,7 @@ const Hub = (() => {
     d.ms[k] = true; store.set('p8b_daily', d);
     const m = MISSIONS.find(x => x.k === k);
     addPouch(1, `미션 완료: ${m ? m.n : k}`);
-    if (tab === 'today' && $('#hub').classList.contains('on')) render();
+    if (tab === 'today' && $('#hub').classList.contains('on')) keepRender();   // 보던 위치 유지 (예전: 맨 위로 올라감)
   }
 
   /* ---------- 공용 UI ---------- */
@@ -451,7 +451,21 @@ const Hub = (() => {
     const box = $('#hDTbox'); if (!box) return;
     const re = () => { box.innerHTML = dailyTarotHTML(p); bindDailyTarot(p); };
     const sh = $('#hDTshuf'); if (sh) sh.onclick = () => { const q = $('#hDTq'); dtQ = q ? q.value.trim() : ''; dtPhase = 'shuffle'; Snd.sfx('tap'); re(); setTimeout(() => { if (dtPhase === 'shuffle') { dtPhase = 'pick'; re(); } }, window.__fastTarot ? 50 : 1600); };
-    document.querySelectorAll('#hDTrow .hdt-pc').forEach(b => b.onclick = () => { store.set(DTK, { d: dtDay(), k: p.date, i: +b.dataset.i, q: dtQ }); dtPhase = 'intro'; Snd.sfx('reveal'); mission('tarot'); try { Karma.metric('daily_tarot'); } catch (e) { } re(); box.scrollIntoView({ block: 'start' }); });
+    // 카드 고르기: 고른 카드가 떠오름 → 결과 카드가 뒤집히며 나타남 (화면 위치는 그대로, 결과가 화면 밖이면 부드럽게 맞춤)
+    const row = $('#hDTrow');
+    document.querySelectorAll('#hDTrow .hdt-pc').forEach(b => b.onclick = () => {
+      if (!row || row.classList.contains('picking')) return;   // 연출 중 다시 누름 방지
+      store.set(DTK, { d: dtDay(), k: p.date, i: +b.dataset.i, q: dtQ }); dtPhase = 'intro';   // 고른 순간 저장 (새로고침·중복 방지)
+      row.classList.add('picking'); b.classList.add('chosen'); Snd.sfx('tap');
+      const reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+      setTimeout(() => {
+        box.innerHTML = dailyTarotHTML(p); const card = box.querySelector('.hdt'); if (card) card.classList.add('reveal');
+        bindDailyTarot(p); Snd.sfx('reveal');
+        const img = box.querySelector('.hdt-open'); if (img) { const r = img.getBoundingClientRect(), vh = window.innerHeight; if (r.top < 60 || r.bottom > vh - 120) img.scrollIntoView({ behavior: reduce ? 'auto' : 'smooth', block: 'center' }); }
+        try { Karma.metric('daily_tarot'); } catch (e) { }
+        setTimeout(() => mission('tarot'), reduce ? 0 : 1200);   // 미션 보상은 연출이 끝난 뒤 (다시 그려도 위치 유지)
+      }, reduce || window.__fastTarot ? 30 : 650);
+    });
     const dm = $('#hDTmore'); if (dm) dm.onclick = () => { if ($('#overlay').classList.contains('on')) closeOverlay(); go('tarot'); };
   }
   function todayHTML(p, a) {
