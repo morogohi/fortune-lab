@@ -129,6 +129,12 @@ window.Auth = (() => {
 
   // 저장된 세션이 있거나 로그인에서 막 돌아왔으면 바로 연결 (그 외에는 SDK도 불러오지 않음)
   if (ready() && !native() && (/[?&]code=/.test(location.search) || localStorage.getItem('p8b_auth'))) client();
+  // 로그인 취소·실패로 돌아온 경우(?error=...): 주소를 정리하고 짧게 안내
+  if (/[?&#]error=/.test(location.search + location.hash)) {
+    const cancel = /access_denied|cancel/i.test(location.search + location.hash);
+    history.replaceState(history.state, '', location.pathname);
+    setTimeout(() => { if (typeof Hub !== 'undefined' && Hub.toast) Hub.toast(cancel ? '로그인을 취소했어요' : '로그인하지 못했어요. 잠시 후 다시 시도해 주세요'); }, 800);
+  }
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'hidden') sync(); });
   // 카르마 저장(받기·쓰기·충전·게임)과 콘텐츠 열기 뒤에 자동으로 계정에 반영 (로그인했을 때만, 1.5초 모아서)
   window.onMetaSaved = () => { if (user && !applying) sync(true); };   // game.js saveMeta 저장 성공 후 호출
