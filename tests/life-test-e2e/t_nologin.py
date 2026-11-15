@@ -5,28 +5,29 @@ R=[]
 def ok(n,c,i=''): R.append(bool(c)); print('PASS' if c else 'FAIL', n, str(i)[:240])
 ME3={'name':'테스트','date':'1991-06-15','cal':'s','time':'','sex':'m'}
 ME2={'name':'두번째','date':'1985-02-03','cal':'s','time':'10:00','sex':'f'}
-BAD=re.compile(r'(로그인(?! 없이)|회원가입(?!·로그인 없이)|로그아웃|계정 연결|동기화|AI 답변|AI 상담사|서버 연결)')
+BAD=re.compile(r'(AI 답변|AI 상담사|서버 연결)')   # 로그인은 선택 기능으로 다시 생김 → AI 약속 문구만 금지
+SAJU_SRV=re.compile(r'(생년월일|사주 정보)[^.。]{0,30}(서버로 보내요|계정에 저장)')
 async def main():
   async with async_playwright() as pw:
     old_mt={'type':'ESTX','ax':[{'k':'EI','pick':'E'},{'k':'SN','pick':'S'},{'k':'TF','pick':'T'},{'k':'JP','pick':'X'}],'bal':1,'at':1700000000000}
     b,pg,logs = await newpage(pw, me=ME3, karma=100, extra={'p8bT_profiles':[ME3,ME2],'p8bT_mbti_test':old_mt,'p8bT_owned':{'pdf#1991-06-15|s||m|2027':{'t':1,'y':2027}},'p8bT_saves':{}})
     reqs=[]; pg.on('request', lambda r: reqs.append(r.url))
     # 1. 로그인 요소 없음
-    ok('상단 로그인 버튼 없음', await pg.evaluate("()=>!document.querySelector('#loginBtn')"))
+    ok('상단 로그인 버튼 = 선택 (로그인 안 해도 이용)', await pg.evaluate("()=>{const b=document.querySelector('#loginBtn');return !!b && b.className.includes('out')}"))
     await pg.click('#setBtn'); await pg.wait_for_timeout(300)
     st = await pg.evaluate("()=>document.querySelector('#osheet').innerText")
-    ok('설정에 계정/로그인 항목 없음', not BAD.search(st) and '계정' not in st, BAD.search(st))
+    ok('설정: 계정 항목은 로그인하지 않음 (선택)', '로그인하지 않음' in st and not BAD.search(st), st[:120])
     await pg.click("#sPriv"); await pg.wait_for_timeout(800)
     await pg.wait_for_function("()=>document.querySelector('#osheet').innerText.includes('개인정보 관리')", timeout=5000)
     pv = await pg.evaluate("()=>document.querySelector('#osheet').innerText")
-    ok('개인정보 안내 = 기기 저장 안내', '현재 기기·브라우저에 저장됩니다' in pv and not BAD.search(pv), pv[:120])
+    ok('개인정보 안내 = 기기 저장 + 로그인해도 사주 정보 안 보냄', '현재 기기·브라우저에 저장됩니다' in pv and '로그인해도 보내지 않아요' in pv and not BAD.search(pv), pv[:120])
     await pg.evaluate("()=>closeOverlay()")
     texts=[]
     for k in ['home','saju','newyear','tojeong','counsel','compat','mbti','tarot','today','more','shop','mbtitest']:
         try: await pg.evaluate(f"()=>Hub.go('{k}')"); await pg.wait_for_timeout(250); texts.append((k, await pg.evaluate("()=>document.body.innerText")))
         except Exception as e: texts.append((k,'ERR '+str(e)))
     bad=[(k,BAD.search(t).group(0)) for k,t in texts if BAD.search(t)]
-    ok('주요 화면에 로그인·동기화·AI 약속 문구 없음', not bad, bad)
+    ok('주요 화면에 AI 약속 문구 없음 · 사주 정보 서버 저장 약속 없음', not bad and not [k for k,t in texts if SAJU_SRV.search(t)], bad)
     # 상담: AI 안내 없음, 기기 안 참고 상담 명시
     tc = await chat(pg, "A는 현재 회사 유지, B는 창업입니다. 자금은 부족하고 안정적인 수입이 중요합니다. 비교해 주세요.")
     body = await pg.evaluate("()=>document.querySelector('#hubBody').innerText")
