@@ -166,7 +166,7 @@ const Fun = (() => {
     const nm = { E: '외향', I: '내향', S: '감각', N: '직관', T: '사고', F: '감정', J: '판단', P: '인식' };
     Snd.sfx('reveal');
     openOverlay('🧩 사주 MBTI', `${chips(list, idx)}<span class="vfreetag">무료 개요</span>
-      <div class="mhero"><small>${who}의 사주가 말하는 성격 유형</small><div class="mtype">${[...m.type].map((c, i) => `<span style="animation-delay:${i * .12}s">${c}</span>`).join('')}</div>
+      <div class="mhero"><small>${who}의 사주로 본 타고난 기질 경향</small><div class="mtype">${[...m.type].map((c, i) => `<span style="animation-delay:${i * .12}s">${c}</span>`).join('')}</div>
         <b>${m.info[0]}</b><p>${m.info[1]}</p></div>
       <div class="fbox">${m.ax.map((o, i) => bar(`${o.x} ${nm[o.x]}`, `${nm[o.y]} ${o.y}`, o.p, cols[i][0], cols[i][1])).join('')}</div>
       ${(() => { try { const L = Detail.mbtiRelList(q); if (!L.length) return ''; const RE = { love: '💕', family: '🏠', friend: '🤝', work: '💼' };
@@ -174,7 +174,8 @@ const Fun = (() => {
       <div class="lock"><b>🔒 사주 MBTI 상세</b><small>${Views.item('mbti').d}</small></div>
       <div class="sjtxt"><h4>🪞 실제 MBTI와 비교하기</h4>
         <select id="fReal"><option value="">실제 MBTI 고르기</option>${Object.keys(MBTI).map(k => `<option${k === real ? ' selected' : ''}>${k}</option>`).join('')}</select>
-        ${mt ? `<div class="fmatch"><b>${mt.pct}%</b> 일치 · ${mt.word}</div>` : ''}</div>
+        ${mt ? `<div class="fmatch"><b>${mt.pct}%</b> 일치 · ${mt.word}</div>` : ''}
+        <p class="sjnote">사주 MBTI는 타고난 기운(오행·음양·십성)을 MBTI 네 글자로 옮겨 본 <b>타고난 기질의 경향</b>이에요. 지금의 실제 MBTI는 살아오며 다듬어진 성향이라 다를 수 있고, 다르다고 사주풀이가 틀렸다는 뜻은 아니에요. ${real ? `실제 MBTI(<b>${esc(real)}</b>)를 골라 두었으니 사주 상담·리포트의 성향 조언은 실제 MBTI를 기준으로 해요.` : '실제 MBTI를 골라 두면 사주 상담·리포트의 성향 조언은 실제 MBTI를 기준으로 해요.'}</p></div>
       <p class="sjnote" style="text-align:center">※ 오행·음양·십성을 MBTI 네 축에 대응시킨 운명 연구소의 재미용 모델이에요. 공식 MBTI 검사가 아니에요.</p>`,
       [{ t: `🔓 상세 풀이 보기 · ${dtail('mbti', q)}`, pri: 1, keep: 1, f: () => Detail.openMbti(q, real) },
        { t: '📤 결과 공유하기', keep: 1, f: () => share(`🧩 사주 MBTI\n${who}: ${m.type} · ${m.info[0]}\n${m.ax.map(o => `${o.pick} ${o.pick === o.x ? o.p : 100 - o.p}%`).join(' · ')}${mt ? `\n실제 ${real}와 ${mt.pct}% 일치` : ''}\n\n운명 연구소에서 내 사주 MBTI 확인하기`) },
@@ -187,6 +188,12 @@ const Fun = (() => {
   function bindChips(fn) { document.querySelectorAll('.fchips [data-t]').forEach(b => b.onclick = () => { Snd.sfx('tap'); fn(+b.dataset.t); }); }
   async function share(text) { try { const r = await Native.share(text); if (r === 'copied') Hub.toast('결과를 복사했어요'); } catch (e) {} }
 
-  return { flirt, mbti, openFlirt, openMbti, MBTI };
+  // 이 프로필의 실제 MBTI: ① 이 프로필의 성향 검사에서 뚜렷하게 나온 유형 ② 직접 고른 실제 MBTI (없으면 null)
+  function realMbti(p) {
+    if (!p) return null;
+    const t = window.MbtiTest ? MbtiTest.settled(MbtiTest.get(p)) : null; if (t) return { type: t, src: 'test' };
+    const v = (store.get('p8b_mbti', {}) || {})[p.date + p.name]; return /^[EI][SN][TF][JP]$/.test(v || '') ? { type: v, src: 'input' } : null;
+  }
+  return { flirt, mbti, openFlirt, openMbti, MBTI, realMbti };
 })();
 window.Fun = Fun;

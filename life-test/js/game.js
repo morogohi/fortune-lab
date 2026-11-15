@@ -20,15 +20,20 @@ let hist=store.get('p8b_hist',[]);
 const saveMeta=()=>{const before=store.get('p8b_karma',KSTART);const ok=store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20));
   const d=karma-before;if(d){const why=window.KREASON||(d>0?'인생 게임 보상':'게임에서 사용');const c=d<0?'spend':(window.KCAT||null);window.KREASON=null;window.KCAT=null;const l=store.get('p8b_klog',[]);l.unshift(c?{t:Date.now(),d,why,bal:karma,c}:{t:Date.now(),d,why,bal:karma});store.set('p8b_klog',l.slice(0,200))}return ok};
 /* 다른 탭에서 카르마·기록이 바뀌면 이 탭도 따라감 (예전 값으로 덮어쓰는 것 방지) */
+/* 화면이 다시 켜지거나 다른 탭에서 바뀌면: 값이 실제로 달라졌을 때만 다시 그리고, 보던 위치(스크롤)는 그대로 둠
+   (예전에는 화면만 껐다 켜도 매번 다시 그려 리포트를 보던 위치가 맨 위로 돌아갔음) */
 function syncMeta(repaint){
+  const k0=karma,h0=JSON.stringify(hist);
   karma=store.get('p8b_karma',KSTART);hist=store.get('p8b_hist',[]);
-  if(!repaint)return;
+  if(!repaint||(karma===k0&&JSON.stringify(hist)===h0))return;
   const on=id=>{const e=document.getElementById(id);return e&&e.classList.contains('on')};
   if(on('title')&&typeof renderTitle==='function')renderTitle();
   const ae=document.activeElement;
-  if(on('hub')&&typeof Hub!=='undefined'&&!(ae&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName))&&!on('overlay'))Hub.render();
+  if(on('hub')&&typeof Hub!=='undefined'&&!(ae&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName))&&!on('overlay')){
+    const b=document.getElementById('hubBody'),y=b?b.scrollTop:0;if(b)b.dataset.keep='1';
+    try{Hub.render()}finally{if(b){b.scrollTop=y;delete b.dataset.keep}}
+  }
 }
-// 테스트 페이지는 저장 키가 p8bT_… 로 바뀌므로 두 이름 모두 확인
 addEventListener('storage',e=>{if(e.key===null||/^p8bT?_(karma|hist)$/.test(e.key))syncMeta(true)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncMeta(true)});
 

@@ -472,12 +472,12 @@ const Detail = (() => {
       '금(金) 기운이 겉으로 드러나지 않는 사주예요. 일을 벌이는 것에 비해 끝맺고 정리하는 데 시간이 걸리는지 살펴보세요. 주 1회 일정·물건·관계를 정리하는 시간을 두면 도움이 돼요.',
       '수(水) 기운이 겉으로 드러나지 않는 사주예요. 쉬지 않고 달리다 한꺼번에 지치는 일이 반복되는지 돌아보세요. 전통적으로 수 기운을 상징하는 충분한 잠과 혼자 생각하는 시간을 챙겨 보는 것도 방법이에요.'][a.weak];
     let cmp = '';
-    if (real) { const same = [...real].filter((c, i) => c === m.type[i]).length; cmp = card('🪞 실제 MBTI와 비교', `<div class="sjtxt"><p>실제 <b>${esc(real)}</b> · 사주 <b>${m.type}</b> — 네 축 중 <b>${same}개</b>가 같아요.</p>${[0, 1, 2, 3].filter(i => real[i] !== m.type[i]).map(i => `<p>· ${W[i]}: 타고난 기질은 <b>${m.type[i]}</b>(${nm[m.type[i]]})인데 지금은 <b>${real[i]}</b>(${nm[real[i]]})로 살고 있어요. 환경과 경험이 이 부분을 바꿨을 수 있어요. 지칠 때는 타고난 ${nm[m.type[i]]} 쪽으로 쉬어 보세요.</p>`).join('') || '<p>타고난 기질과 지금 모습이 같아요. 자기 자신을 잘 알고 사는 편이에요.</p>'}</div>`); }
+    if (real) { const same = [...real].filter((c, i) => c === m.type[i]).length; cmp = card('🪞 실제 MBTI와 비교', `<div class="sjtxt"><p>실제 <b>${esc(real)}</b> · 사주 <b>${m.type}</b> — 네 축 중 <b>${same}개</b>가 같아요.</p><p>사주 MBTI는 타고난 기운으로 본 기질의 경향이고, 실제 MBTI는 지금의 성향이에요. 서로 보는 대상이 달라 일부가 달라도 자연스러우며, 사주풀이가 틀렸다는 뜻은 아니에요. 생활 속 성향 조언은 실제 MBTI를 기준으로 읽어 주세요.</p>${[0, 1, 2, 3].filter(i => real[i] !== m.type[i]).map(i => `<p>· ${W[i]}: 타고난 기질은 <b>${m.type[i]}</b>(${nm[m.type[i]]})인데 지금은 <b>${real[i]}</b>(${nm[real[i]]})로 살고 있어요. 환경과 경험이 이 부분을 바꿨을 수 있어요. 지칠 때는 타고난 ${nm[m.type[i]]} 쪽으로 쉬어 보세요.</p>`).join('') || '<p>타고난 기질과 지금 모습이 같아요. 자기 자신을 잘 알고 사는 편이에요.</p>'}</div>`); }
     return card(`🧩 ${who}의 사주 MBTI · ${m.type}`, `<div class="sjtxt"><p><b>${m.info[0]}</b> — ${m.info[1]}</p></div>
         <table class="dytbl"><tr><th>축</th><th>결과</th><th>근거 (사주)</th></tr>${m.ax.map((o, i) => `<tr><td>${W[i]}</td><td><b>${o.pick}</b> ${nm[o.pick]}<small style="display:block;color:var(--dim)">${deg(o)}</small></td><td><small>${WH[i]}</small></td></tr>`).join('')}</table>`)
       + (opt.compact ? card('성향이 드러나는 방식', `<div class="sjtxt"><h4>일할 때</h4>${part('w')}<h4>사람을 대할 때</h4>${part('r')}<h4>가까운 관계에서</h4>${part('l')}</div>`)
         + mbtiExtra(m, a, true) + card('사주와 함께 볼 점', `<div class="sjtxt"><p>${weakT}</p></div>`)
-        + `<p class="sjnote">사주 MBTI는 오행·음양·십성을 MBTI 네 축에 대응시킨 참고 모델이며, 공식 MBTI 검사와 다를 수 있어요. 실제 검사 결과와 견줘 보며 읽어 주세요.</p>` : '')
+        + cmp + `<p class="sjnote">사주 MBTI는 오행·음양·십성을 MBTI 네 축에 대응시킨 타고난 기질의 참고 모델이며, 공식 MBTI 검사가 아니에요. 지금의 실제 MBTI와 다를 수 있고, 다르다고 사주풀이가 틀렸다는 뜻은 아니에요.</p>` : '')
       + (opt.compact ? '' : card('💼 일하는 방식', `<div class="sjtxt">${part('w')}</div>`)
       + card('🤝 사람 관계', `<div class="sjtxt">${part('r')}</div>`)
       + card('💕 연애 스타일', `<div class="sjtxt">${part('l')}</div>`)
@@ -628,7 +628,7 @@ const Detail = (() => {
     }).join('');
     chapters.push({ t: '월별 상담', sub: '핵심 주제 · 이달의 초점 · 토정 신수 · 유의할 점 · 실천 · 좋은 날 · 관계', html: card(`${Y} 월별 상담`, months) });
     // ── 성격 유형 (압축)
-    try { const mt = Fun.mbti(a); chapters.push({ t: '성격 유형 (사주 MBTI)', sub: '네 축의 근거 · 성향이 드러나는 방식 · 성장 로드맵', html: mbti(Object.assign({}, p, { self: true }), a, mt, null, { noRel: true, compact: true }) }); } catch (e) { }
+    try { const mt = Fun.mbti(a), rm = Fun.realMbti(p); chapters.push({ t: '성격 유형 (사주 MBTI)', sub: '네 축의 근거 · 성향이 드러나는 방식 · 성장 로드맵', html: mbti(Object.assign({}, p, { self: true }), a, mt, rm ? rm.type : null, { noRel: true, compact: true }) }); } catch (e) { }
     // ── 궁합 (차이·대화 먼저)
     pp.forEach(x => { try { chapters.push({ t: `궁합 · ${x.q.name}`, sub: '서로 다른 점과 대화법 · 갈등 해법 · 관계 유지 · 성향 궁합 · 오행과 띠', html: compat(p, a, x.q, x.b, x.q.rel, { noMonths: true, report: true }) }); } catch (e) { } });
     // ── 상담 정리: 2027 첫 90일 실천 계획 · 돌아볼 질문

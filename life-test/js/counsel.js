@@ -88,10 +88,10 @@ const Counsel = (() => {
     const li = a.dy.findIndex(d => d.age === luck.start), nextD = li >= 0 ? a.dy[li + 1] : a.dy[0];
     const ny = Fortune.newYear(a, Y), ny2 = ny, mp = Fortune.monthPlan(a, Y);
     const test = MbtiTest.get(p), sm = Fun.mbti(a);   // 이 프로필의 성향 검사 결과만 (다른 프로필 결과는 쓰지 않음)
-    const set = MbtiTest.settled(test);
-    const mbti = set ? { type: set, src: 'MBTI 성향 검사 결과', sure: true }
+    const set = MbtiTest.settled(test), rm = Fun.realMbti ? Fun.realMbti(p) : null;
+    const mbti = rm ? { type: rm.type, src: `${rm.src === 'test' ? 'MBTI 성향 검사 결과' : '직접 고른 실제 MBTI'}${rm.type !== sm.type ? ` · 사주로 본 타고난 기질은 ${sm.type} (보는 대상이 달라 다를 수 있어요)` : ''}`, sure: true }
       : test ? { type: sm.type, src: `${p.name}님의 성향 검사 결과에 반반인 축이 ${test.bal || test.ax.filter(x => x.pick === 'X').length}개 있어(중립 결과) 사주로 본 MBTI를 참고했어요`, sure: false }
-      : { type: sm.type, src: `사주로 본 MBTI · ${p.name}님의 성향 검사 기록이 없어요 (검사를 하면 더 정확해요)`, sure: false };
+      : { type: sm.type, src: `사주로 본 MBTI(타고난 기질 경향) · ${p.name}님의 실제 MBTI 기록이 없어요. 사주 MBTI 화면에서 실제 MBTI를 고르거나 성향 검사를 하면 그 결과로 조언해요`, sure: false };
     const hist = store.get('p8b_hist', []);
     const GV = { S: 5, A: 4, B: 3, C: 2, D: 1 };
     const game = hist.length ? { n: hist.length, avg: (hist.reduce((s, h) => s + (GV[h.grade] || 2), 0) / hist.length), best: hist.reduce((m, h) => (GV[h.grade] || 0) > (GV[m.grade] || 0) ? h : m, hist[0]) } : null;

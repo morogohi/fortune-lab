@@ -122,7 +122,7 @@ const YearFull = (() => {
     T: '판단은 빠르지만 사람의 마음을 놓치기 쉬워요. 결정 전에 한 번 더 상대 입장을 물어보세요.', F: '사람을 챙기는 힘이 귀인을 부르지만, 거절해야 할 땐 분명히 하세요.',
     J: '계획대로 밀고 갈 때 강해요. 다만 변수가 생기면 계획을 고치는 것도 실력이에요.', P: '유연함이 기회를 잡지만 마감이 흐려지기 쉬워요. 중요한 일은 날짜부터 정하세요.' };
   function mbtiHTML(a, B, p) {
-    const test = window.MbtiTest ? MbtiTest.get(p) : null, set = window.MbtiTest ? MbtiTest.settled(test) : null, sm = Fun.mbti(a);
+    const test = window.MbtiTest ? MbtiTest.get(p) : null, rm = Fun.realMbti ? Fun.realMbti(p) : null, set = rm ? rm.type : null, sm = Fun.mbti(a);
     const type = set || sm.type, info = Fun.MBTI[type] || ['', ''];
     return `<div class="hcard yf-mbti"><h3 class="ht">🧩 MBTI로 본 ${Y} 전략 · ${type}</h3><div class="sjtxt">
       <p><b>${info[0]}</b> ${info[1]}</p>
@@ -134,7 +134,7 @@ const YearFull = (() => {
         return `<div class="yf-mb"><b>📌 ${T}의 ${Y} 실천 시나리오</b><p>올해는 <b>${act}</b>에 운이 실려요. ${T}에게는 ${how}이 잘 맞으니, ${pace} 진행하세요. 시작하기 좋은 달은 <b>${bm}</b>이에요.</p>
           <p>${T[2] === 'T' ? '⚠️ 숫자와 효율만 보다 동료의 마음을 놓치기 쉬워요. 중요한 결정 전에 한 사람에게 의견을 물어보세요.' : '⚠️ 사람을 챙기다 내 일이 밀리기 쉬워요. 거절할 일은 이번 주 안에 분명히 말하세요.'} ${T[1] === 'N' ? '아이디어가 많아도 올해는 한 가지를 끝까지 해 보는 것이 성과로 남아요.' : '익숙한 방식이 안전하지만, 올해 한 가지는 새 방법을 시도해 보세요.'}</p></div>`; })()}
       ${[...type].map(c => `<p>· <b>${c}</b> ${MB_Y[c] || ''}</p>`).join('')}
-      <p class="sjnote">기준: ${set ? 'MBTI 성향 검사 결과' : test ? '성향 검사 결과가 뚜렷하지 않아 사주로 본 MBTI' : '사주로 본 MBTI (성향 검사를 하면 더 정확해요)'}${set && set !== sm.type ? ` · 사주로 본 MBTI는 ${sm.type}` : ''}</p></div></div>`;
+      <p class="sjnote">기준: ${rm ? (rm.src === 'test' ? 'MBTI 성향 검사 결과' : '직접 고른 실제 MBTI') : test ? '성향 검사 결과가 뚜렷하지 않아 사주로 본 MBTI(타고난 기질 경향)' : '사주로 본 MBTI(타고난 기질 경향) · 실제 MBTI를 고르거나 성향 검사를 하면 그 결과로 바꿔 드려요'}${set && set !== sm.type ? ` · 사주로 본 타고난 기질은 ${sm.type} (보는 대상이 달라 다를 수 있어요)` : ''}</p></div></div>`;
   }
   function gameHTML(B) {
     const h = store.get('p8b_hist', []);
