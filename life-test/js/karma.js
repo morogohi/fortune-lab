@@ -69,7 +69,7 @@ const Karma = (() => {
   let tick = null;
   /* ---------- 📒 사용 내역 ---------- */
   // 분류: ad 광고 · game 인생 게임 · bonus 이벤트·교환 · buy 구매 · spend 사용 (예전 기록은 이유 문구로 추정)
-  const CATS = { ad: ['📺', '광고'], game: ['🎲', '인생 게임'], bonus: ['🎁', '보너스'], buy: ['💳', '구매'], spend: ['✨', '사용'], view: ['🔁', '다시보기'] };
+  const CATS = { ad: ['📺', '광고'], game: ['🎲', '인생 게임'], bonus: ['🎁', '보너스'], buy: ['💳', '구매'], spend: ['✨', '사용'], view: ['🔁', '다시보기'], sync: ['☁️', '계정 동기화'] };
   // 카르마 변화 없는 기록 (무료 다시보기 등) — 언제 무엇을 봤는지 내역에 남김
   function note(why) { const l = store.get('p8b_klog', []); l.unshift({ t: Date.now(), d: 0, why, bal: bal(), c: 'view' }); store.set('p8b_klog', l.slice(0, 200)); }
   function cat(x) {
@@ -87,7 +87,7 @@ const Karma = (() => {
   // 기간별 합계: 모은 것(광고·게임·보너스) · 산 것 · 쓴 것
   function sum(from) {
     const r = { earn: 0, buy: 0, spend: 0, n: 0 };
-    log().forEach(x => { if (from && x.t < from) return; const c = cat(x); r.n++; if (c === 'spend') r.spend -= x.d; else if (c === 'buy') r.buy += x.d; else if (x.d > 0) r.earn += x.d; });
+    log().forEach(x => { if (from && x.t < from) return; const c = cat(x); if (c === 'sync') return; r.n++; if (c === 'spend') r.spend -= x.d; else if (c === 'buy') r.buy += x.d; else if (x.d > 0) r.earn += x.d; });
     return r;
   }
   function today() { return Object.assign(sum(KST.startOfDay()), { adLeft: adLeft(), adMax: AD_DAY }); }
@@ -131,7 +131,7 @@ const Karma = (() => {
       <div class="kway"><i>📺</i><span><b>광고 보기 +${AD_K}</b><small>3분 간격 · 하루 ${AD_DAY}번 (최대 ${AD_K * AD_DAY})</small></span></div>
       <div class="kway"><i>🎲</i><span><b>인생 게임 엔딩 +5~15</b><small>한 판을 끝까지 살면 점수에 따라 지급 · 10살마다 광고 휴식 +${BREAK_K}</small></span></div>
       <div class="kway"><i>✨</i><span><b>처음 시작 +${START()}</b><small>처음 앱을 열면 기본으로 드려요</small></span></div>
-      ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 생년월일 등 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
+      ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 카르마가 계정에 저장돼 다른 기기에서도 이어져요 · 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
       ${events().map(g => `<div class="kway"><i>${g.e}</i><span><b>${esc(g.n)} +${g.karma}</b><small>${fmtD(g.until)}까지 앱을 열면 1회 · ${gotEvent(g.id) ? '받았어요 ✅' : '곧 지급돼요'}</small></span></div>`).join('')}
       <div class="kway"><i>🎁</i><span><b>복주머니 교환 +10</b><small>출석·미션으로 모은 복주머니 3개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>

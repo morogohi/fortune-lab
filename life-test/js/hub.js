@@ -184,10 +184,11 @@ const Hub = (() => {
     document.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => { const l = profiles(); l.splice(+b.dataset.pdel, 1); store.set(PKEY, l); closeOverlay(true); openProfiles(); });
   }
 
-  /* ---------- ⚙️ 설정 (로그인 없음 · 기기 내 저장 서비스) ---------- */
+  /* ---------- ⚙️ 설정 · 👤 로그인(선택) ---------- */
   function openSettings() {
-    const me = getMe();
+    const me = getMe(), u = Auth.user();
     openOverlay('⚙️ 설정', `<div class="sets">
+      <div class="setrow"><span>👤 계정</span><div>${u ? `<b>${esc(Auth.name())}</b> <small>${Auth.provider() === 'kakao' ? '카카오' : Auth.provider() === 'google' ? '구글' : ''} 로그인</small>` : '<small>로그인하지 않음 (선택)</small>'}</div><button id="sAcc">${u ? '관리' : '로그인'}</button></div>
       <div class="setrow"><span>🙂 내 정보</span><div>${me ? `<b>${esc(me.name)}</b> <small>${pLine(me)}</small>` : '<small>입력 전</small>'}</div><button id="sMe">${me ? '바꾸기' : '입력'}</button></div>
       <div class="setrow col"><span>🎨 화면</span><div class="modeseg">${[['light', '라이트'], ['dark', '다크'], ['system', '휴대폰 설정']].map(([m, n]) => `<button data-smode="${m}" class="${Theme.mode() === m ? 'on' : ''}">${n}</button>`).join('')}</div></div>
       <div class="setrow"><span>🎵 배경음악</span><div></div><button class="tgl${Snd.on.bgm ? ' on' : ''}" id="sBgm" aria-label="배경음악"><i></i></button></div>
@@ -196,9 +197,10 @@ const Hub = (() => {
       <div class="setrow"><span>🛠️ 운영 모드</span><div>${Karma.modeBadge()} <small>${Karma.modeLine()}</small></div></div>
       ${Karma.toolsHTML()}
       <div class="setrow"><span>ℹ️ 앱 버전</span><div><b>${esc(appVer())}</b> <small>${Store.native ? '앱' : '웹'}</small></div><button id="sShop">상점</button></div>
-      <div class="setrow"><span>🔒 개인정보</span><div><small>정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
+      <div class="setrow"><span>🔒 개인정보</span><div><small>사주 정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
     </div>`, [{ t: '닫기' }]);
     $('#sMe').onclick = () => { closeOverlay(true); me ? openProfiles() : openItem('today'); };
+    $('#sAcc').onclick = () => { closeOverlay(true); u ? openAccount() : openLogin(); };
     document.querySelectorAll('[data-smode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.smode); document.querySelectorAll('[data-smode]').forEach(x => x.classList.toggle('on', x === b)); render(); });
     $('#sBgm').onclick = e => { Snd.toggle('bgm'); e.currentTarget.classList.toggle('on', Snd.on.bgm); };
     $('#sSfx').onclick = e => { Snd.toggle('sfx'); e.currentTarget.classList.toggle('on', Snd.on.sfx); Snd.sfx('tap'); };
@@ -215,7 +217,7 @@ const Hub = (() => {
       const ln = LN(); if (ln) ln.getPending().then(r => r.notifications.length && ln.cancel({ notifications: r.notifications.map(n => ({ id: n.id })) })).catch(() => {});
       location.reload();
     };
-    openOverlay('🗑️ 내 정보·기록 지우기', `<div class="sjtxt"><p>이 기기에 저장된 정보만 지워요. 개발자 서버에는 원래 저장된 정보가 없어요.</p>
+    openOverlay('🗑️ 내 정보·기록 지우기', `<div class="sjtxt"><p>이 기기에 저장된 정보만 지워요. 사주 정보는 원래 서버에 없어요. (로그인했다면 계정의 카르마 기록은 그대로 남고, 계정 → 회원 탈퇴로 지울 수 있어요)</p>
       <h4>① 내 사주·궁합 정보만</h4><p>내 이름(별명)·생년월일·시간·성별, 최근 입력 기록(${profiles().length}명), 궁합 관계도(${people().length}명), 사주 MBTI 결과</p>
       <h4>② 게임 기록까지 모두</h4><p>①에 더해 저장 슬롯·지난 생애·카르마·출석/복주머니·테마·알림 설정·소리 설정</p>
       <h4>지워지지 않는 것</h4><p>구매한 상품(스토어 계정에서 「구매 복원」 가능)·행운패스 남은 기간·광고 시청 횟수 제한·무상 카르마 이벤트 받은 기록. 구글 설문에 남긴 응답은 이 기기와 별개로 구글 설문에 보관돼요.</p></div>`, [
@@ -223,10 +225,49 @@ const Hub = (() => {
       { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
   }
   function openPrivacy() {
-    openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>회원가입·로그인 없이 쓰는 서비스예요. 이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대, 상담·성향 검사 기록, 카르마·구매 기록, 게임 저장은 모두 <b>현재 기기·브라우저에만</b> 저장되고 개발자 서버로 보내지 않아요.</p>
-      <p>정보와 이용 기록은 현재 기기·브라우저에 저장됩니다. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있습니다.</p></div>`,
+    openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>로그인하지 않아도 모든 기능을 쓸 수 있어요. 이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대, 상담·성향 검사 기록, 구매 기록, 게임 저장은 모두 <b>현재 기기·브라우저에만</b> 저장되고 개발자 서버로 보내지 않아요.</p>
+      <p>정보와 이용 기록은 현재 기기·브라우저에 저장됩니다. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있습니다.</p>
+      <p>👤 <b>로그인(선택)</b>: 카카오·구글로 로그인하면 <b>카르마 잔액·살아 본 인생 수·연 콘텐츠 목록</b>만 계정에 저장돼 다른 기기에서도 이어져요. 사주 정보·궁합 상대·상담 기록은 로그인해도 보내지 않아요. 탈퇴하면 서버 기록은 바로 지워져요.</p></div>`,
       [{ t: '🗑️ 내 정보·기록 지우기', f: openWipe }, { t: '📄 개인정보 처리방침', f: () => { location.href = 'privacy.html'; } }, { t: '닫기' }]);
   }
+  const KAKAO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>';
+  const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
+  function openLogin() {
+    const ok = Auth.ready(), nat = Auth.native(), bonus = (STORE_CONFIG.signupBonus || 0);
+    openOverlay('👤 로그인 · 회원가입', `<div class="kbal sm" style="justify-content:center">${bonus ? `<b>🎉 처음 로그인하면 카르마 +${bonus}</b>` : '<b>☁️ 카르마를 계정에 보관</b>'}<small style="text-align:center">${bonus ? '계정당 1번 · ' : ''}카르마와 연 콘텐츠가 계정에 저장돼 다른 기기에서도 이어서 쓸 수 있어요</small></div>
+      <button class="sso kakao" id="lgKakao" ${ok && !nat ? '' : 'disabled'}>${KAKAO_SVG}<span>카카오 로그인</span></button>
+      <button class="sso google" id="lgGoogle" ${ok && !nat ? '' : 'disabled'}>${GOOGLE_SVG}<span>Google 계정으로 로그인</span></button>
+      ${!ok ? '<p class="sjnote" style="text-align:center">로그인 서버 연결을 준비하고 있어요. 곧 열려요!</p>' : nat ? '<p class="sjnote" style="text-align:center">앱 로그인은 다음 업데이트에서 지원해요. 지금은 웹에서 로그인할 수 있어요.</p>' : ''}
+      <p class="sjnote" style="text-align:center">🔒 이름·생년월일·태어난 시간·성별·궁합 상대·상담 기록은 <b>서버로 보내지 않고</b> 이 기기에만 저장돼요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
+    const run = async p => { toast('로그인 화면으로 이동해요…'); const r = await Auth.login(p); if (r.error) toast(r.error === 'not-configured' ? '로그인 서버 준비 중이에요' : '로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요'); };
+    $('#lgKakao').onclick = () => run('kakao'); $('#lgGoogle').onclick = () => run('google');
+  }
+  function openAccount() {
+    const t = Auth.syncedAt();
+    openOverlay('👤 내 계정', `<div class="sets"><div class="setrow"><span>${Auth.provider() === 'kakao' ? '💬 카카오' : '🔵 구글'}</span><div><b>${esc(Auth.name())}</b></div></div>
+      <div class="setrow"><span>☁️ 동기화</span><div><small>카르마 ${karma} · ${t ? new Date(t).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 저장' : '아직 저장 전'}</small></div><button id="acSync">지금 저장</button></div></div>
+      <p class="sjnote">계정에는 카르마 잔액·인생 수·연 콘텐츠 목록만 있어요. 생년월일 등 사주 정보와 상담 기록은 이 기기에만 있어요. 로그아웃해도 이 기기의 카르마는 그대로예요.</p>`,
+      [{ t: '로그아웃', f: async () => { await Auth.logout(); toast('로그아웃했어요'); } },
+       { t: '회원 탈퇴', f: () => openOverlay('회원 탈퇴', '<p class="sjtxt">서버에 저장된 계정과 카르마·연 콘텐츠 기록이 모두 삭제돼요. 이 기기의 정보와 카르마는 그대로 남아요. 회원가입 보너스는 다시 받을 수 없어요.</p>',
+           [{ t: '탈퇴하기', pri: 1, f: async () => toast(await Auth.deleteAccount() ? '탈퇴가 완료됐어요' : '탈퇴하지 못했어요. 문의: support.um09@gmail.com') }, { t: '취소', f: openAccount }]) },
+       { t: '닫기' }]);
+    $('#acSync').onclick = async () => { const ok = await Auth.sync(); toast(ok ? '계정에 저장했어요' : '저장하지 못했어요. 잠시 후 다시 시도해 주세요'); closeOverlay(true); openAccount(); };
+  }
+  function topbarUI() {
+    const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
+    const pv = Auth.provider();
+    if (u) {
+      const av = Auth.avatar();
+      b.className = 'auth in' + (pv ? ' ' + pv : '');
+      b.innerHTML = `<span class="aav">${av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1))}<i class="adot"></i></span><span class="alab">${esc(Auth.name().slice(0, 5))}</span>`;
+      b.title = `${Auth.name()} · ${pv === 'kakao' ? '카카오' : pv === 'google' ? '구글' : ''} 로그인됨`; b.setAttribute('aria-label', b.title);
+    } else {
+      b.className = 'auth out';
+      b.innerHTML = '<span class="aav">👤</span><span class="alab">로그인</span>';
+      b.title = '로그인하지 않음 · 눌러서 로그인'; b.setAttribute('aria-label', b.title);
+    }
+  }
+
   /* ---------- 홈: 서비스 목록 → 항목 선택 → (정보 없으면) 단계별 입력 → 결과 ---------- */
   let pending = null;          // 정보 입력 후 이어서 열 항목
   const ITEMS = [
@@ -998,7 +1039,7 @@ const Hub = (() => {
     paintIcons();
     // 기존 화면 전환에 하단 탭 표시와 미션 체크를 연결
     const base = show;
-    show = function (id) { base(id); if (id === 'end') { mission('game'); } syncTabs(); const h = $('#homeTop'); if (h) h.hidden = id === 'hub'; };
+    show = function (id) { base(id); if (id === 'end') { mission('game'); Auth.sync(true); } syncTabs(); const h = $('#homeTop'); if (h) h.hidden = id === 'hub'; };
     // 인생 게임의 어느 화면에서든 앱 홈으로: 진행 중인 인생은 저장하고 나가기 확인
     $('#homeTop').onclick = () => {
       Snd.sfx('tap');
@@ -1013,9 +1054,12 @@ const Hub = (() => {
     Store.onChange(() => { if ($('#hub').classList.contains('on')) render(); });
     hookHistory();
     $('#setBtn').onclick = () => { Snd.sfx('tap'); openSettings(); };
+    $('#loginBtn').onclick = () => { Snd.sfx('tap'); Auth.user() ? openAccount() : openLogin(); };
+    let wasIn = !!Auth.user();
+    Auth.on(u => { topbarUI(); if ($('#hub').classList.contains('on') && !$('#overlay').classList.contains('on')) render(); if (u && !wasIn) { if ($('#lgKakao') && $('#overlay').classList.contains('on')) closeOverlay(); toast(`👋 ${Auth.name()}님, 로그인했어요`); } wasIn = !!u; }); topbarUI();
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openRecords };
+  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openRecords, openLogin };
 })();
 Hub.init();
