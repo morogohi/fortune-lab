@@ -88,7 +88,8 @@ window.Auth = (() => {
       const linked = !!(link && link.uid === user.id);
       const { data, error } = linked
         ? await sb.rpc('sync_state', { p_delta: k - (+link.base || 0), p_lives: lives(), p_unlocks: un })
-        : await sb.rpc('link_device', { p_karma: k, p_lives: lives(), p_unlocks: un });
+        // 이 기기가 다른 계정에 연결돼 있었다면(계정 바꿔 로그인) 기기 잔액은 이전 계정 몫 → 새 계정에 복사하지 않음
+        : await sb.rpc('link_device', { p_karma: (link && link.uid && link.uid !== user.id) ? 0 : k, p_lives: lives(), p_unlocks: un });
       if (error) { if (linked && /not linked/.test(error.message || '')) { try { localStorage.removeItem(LKEY); } catch (e) { } again = true; } return false; }
       const r = Array.isArray(data) ? data[0] : data; if (!r) return false;
       const extra = curKarma() - k;                // 보내는 사이 기기에서 또 바뀐 만큼 → 다음 번에 보냄

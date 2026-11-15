@@ -3,9 +3,9 @@ from common import *
 R=[]
 def ok(n,c,i=''): R.append(bool(c)); print('PASS' if c else 'FAIL', n, str(i)[:200])
 ME3={'name':'테스트','date':'1991-06-15','cal':'s','time':'','sex':'m'}
-SRV={'gs':{}, 'claims':set(), 'calls':[]}
+SRV={'gs':{}, 'claims':set(), 'calls':[], 'uid':'u1'}
 def rpc(name, a):
-    SRV['calls'].append((name, a)); uid='u1'; g=SRV['gs']
+    SRV['calls'].append((name, a)); uid=SRV['uid']; g=SRV['gs']
     if name=='link_device':
         r=g.get(uid); k=max(0,min(100000,a['p_karma']))
         if r: r['karma']=max(r['karma'],k); r['lives']=max(r['lives'],a['p_lives']); r['unlocks'].update(a['p_unlocks'] or {})
@@ -17,21 +17,23 @@ def rpc(name, a):
         r['karma']=max(0,min(100000,r['karma']+a['p_delta'])); r['lives']=max(r['lives'],a['p_lives']); r['unlocks'].update(a['p_unlocks'] or {})
         return {'data':r,'error':None}
     if name=='claim_signup_bonus':
-        if 'kakao:1' in SRV['claims'] or not (0<a['p_amount']<=100): return {'data':False,'error':None}
-        SRV['claims'].add('kakao:1'); g[uid]['karma']+=a['p_amount']; return {'data':True,'error':None}
+        if ('sub:'+uid) in SRV['claims'] or not (0<a['p_amount']<=100): return {'data':False,'error':None}
+        SRV['claims'].add('sub:'+uid); g[uid]['karma']+=a['p_amount']; return {'data':True,'error':None}
     if name=='delete_my_account':
         g.pop(uid,None); return {'data':None,'error':None}
-MOCK="""window.supabase={createClient:function(){let session=JSON.parse(localStorage.getItem('__ms')||'null');const cbs=[];return{auth:{onAuthStateChange(f){cbs.push(f)},async getSession(){return{data:{session}}},async signInWithOAuth({provider}){session={user:{id:'u1',app_metadata:{provider},user_metadata:{name:'홍길동',avatar_url:'https://x/a.png'}}};localStorage.setItem('__ms',JSON.stringify(session));setTimeout(()=>cbs.forEach(f=>f('SIGNED_IN',session)),50);return{error:null}},async signOut(){session=null;localStorage.removeItem('__ms');cbs.forEach(f=>f('SIGNED_OUT',null))}},async rpc(n,a){return await window.__rpc(n,a||{})}}}};"""
+MOCK="""window.supabase={createClient:function(){let session=JSON.parse(localStorage.getItem('__ms')||'null');const cbs=[];return{auth:{onAuthStateChange(f){cbs.push(f)},async getSession(){return{data:{session}}},async signInWithOAuth({provider}){session={user:{id:(await window.__uid()),app_metadata:{provider},user_metadata:{name:'홍길동',avatar_url:'https://x/a.png'}}};localStorage.setItem('__ms',JSON.stringify(session));setTimeout(()=>cbs.forEach(f=>f('SIGNED_IN',session)),50);return{error:null}},async signOut(){session=null;localStorage.removeItem('__ms');cbs.forEach(f=>f('SIGNED_OUT',null))}},async rpc(n,a){return await window.__rpc(n,a||{})}}}};"""
 CFG="window.AUTH_CONFIG={supabaseUrl:'https://mock.supabase.co',supabaseAnonKey:'anon',providers:['kakao','google']};"
 async def dev(pw, karma, cfg=True):
     b,pg,logs = await newpage(pw, me=ME3, karma=karma, extra={'p8bT_events':{'newyear2027':1}}) if False else (None,None,None)
     b = await pw.chromium.launch(executable_path='/usr/bin/google-chrome', args=['--no-sandbox'])
     ctx = await b.new_context(viewport={'width':412,'height':900}, locale='ko-KR', timezone_id='Asia/Seoul')
-    await ctx.expose_function('__rpc', rpc)
+    await ctx.expose_function('__rpc', rpc); await ctx.expose_function('__uid', lambda: SRV['uid'])
     pg = await ctx.new_page(); logs=[]; pg.on('pageerror', lambda e: logs.append('PAGEERR: '+str(e)))
     net=[]; pg.on('request', lambda r: net.append(r.url) if 'supabase' in r.url else None)
     init={'p8bT_me':ME3,'p8bT_karma':karma,'p8bT_profiles':[ME3],'p8bT_events':{'newyear2027':1}}
     await pg.add_init_script("(function(){if(sessionStorage.getItem('__init'))return;sessionStorage.setItem('__init','1');var d=%s;for(var k in d)localStorage.setItem(k,JSON.stringify(d[k]));})()" % json.dumps(init, ensure_ascii=False))
+    if not cfg:
+        await pg.route('**/auth-config.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body="window.AUTH_CONFIG={supabaseUrl:'',supabaseAnonKey:''};"))
     if cfg:
         await pg.add_init_script(MOCK)
         await pg.route('**/auth-config.js', lambda r: r.fulfill(status=200, content_type='application/javascript', body=CFG))
@@ -93,6 +95,12 @@ async def main():
     # 재가입: 보너스 없음
     await A.click('#loginBtn'); await A.wait_for_timeout(200); await A.click('#lgKakao'); await A.wait_for_timeout(1500)
     ok('재가입해도 보너스 다시 안 줌', SRV['gs']['u1']['karma']==k0+105, SRV['gs']['u1'])
+    # 7. 같은 기기에서 다른 계정으로 바꿔 로그인: 기기 잔액을 새 계정에 복사하지 않음
+    await A.evaluate("()=>Auth.logout()"); await A.wait_for_timeout(300)
+    SRV['uid']='u2'
+    await A.click('#loginBtn'); await A.wait_for_timeout(200); await A.click('#lgGoogle'); await A.wait_for_timeout(1500)
+    r7 = await A.evaluate("()=>karma")
+    ok('계정 바꿔 로그인: 새 계정은 보너스만 (이전 계정 잔액 복사 없음)', SRV['gs']['u2']['karma']==100 and r7==100 and SRV['gs']['u1']['karma']==k0+105, (SRV['gs']['u2'], r7, SRV['gs']['u1']['karma']))
     print([l for l in logsA+logsB if 'PAGEERR' in l][:5]); await bA.close(); await bB.close()
   print('RESULT', sum(R),'/',len(R))
 asyncio.run(main())
