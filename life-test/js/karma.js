@@ -17,7 +17,7 @@ const Karma = (() => {
   // 전환 측정 (이 기기에만): 광고 시작·완료·실패, 부족분 안내, 결제 시작·취소·완료, 콘텐츠 해제·재열람
   const MKEY = 'p8b_metrics';
   function metric(k) { const m = store.get(MKEY, {}); m[k] = (m[k] || 0) + 1; m._since = m._since || Date.now(); store.set(MKEY, m); }
-  function add(n, why, cat) { window.KREASON = why || '카르마 받기'; window.KCAT = cat || null; karma += n; saveMeta(); try { Auth.sync(); } catch (e) { } Store.notify(); if (why) Hub.toast(`✨ 카르마 +${n} · ${why}`); }
+  function add(n, why, cat) { if (typeof syncMeta === 'function') syncMeta(false); window.KREASON = why || '카르마 받기'; window.KCAT = cat || null; karma += n; if (saveMeta() === false) { karma -= n; Hub.toast('저장하지 못해 카르마를 받지 못했어요. 저장 공간을 확인해 주세요'); return; } Store.notify(); if (why) Hub.toast(`✨ 카르마 +${n} · ${why}`); }
   function adState() { const o = store.get(AKEY, null); return o && o.d === day() ? o : { d: day(), n: 0, last: 0 }; }
   function adLeft() { return Math.max(0, AD_DAY - adState().n); }
   function adWait() { return Math.max(0, adState().last + AD_GAP - Date.now()); }
@@ -53,12 +53,17 @@ const Karma = (() => {
   function spend(n, label, onOk, back, extra) {
     if (bal() < n) { metric('lack_shown'); openCharge(n - bal(), label, back); return; }
     openOverlay(`✨ ${label}`, `<p class="sjtxt" style="text-align:center">카르마 <b>${n}</b>를 써서 열까요?<br><small>보유 ${bal()} → ${bal() - n}</small></p>${extra ? `<p class="sjnote" style="text-align:center">${extra}</p>` : ''}`,
-      [{ t: `✨ 카르마 ${n} 쓰고 열기`, pri: 1, f: () => { window.KREASON = label.replace(/^\S+\s/, ''); window.KCAT = 'spend'; karma -= n; saveMeta(); metric('spend'); try { Auth.sync(); } catch (e) { } Snd.sfx('fanfare'); onOk(); Store.notify(); } }, { t: '취소', f: () => back && back() }]);
+      [{ t: `✨ 카르마 ${n} 쓰고 열기`, pri: 1, f: () => {
+        if (typeof syncMeta === 'function') syncMeta(false);   // 다른 탭에서 바뀐 잔액을 먼저 반영
+        if (bal() < n) { openCharge(n - bal(), label, back); return; }
+        window.KREASON = label.replace(/^\S+\s/, ''); window.KCAT = 'spend'; karma -= n;
+        if (saveMeta() === false) { karma += n; Hub.toast('저장하지 못해 차감하지 않았어요. 저장 공간을 확인해 주세요'); back && back(); return; }
+        metric('spend'); Snd.sfx('fanfare'); onOk(); Store.notify(); } }, { t: '취소', f: () => back && back() }]);
   }
   function unlock(k, after) {
     const it = Store.item(k); if (!it || !it.k) return;
     if (Store.has(k)) { after && after(); return; }
-    spend(it.k, `${it.e} ${it.n}`, () => { Store.unlock(k); metric('unlock_' + k); try { Auth.sync(); } catch (e) { } Hub.toast(`🔓 열렸어요 · ${it.n}`); after && after(); });
+    spend(it.k, `${it.e} ${it.n}`, () => { Store.unlock(k); metric('unlock_' + k); Hub.toast(`🔓 열렸어요 · ${it.n}`); after && after(); });
   }
   function adLabel() { const left = adLeft(), w = adWait(); return `${left ? (w ? `${fmt(w)} 뒤 다시 가능` : '지금 받을 수 있어요') : '오늘은 다 받았어요'} · 오늘 ${AD_DAY - left}/${AD_DAY}`; }
   let tick = null;
@@ -138,7 +143,7 @@ const Karma = (() => {
       <div class="kway"><i>📜</i><span><b>사주풀이는 무료</b><small>타고난 성격·강점·약점·연애·재물·건강 성향·개운법</small></span></div>
       <div class="kway"><i>🧭</i><span><b>사주 상담 ${CounselPrice.text()}</b><small>대화 상담 · 선택 상담 · 기기 안 규칙 기반 풀이</small></span></div>
       <div class="kway"><i>🎮</i><span><b>인생 게임 아이템</b><small>다시 태어나기 15 · 기적 40 · 운명 조작 팩 30 · 갈림길 미리 보기 3</small></span></div>
-      <p class="sjnote">카르마는 쓰면 없어지는 소모성 재화예요. 이 기기에 저장되며, 앱을 지우면 남은 카르마도 사라질 수 있어요 (로그인하면 계정에 함께 저장돼요). 카르마는 현금으로 바꾸거나 환불할 수 없어요 — 구매 환불은 스토어 정책을 따라요.</p></div>`;
+      <p class="sjnote">카르마는 쓰면 없어지는 소모성 재화예요. 이 기기에 저장되며, 앱을 지우면 남은 카르마도 사라질 수 있어요. 정보와 이용 기록은 현재 기기·브라우저에 저장돼요. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있어요. 카르마는 현금으로 바꾸거나 환불할 수 없어요 — 구매 환불은 스토어 정책을 따라요.</p></div>`;
   }
   function openHelp(back) {
     openOverlay('❓ 카르마가 뭔가요?', `<div class="kbal sm"><span>보유 카르마</span><b>✨ ${bal()}</b></div>` + helpHTML(),
@@ -282,7 +287,7 @@ const Karma = (() => {
       if (gotEvent(g.id)) return;
       const r = store.get(EKEY, {}); r[g.id] = Date.now(); store.set(EKEY, r);
       window.KREASON = `${g.e} ${g.n}`; window.KCAT = 'bonus'; karma += g.karma; saveMeta();
-      try { Auth.sync(); } catch (e) { } Store.notify(); metric('event_' + g.id); out.push(g.karma);
+      Store.notify(); metric('event_' + g.id); out.push(g.karma);
       setTimeout(() => Hub.toast(`${g.e} ${g.n} +${g.karma} · ${fmtD(g.until)}까지`), out.length > 1 ? 2600 : 0);
     });
     return out;

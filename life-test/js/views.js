@@ -41,7 +41,7 @@ const Views = (() => {
       store.set(OKEY, o); store.set('p8b_owned_mig', 1);
     } catch (e) { }
   })();
-  const ownedNote = '구매 기록은 이 기기에만 보관돼요. 앱 삭제 · 브라우저 데이터 삭제 · 기기 변경 시에는 다시 열 수 없어요 (로그인 동기화는 카르마 잔액만 옮겨요).';
+  const ownedNote = '구매 기록은 이 기기에만 보관돼요. 앱 삭제 · 브라우저 데이터 삭제 · 기기 변경 시에는 다시 열 수 없어요.';
 
   /* 오늘 상태: paid(오늘 결제했나) · used(오늘 본 횟수, 결제한 열람 포함) · freeLeft(남은 무료 다시보기) */
   function status(k, s, extraLegacy) {

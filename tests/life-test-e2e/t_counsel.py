@@ -43,7 +43,8 @@ async def main():
             if mth.strip() and mth.strip() in ex: bad.append((mth, blk))
     plan = re.search(r'4주차\n(.+?)\n', tp).group(1)
     ok('주의 달이 실행 권장 달에 없음', not bad, str(bad)+' caution='+caution)
-    ok('4주 계획 시작 달 ≠ 주의 달', all(m.strip() not in plan.split('에 맞춰요')[0] for m in caution.split('·')), plan)
+    runp = re.findall(r'(\S+)에 작은 규모로 시작', plan)
+    ok('4주 계획 실행 달 ≠ 주의 달', runp and all(m.strip() not in runp[0] for m in caution.split('·')), plan)
     # 6. 기준 연도 표시
     ok('2027년 기준 대운으로 표시(지금과 구분)', '2027년 기준으로는' in tc and '지금(2026년)' in tc)
     print('\n'.join(l for l in logs if 'PAGEERR' in l))
