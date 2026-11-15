@@ -84,7 +84,7 @@ function bindShopList(root, re) {
   root.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { if (document.getElementById('overlay').classList.contains('on')) closeOverlay(); Hub.go(b.dataset.go); });
   root.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => doBuy(b.dataset.buy, re));
 }
-async function restoreBuys(re) { const n = await Store.restore(); re && re(); Hub.toast(n > 0 ? `구매 ${n}건을 복원했어요` : n === 0 ? '복원할 구매 내역이 없어요 (카르마는 로그인 계정으로 복원돼요)' : Store.errText(Store.lastErr())); }
+async function restoreBuys(re) { const n = await Store.restore(); re && re(); Hub.toast(n > 0 ? `구매 ${n}건을 복원했어요` : n === 0 ? '복원할 구매 내역이 없어요 (카르마는 이 기기에만 저장돼 복원되지 않아요)' : Store.errText(Store.lastErr())); }
 function openShop(focus, full) {
   if (focus && !full && Store.item(focus)) return openProduct(focus);
   openOverlay('✨ 카르마 상점',

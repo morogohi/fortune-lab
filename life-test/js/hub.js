@@ -33,11 +33,11 @@ const Hub = (() => {
   function addRecord(r) { const l = store.get(RKEY, []); if (r.uniq && l.some(x => x.uniq === r.uniq)) return; l.unshift({ t: Date.now(), ...r }); store.set(RKEY, l.slice(0, 60)); }
   function openRecords() {
     const l = store.get(RKEY, []), sec = (k, t, n) => { const x = l.filter(r => r.k === k).slice(0, n); return x.length ? `<h4 class="rech">${t}</h4>${x.map(r => `<div class="recr"><b>${esc(r.title)}</b><small>${new Date(r.t).toLocaleDateString('ko-KR')} · ${esc(r.sub || '')}</small></div>`).join('')}` : ''; };
-    const mt = store.get('p8b_mbti_test', null), ch = store.get('p8b_counsel_hist', []), gh = store.get('p8b_hist', []), pp = people();
+    const me0 = getMe(), mt = me0 ? MbtiTest.get(me0) : null, ch = me0 && window.Counsel && Counsel.hist ? Counsel.hist(me0) : [], gh = store.get('p8b_hist', []), pp = people();
     const body = [
       sec('today', '🔮 오늘의 운세', 7), sec('tarot', '🃏 타로', 5),
       mt ? `<h4 class="rech">📝 MBTI 성향 검사</h4><div class="recr" data-go="mbtitest"><b>${mt.type.replace(/X/g, '·')}</b><small>${KST.at(mt.at).toLocaleDateString('ko-KR')} · 눌러서 자세히</small></div>` : '',
-      ch.length ? `<h4 class="rech">🤖 사주 상담</h4>${ch.slice(0, 5).map((x, i) => `<div class="recr" data-cs="${i}"><b>${esc(x.q || x.opts.join(' vs '))}</b><small>${new Date(x.t).toLocaleDateString('ko-KR')} · 추천: ${esc(x.pick)}</small></div>`).join('')}` : '',
+      ch.length ? `<h4 class="rech">🤖 사주 상담</h4>${ch.slice(0, 5).map((x, i) => `<div class="recr" data-cs="${i}"><b>${esc(x.q || x.opts.join(' vs '))}</b><small>${KST.fmt(x.t)}${x.Y ? ` · ${x.Y}년 기준` : ''} · ${x.v === 2 ? '현실 조건 우선' : '추천'}: ${esc(x.pick)}</small></div>`).join('')}` : '',
       pp.length ? `<h4 class="rech">💞 궁합 관계도</h4><div class="recr" data-go="compat"><b>${pp.length}명 등록</b><small>${pp.slice(0, 4).map(x => esc(x.name)).join(', ')}${pp.length > 4 ? ' …' : ''}</small></div>` : '',
       (() => { const sv = store.get('p8b_saves', {}), ks = ['auto', 's1', 's2', 's3'].filter(k => sv[k] && sv[k].meta); return ks.length ? `<h4 class="rech">💾 저장한 인생 (이어 하기)</h4>${ks.map(k => { const m = sv[k].meta; return `<div class="recr" data-sv="${k}"><b>${m.f} ${esc(m.name)} · ${m.age}살 (${m.st})</b><small>${k === 'auto' ? '자동 저장' : '슬롯 ' + k.slice(1)} · ${m.year}년${m.job ? ' · ' + esc(m.job) : ''} · 눌러서 이어 하기</small></div>`; }).join('')}` : ''; })(),
       gh.length ? `<h4 class="rech">🎲 인생 게임 (끝난 인생)</h4>${gh.slice(0, 5).map(h => `<div class="recr"><b>${h.f} ${esc(h.name)} · ${h.grade}등급</b><small>「${esc(h.title)}」 · 향년 ${h.age}세</small></div>`).join('')}` : '',
@@ -45,7 +45,7 @@ const Hub = (() => {
     openOverlay('📂 내 기록 보관함', (body || '<p class="sjtxt" style="text-align:center">아직 저장된 기록이 없어요.<br>오늘의 운세·타로·검사·상담을 해 보면 여기에 모여요.</p>') + '<p class="sjnote" style="text-align:center">운세·타로·검사·상담·궁합·인생 게임(끝난 인생과 저장한 진행 중 인생)이 모여요 · 기록은 이 기기에만 저장돼요</p>', [{ t: '닫기' }]);
     document.querySelectorAll('#osheet [data-go]').forEach(b => b.onclick = () => { closeOverlay(); go(b.dataset.go); });
     document.querySelectorAll('#osheet [data-sv]').forEach(b => b.onclick = () => { closeOverlay(); go('game'); setTimeout(() => Save.load(b.dataset.sv), 150); });
-    document.querySelectorAll('#osheet [data-cs]').forEach(b => b.onclick = () => { const x = ch[+b.dataset.cs]; openOverlay('🤖 지난 상담', x.html, [{ t: '기록으로', f: openRecords }]); });
+    document.querySelectorAll('#osheet [data-cs]').forEach(b => b.onclick = () => { const x = ch[+b.dataset.cs]; openOverlay('🤖 지난 상담', Counsel.pastHTML ? Counsel.pastHTML(x) : x.html, [{ t: '기록으로', f: openRecords }]); });
   }
   const MPOOL = [
     { k: 'today', e: '🔮', n: '오늘의 운세 보기', go: () => go('today') },
@@ -171,11 +171,10 @@ const Hub = (() => {
     document.querySelectorAll('[data-pdel]').forEach(b => b.onclick = () => { const l = profiles(); l.splice(+b.dataset.pdel, 1); store.set(PKEY, l); closeOverlay(true); openProfiles(); });
   }
 
-  /* ---------- ⚙️ 설정 · 👤 로그인 ---------- */
+  /* ---------- ⚙️ 설정 (로그인 없음 · 기기 내 저장 서비스) ---------- */
   function openSettings() {
-    const me = getMe(), u = Auth.user();
+    const me = getMe();
     openOverlay('⚙️ 설정', `<div class="sets">
-      <div class="setrow"><span>👤 계정</span><div>${u ? `<b>${esc(Auth.name())}</b> <small>${Auth.provider() === 'kakao' ? '카카오' : Auth.provider() === 'google' ? '구글' : ''} 로그인</small>` : '<small>로그인하지 않음</small>'}</div><button id="sAcc">${u ? '관리' : '로그인'}</button></div>
       <div class="setrow"><span>🙂 내 정보</span><div>${me ? `<b>${esc(me.name)}</b> <small>${pLine(me)}</small>` : '<small>입력 전</small>'}</div><button id="sMe">${me ? '바꾸기' : '입력'}</button></div>
       <div class="setrow col"><span>🎨 화면</span><div class="modeseg">${[['light', '라이트'], ['dark', '다크'], ['system', '휴대폰 설정']].map(([m, n]) => `<button data-smode="${m}" class="${Theme.mode() === m ? 'on' : ''}">${n}</button>`).join('')}</div></div>
       <div class="setrow"><span>🎵 배경음악</span><div></div><button class="tgl${Snd.on.bgm ? ' on' : ''}" id="sBgm" aria-label="배경음악"><i></i></button></div>
@@ -186,7 +185,6 @@ const Hub = (() => {
       <div class="setrow"><span>ℹ️ 앱 버전</span><div><b>${esc(appVer())}</b> <small>${Store.native ? '앱' : '웹'}</small></div><button id="sShop">상점</button></div>
       <div class="setrow"><span>🔒 개인정보</span><div><small>정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
     </div>`, [{ t: '닫기' }]);
-    $('#sAcc').onclick = () => { closeOverlay(true); u ? openAccount() : openLogin(); };
     $('#sMe').onclick = () => { closeOverlay(true); me ? openProfiles() : openItem('today'); };
     document.querySelectorAll('[data-smode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.smode); document.querySelectorAll('[data-smode]').forEach(x => x.classList.toggle('on', x === b)); render(); });
     $('#sBgm').onclick = e => { Snd.toggle('bgm'); e.currentTarget.classList.toggle('on', Snd.on.bgm); };
@@ -212,69 +210,10 @@ const Hub = (() => {
       { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
   }
   function openPrivacy() {
-    openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대는 <b>이 기기 안에만</b> 저장돼요. 로그인해도 서버로 보내지 않아요.</p>
-      <p>회원가입(카카오·구글 로그인)을 하면 서버에는 <b>암호화한 닉네임</b>·로그인 공급자·가입/접속 시각과 게임 기록 요약(카르마·인생 수·연 콘텐츠)만 저장돼요. 사주 정보는 로그인해도 보내지 않아요.</p></div>`,
+    openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>회원가입·로그인 없이 쓰는 서비스예요. 이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대, 상담·성향 검사 기록, 카르마·구매 기록, 게임 저장은 모두 <b>현재 기기·브라우저에만</b> 저장되고 개발자 서버로 보내지 않아요.</p>
+      <p>정보와 이용 기록은 현재 기기·브라우저에 저장됩니다. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있습니다.</p></div>`,
       [{ t: '🗑️ 내 정보·기록 지우기', f: openWipe }, { t: '📄 개인정보 처리방침', f: () => { location.href = 'privacy.html'; } }, { t: '닫기' }]);
   }
-  const KAKAO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>';
-  const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
-  function openLogin() {
-    const ok = Auth.ready(), nat = Auth.native();
-    openOverlay('👤 로그인 · 회원가입', `<div class="kbal sm" style="justify-content:center"><b>🎉 회원가입하면 카르마 +${(STORE_CONFIG.signupBonus || 0)}</b><small style="text-align:center">계정당 1번 · 카르마와 연 콘텐츠가 계정에 저장돼 다른 기기에서도 이어서 할 수 있어요</small></div>
-      <button class="sso kakao" id="lgKakao" ${ok && !nat ? '' : 'disabled'}>${KAKAO_SVG}<span>카카오 로그인</span></button>
-      <button class="sso google" id="lgGoogle" ${ok && !nat ? '' : 'disabled'}>${GOOGLE_SVG}<span>Google 계정으로 로그인</span></button>
-      ${!ok ? '<p class="sjnote" style="text-align:center">로그인 서버 연결을 준비하고 있어요. 곧 열려요!</p>' : nat ? '<p class="sjnote" style="text-align:center">앱 로그인은 다음 업데이트에서 지원해요. 지금은 웹에서 로그인할 수 있어요.</p>' : ''}
-      ${nat ? '' : `<details class="tlog"${window.P8B_COMMERCIAL ? ' open' : ''}><summary>🧪 테스트 계정으로 로그인</summary>
-        <input id="tlId" autocomplete="username" placeholder="아이디" maxlength="30"><input id="tlPw" type="password" autocomplete="current-password" placeholder="비밀번호" maxlength="40">
-        <div id="tlErr" class="cs-err"></div><button class="bigbtn wide" id="tlGo">테스트 계정 로그인</button>
-        <p class="sjnote">검수·시범 테스트 전용 계정이에요. 로그인하면 테스트 프로필과 모든 유료 콘텐츠가 열려요.${window.P8B_COMMERCIAL ? ' 이 테스트 페이지에서는 아이디 <b>1</b> · 비밀번호 <b>1</b>로도 로그인할 수 있어요.' : ''}</p></details>`}
-      <p class="sjnote" style="text-align:center">🔒 이름·생년월일·태어난 시간·성별·궁합 상대는 <b>서버로 보내지 않고</b> 이 기기에만 저장돼요.<br>가입할 때 받는 닉네임은 서버에서 <b>암호화</b>해 보관하고, 탈퇴하면 바로 지워요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
-    const tg = $('#tlGo'); if (tg) tg.onclick = async () => {
-      const r = await Auth.loginTest($('#tlId').value, $('#tlPw').value);
-      if (!r.ok) { $('#tlErr').textContent = r.error === 'id' ? '아이디를 확인해 주세요' : r.error === 'pw' ? '비밀번호가 맞지 않아요' : '이 환경에서는 테스트 로그인을 쓸 수 없어요'; Snd.sfx('bad'); return; }
-      setupTestAccount(r.first); if ($('#overlay').classList.contains('on')) closeOverlay(); Snd.sfx('fanfare');
-    };
-    const run = async p => { toast('로그인 화면으로 이동해요…'); const r = await Auth.login(p); if (r.error) toast(r.error === 'not-configured' ? '로그인 서버 준비 중이에요' : '로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요'); };
-    $('#lgKakao').onclick = () => run('kakao'); $('#lgGoogle').onclick = () => run('google');
-  }
-  /* 테스트 계정: 개인정보 운명연구소 · 유료 콘텐츠 전체 열람(Store) · 카르마 · 궁합 상대 예시 */
-  const TEST_ME = { name: '운명연구소', date: '1974-03-19', cal: 's', time: '', sex: 'm' };
-  function setupTestAccount(first) {
-    store.set('p8b_me', { ...TEST_ME }); rememberProfile(TEST_ME);
-    { const l = people(); l.forEach(x => { if (x.name === '테스트 상대') x.name = '예시 상대(테스트용)'; }); store.set('p8b_people', l); }
-    if (first) {
-      if (typeof karma !== 'undefined') { karma += 500; window.KREASON = '테스트 계정 지급'; saveMeta(); }
-      const list = people(); if (!list.some(x => /테스트 상대|예시 상대/.test(x.name))) { list.unshift({ name: '예시 상대(테스트용)', date: '1978-08-15', cal: 's', time: '', sex: 'f', rel: 'love' }); store.set('p8b_people', list.slice(0, 20)); }
-    }
-    toast(first ? '🧪 테스트 계정 · 운명연구소 프로필, 유료 콘텐츠 전체, 카르마 500 + 가입 보너스 ' + (STORE_CONFIG.signupBonus || 0) + '' : '🧪 테스트 계정으로 로그인했어요');
-    topbarUI(); if ($('#hub').classList.contains('on')) render();
-  }
-  function openAccount() {
-    const t = store.get('p8b_synced', 0);
-    openOverlay('👤 내 계정', `<div class="sets"><div class="setrow"><span>${Auth.provider() === 'kakao' ? '💬 카카오' : Auth.provider() === 'test' ? '🧪 테스트' : '🔵 구글'}</span><div><b>${esc(Auth.name())}</b></div></div>
-      <div class="setrow"><span>☁️ 동기화</span><div><small>카르마 ${karma} · ${t ? new Date(t).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 저장' : '아직 저장 전'}</small></div><button id="acSync">지금 저장</button></div></div>
-      <p class="sjnote">서버에는 계정 정보와 게임 기록 요약만 있어요. 생년월일 등은 이 기기에만 있어요.</p>`,
-      [{ t: '로그아웃', f: async () => { await Auth.logout(); toast('로그아웃했어요'); } },
-       { t: '회원 탈퇴', f: () => openOverlay('회원 탈퇴', '<p class="sjtxt">서버에 저장된 계정과 게임 기록이 모두 삭제돼요. 이 기기의 정보는 그대로 남아요.</p>',
-           [{ t: '탈퇴하기', pri: 1, f: async () => toast(await Auth.deleteAccount() ? '탈퇴가 완료됐어요' : '탈퇴하지 못했어요. 문의: support.um09@gmail.com') }, { t: '취소' }]) },
-       { t: '닫기' }]);
-    $('#acSync').onclick = async () => { await Auth.sync(); toast('저장했어요'); closeOverlay(true); openAccount(); };
-  }
-  function topbarUI() {
-    const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
-    const pv = Auth.provider();
-    if (u) {
-      const av = Auth.avatar();
-      b.className = 'auth in' + (pv ? ' ' + pv : '');
-      b.innerHTML = `<span class="aav">${av ? `<img src="${esc(av)}" alt="" referrerpolicy="no-referrer">` : esc(Auth.name().slice(0, 1))}<i class="adot"></i></span><span class="alab">${esc(Auth.name().slice(0, 5))}</span>`;
-      b.title = `${Auth.name()} · ${pv === 'kakao' ? '카카오' : pv === 'google' ? '구글' : pv === 'test' ? '테스트 계정' : ''} 로그인됨`; b.setAttribute('aria-label', b.title);
-    } else {
-      b.className = 'auth out';
-      b.innerHTML = '<span class="aav">👤</span><span class="alab">로그인</span>';
-      b.title = '로그인하지 않음 · 눌러서 로그인'; b.setAttribute('aria-label', b.title);
-    }
-  }
-
   /* ---------- 홈: 서비스 목록 → 항목 선택 → (정보 없으면) 단계별 입력 → 결과 ---------- */
   let pending = null;          // 정보 입력 후 이어서 열 항목
   const ITEMS = [
@@ -368,9 +307,9 @@ const Hub = (() => {
         ? `<button class="hme" id="hmMe"><span class="ddi" title="${a.ddi}띠">${DDI_E[a.p.y.b]}</span><div><b>${esc(p.name)}님 <em class="ddit">${a.ddi}띠</em></b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
       ${karmaCardHTML()}
-      <button class="hhero" data-item="today"><div class="hh-top"><small>오늘의 운세</small>${(() => { const st = store.get(DTK, {}), done = p && dtToday(st) && st.k === p.date && st.i != null;
-          return `<span class="hh-tarot${done ? ' done' : ''}" id="hhTarot" role="button" aria-label="${done ? '오늘 뽑은 타로 카드 보기' : '무료 타로 카드 뽑기'}"><i>🃏</i>${done ? '오늘 타로' : '무료 타로'}</span>`; })()}<em class="hgo">시작하기 ›</em></div>
-        <div class="hh-mid"><div><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span></div><i>☀️</i></div></button>
+      <div class="hhero"><button type="button" class="hh-main" data-item="today" aria-label="오늘의 운세 시작하기${f ? ` · ${f.sc[0]}점 ${f.grade}` : ''}"></button><div class="hh-top"><small>오늘의 운세</small>${(() => { const st = store.get(DTK, {}), done = p && dtToday(st) && st.k === p.date && st.i != null;
+          return `<button type="button" class="hh-tarot${done ? ' done' : ''}" id="hhTarot" aria-label="${done ? '오늘 뽑은 타로 카드 보기' : '무료 타로 카드 뽑기'}"><i>🃏</i>${done ? '오늘 타로' : '무료 타로'}</button>`; })()}<em class="hgo" aria-hidden="true">시작하기 ›</em></div>
+        <div class="hh-mid" aria-hidden="true"><div><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span></div><i>☀️</i></div></div>
       ${sec('사주 · 운세', 'saju')}
       ${sec('궁합 · 관계', 'rel')}
       ${sec('인생 게임', 'game')}
@@ -381,7 +320,13 @@ const Hub = (() => {
   }
   function bindHome() {
     document.querySelectorAll('[data-item]').forEach(b => b.onclick = () => openItem(b.dataset.item));
-    const ht = $('#hhTarot'); if (ht) ht.onclick = e => { e.stopPropagation(); openItem('today'); setTimeout(() => { const x = $('#hDTbox'); if (x) x.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 250); };
+    // 무료 타로: 오늘의 운세 버튼과 형제 버튼(중첩 아님) — 오늘의 운세를 열지 않고 매일 타로만 창으로 엶 (내 정보가 없으면 입력부터)
+    const ht = $('#hhTarot'); if (ht) ht.onclick = e => {
+      e.stopPropagation(); Snd.sfx('tap'); const me = getMe();
+      if (!me || !analyzeP(me)) { openItem('today'); return; }
+      openOverlay('🃏 오늘의 무료 타로', `<div id="hDTbox" class="hdt-ov">${dailyTarotHTML(me)}</div>`, [{ t: '닫기', f: () => render() }]);
+      bindDailyTarot(me);
+    };
     const me = $('#hmMe'); if (me) me.onclick = openProfiles;
     bindKarmaCard();
     const v = $('#hVer'); if (v) v.onclick = () => toast(`운명 연구소 · 프로젝트 80억 ${appVer()} (${Store.native ? '앱' : '웹'})`);
@@ -507,7 +452,7 @@ const Hub = (() => {
     const re = () => { box.innerHTML = dailyTarotHTML(p); bindDailyTarot(p); };
     const sh = $('#hDTshuf'); if (sh) sh.onclick = () => { const q = $('#hDTq'); dtQ = q ? q.value.trim() : ''; dtPhase = 'shuffle'; Snd.sfx('tap'); re(); setTimeout(() => { if (dtPhase === 'shuffle') { dtPhase = 'pick'; re(); } }, window.__fastTarot ? 50 : 1600); };
     document.querySelectorAll('#hDTrow .hdt-pc').forEach(b => b.onclick = () => { store.set(DTK, { d: dtDay(), k: p.date, i: +b.dataset.i, q: dtQ }); dtPhase = 'intro'; Snd.sfx('reveal'); mission('tarot'); try { Karma.metric('daily_tarot'); } catch (e) { } re(); box.scrollIntoView({ block: 'start' }); });
-    const dm = $('#hDTmore'); if (dm) dm.onclick = () => go('tarot');
+    const dm = $('#hDTmore'); if (dm) dm.onclick = () => { if ($('#overlay').classList.contains('on')) closeOverlay(); go('tarot'); };
   }
   function todayHTML(p, a) {
     const f = Fortune.today(a, keyOf(p));
@@ -572,7 +517,7 @@ const Hub = (() => {
   function tarotCtx(p, a) {
     if (!a) return null;
     try {
-      const mt = store.get('p8b_mbti_test', null), mbti = (mt && MbtiTest.settled(mt)) || (store.get('p8b_mbti', {})[p.date + p.name]) || (Fun.mbti(a) || {}).type || '';
+      const mt = MbtiTest.get(p), mbti = (mt && MbtiTest.settled(mt)) || (store.get('p8b_mbti', {})[p.date + p.name]) || (Fun.mbti(a) || {}).type || '';
       const partners = people().filter(x => !x.rel || x.rel === 'love').map(x => ({ name: x.name, a: analyzeP(x) })).filter(x => x.a);
       return { a, p, age: KST.year() - +String(p.date).slice(0, 4), mbti: typeof mbti === 'string' ? mbti : '', partners };
     } catch (e) { return null; }
@@ -667,7 +612,7 @@ const Hub = (() => {
   /* ---------- MBTI 성향 검사 (설문 · 독립 화면) ---------- */
   let mtAns = null, mtPage = 0;
   function mbtiTestHTML(p, a) {
-    const res = store.get('p8b_mbti_test', null);
+    const res = p ? MbtiTest.get(p) : null;   // 이 프로필의 검사 결과만
     if (res && !mtAns) {
       const bal = res.ax.filter(x => x.pick === 'X').length, set = MbtiTest.settled(res);
       const info = set ? (Fun.MBTI[set] || ['', '']) : null, sm = a ? Fun.mbti(a) : null;
@@ -687,7 +632,7 @@ const Hub = (() => {
            <p class="sjtxt">${same === dec.length && dec.length >= 3 ? '타고난 기질과 지금의 모습이 비슷한 편으로 보여요. 다만 설문 한 번과 사주 해석은 모두 참고용이니, 맞는 부분만 가볍게 받아들이세요.'
              : same * 2 >= dec.length ? '타고난 기질과 살아오며 만든 모습이 섞여 있는 것으로 보여요. 어느 쪽이 더 나다운지는 스스로 느끼는 게 가장 정확해요.'
              : '사주로 본 기질과 지금의 모습이 꽤 달라 보여요. 환경과 경험이 성향을 많이 바꿨을 수 있어요. 어느 쪽도 틀린 것은 아니에요.'}</p>`;
-      return `<div class="hhead"><small>${KST.fmt(res.at)} 검사 결과 · 이 기기에만 저장돼요</small><h2>MBTI 성향 검사</h2></div>
+      return `<div class="hhead"><small>${esc(p.name)}님 · ${KST.fmt(res.at)} 검사 결과 · 이 기기에만 저장돼요</small><h2>MBTI 성향 검사</h2></div>
         <div class="hcard">${head}</div>
         <div class="hcard"><h3 class="ht">성향 비율</h3>${res.ax.map(x => `<div class="maxr"><span class="${x.pick === x.x ? 'on' : ''}">${x.x} ${x.xn}<br>${x.p}%</span><div class="tjbar"><i style="width:${x.p}%"></i></div><span class="${x.pick === x.y ? 'on' : ''}">${x.y} ${x.yn}<br>${100 - x.p}%</span></div>`).join('')}
           <p class="sjnote">45~55%인 축은 한쪽으로 정하지 않고 ‘·’(균형)으로 표시해요. 이런 축은 상황에 따라 양쪽을 오가는 편이에요.</p></div>
@@ -698,7 +643,7 @@ const Hub = (() => {
     }
     const A = mtAns || [], n = A.filter(v => v != null).length, N = MbtiTest.Q.length, PER = 6, pages = Math.ceil(N / PER);
     const pg = Math.min(mtPage, pages - 1), idx = MbtiTest.ORDER.slice(pg * PER, pg * PER + PER), pageDone = idx.every(i => A[i] != null);
-    return `<div class="hhead"><small>정답은 없어요 · 평소의 나에 가깝게 골라 주세요</small><h2>MBTI 성향 검사</h2></div>
+    return `<div class="hhead"><small>정답은 없어요 · 평소의 나에 가깝게 골라 주세요${p && !n && MbtiTest.legacy() ? ' · 예전 검사 기록 1건은 어느 프로필의 결과인지 확인되지 않아 분석에 쓰지 않고 보관 중이에요' : ''}</small><h2>MBTI 성향 검사</h2></div>
       <div class="mprog"><div class="tjbar"><i style="width:${n / N * 100}%"></i></div><small class="hnote">${pg + 1} / ${pages} 페이지 · ${n} / ${N} 문항</small></div>
       <div class="hcard">${idx.map((i, j) => { const q = MbtiTest.Q[i]; return `<div class="mq" id="mq${i}"><p><b>${pg * PER + j + 1}.</b>${q[2]}</p><div class="sc">${MbtiTest.SCALE.map(([t, v]) => `<button data-q="${i}" data-v="${v}" class="${A[i] === v ? 'on' : ''}">${t}</button>`).join('')}</div></div>`; }).join('')}</div>
       <p class="sjnote" style="text-align:center">‘보통’만 고르면 성향이 드러나지 않아요. 조금이라도 기우는 쪽을 골라 주세요.</p>
@@ -710,7 +655,7 @@ const Hub = (() => {
     const ag = $('#mtAgain'); if (ag) ag.onclick = () => { mtAns = Array(MbtiTest.Q.length).fill(null); mtPage = 0; render(); };
     const sj = $('#mtSaju'); if (sj) sj.onclick = () => Fun.openMbti(0);
     const mi = $('#mtIn'); if (mi) mi.onclick = () => { pending = 'mbtitest'; tab = 'input'; render(); };
-    if (!mtAns && store.get('p8b_mbti_test', null)) return;
+    if (!mtAns && p && MbtiTest.get(p)) return;
     if (!mtAns) { mtAns = Array(MbtiTest.Q.length).fill(null); mtPage = 0; }
     const N = mtAns.length, PER = 6;
     const refresh = () => {
@@ -730,8 +675,11 @@ const Hub = (() => {
     const pv = $('#mtPrev'); if (pv) pv.onclick = () => { mtPage--; Snd.sfx('tap'); render(); };
     const dn = $('#mtDone'); if (dn) dn.onclick = () => {
       if (mtAns.some(v => v == null)) return;
-      const res = MbtiTest.score(mtAns); store.set('p8b_mbti_test', res); mtAns = null; mtPage = 0;
-      const me = getMe(), set = MbtiTest.settled(res);
+      const me = getMe(), res = MbtiTest.score(mtAns);
+      if (!me) { toast('검사 결과는 프로필별로 저장돼요. 내 정보를 먼저 입력해 주세요'); pending = 'mbtitest'; tab = 'input'; render(); return; }
+      if (!MbtiTest.put(me, res)) { toast('결과를 저장하지 못했어요. 저장 공간을 확인한 뒤 다시 시도해 주세요'); return; }   // 저장 실패를 성공으로 표시하지 않음
+      mtAns = null; mtPage = 0;
+      const set = MbtiTest.settled(res);
       if (me) { const s = store.get('p8b_mbti', {}); if (set) s[me.date + me.name] = set; else delete s[me.date + me.name]; store.set('p8b_mbti', s); }
       Snd.sfx('fanfare'); render(); mission('mbtitest');
     };
@@ -1023,7 +971,7 @@ const Hub = (() => {
     paintIcons();
     // 기존 화면 전환에 하단 탭 표시와 미션 체크를 연결
     const base = show;
-    show = function (id) { base(id); if (id === 'end') { mission('game'); Auth.sync(); } syncTabs(); const h = $('#homeTop'); if (h) h.hidden = id === 'hub'; };
+    show = function (id) { base(id); if (id === 'end') { mission('game'); } syncTabs(); const h = $('#homeTop'); if (h) h.hidden = id === 'hub'; };
     // 인생 게임의 어느 화면에서든 앱 홈으로: 진행 중인 인생은 저장하고 나가기 확인
     $('#homeTop').onclick = () => {
       Snd.sfx('tap');
@@ -1038,12 +986,9 @@ const Hub = (() => {
     Store.onChange(() => { if ($('#hub').classList.contains('on')) render(); });
     hookHistory();
     $('#setBtn').onclick = () => { Snd.sfx('tap'); openSettings(); };
-    $('#loginBtn').onclick = () => { Snd.sfx('tap'); Auth.user() ? openAccount() : openLogin(); };
-    let wasIn = !!Auth.user();
-    Auth.on(u => { topbarUI(); if ($('#hub').classList.contains('on') && !$('#overlay').classList.contains('on')) render(); if (u && !wasIn) { if ($('#lgKakao') && $('#overlay').classList.contains('on')) closeOverlay(); toast(`👋 ${Auth.name()}님, 로그인했어요`); } wasIn = !!u; }); topbarUI();
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openLogin };
+  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register };
 })();
 Hub.init();
