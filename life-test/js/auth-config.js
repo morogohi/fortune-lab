@@ -3,7 +3,7 @@
  * service_role 키·카카오/구글 Client Secret은 절대 여기에 넣지 마세요 (Supabase 대시보드에만 입력).
  * 비어 있으면 로그인 버튼은 '준비 중'으로 보이고, 나머지 기능은 그대로 동작합니다. */
 window.AUTH_CONFIG = {
-  supabaseUrl: '',        // 예: 'https://abcdefghijkl.supabase.co'
-  supabaseAnonKey: '',    // 예: 'eyJhbGciOiJIUzI1NiIs...' 또는 'sb_publishable_...'
+  supabaseUrl: 'https://ewgtqpfvmvsytcqtjofi.supabase.co',
+  supabaseAnonKey: 'sb_publishable_dQn_jSg2H5paFeLj69ODRQ_ShVfMbmg',   // 공개용(publishable) 키
   providers: ['kakao', 'google'],
 };
