@@ -9,11 +9,13 @@
  * ===================================================================== */
 (function () {
   const OFF = 9 * 60;   // 한국은 서머타임 없음
-  const nowMs = () => (typeof window.__kstNow === 'number' ? window.__kstNow : Date.now());   // 테스트용 고정 시각
+  // 테스트 모드 가상 날짜: 테스트 도구 「다음 날로」가 하루씩 앞당김 (실제 서비스 모드에서는 Karma 가 0으로 되돌림)
+  const off = () => { if (window.P8B_MODE !== 'commercial' && !window.__kstTestOK) return 0; try { const v = +JSON.parse(localStorage.getItem('p8b_test_dayoff') || '0'); return Number.isFinite(v) ? v : 0; } catch (e) { return 0; } };
+  const nowMs = () => (typeof window.__kstNow === 'number' ? window.__kstNow : Date.now()) + off() * 864e5;
   const shift = t => { const d = new Date(t); return new Date(t + (OFF + d.getTimezoneOffset()) * 60000); };
   const pad = n => String(n).padStart(2, '0');
   const KST = {
-    nowMs,
+    nowMs, offsetDays: off,
     now: () => shift(nowMs()),
     at: t => shift(t),
     ymd: (t = nowMs()) => { const d = shift(t); return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`; },

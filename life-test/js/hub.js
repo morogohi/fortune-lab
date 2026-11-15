@@ -58,6 +58,12 @@ const Hub = (() => {
   ];
   // 날마다 4개: 오늘의 운세 + 타로 + (궁합·사주·신년·검사 중 하루 1개 순환) + 인생 게임(선택)
   const MISSIONS_FOR = d => { const rot = ['compat', 'saju', 'newyear', 'mbtitest'], n = +String(d).replace(/\D/g, '') || 0; return ['today', 'tarot', rot[n % rot.length], 'game'].map(k => MPOOL.find(m => m.k === k)); };
+  // 테스트 도구용 오늘 상태 요약
+  function dailyState() {
+    const d = daily(), st = store.get('p8b_streak', { n: 0, last: '' }), p = getMe(), dt = store.get(DTK, {});
+    return { day: day(), off: KST.offsetDays(), att: d.att, streak: st.n || 0, ms: MISSIONS_FOR(day()).map(m => [m.k, !!d.ms[m.k]]), shared: !!d.shared, earned: d.earned, cap: DAILY_CAP, pouch: pouch(),
+      tarot: !!(p && dtToday(dt) && dt.k === p.date && dt.i != null), counselFree: !store.get('p8b_counsel_free', 0) };
+  }
   const MISSIONS = { map: f => MISSIONS_FOR(day()).map(f), find: f => MPOOL.find(f), some: f => MISSIONS_FOR(day()).some(f), filter: f => MISSIONS_FOR(day()).filter(f), get length() { return 4; } };
   function daily() {
     const d = store.get('p8b_daily', null);
@@ -69,6 +75,7 @@ const Hub = (() => {
     if (capped) { n = Math.max(0, Math.min(n, DAILY_CAP - d.earned)); d.earned += n; }
     store.set('p8b_daily', d);
     if (n > 0) { store.set('p8b_pouch', pouch() + n); toast(`🧧 ${why} · 복주머니 +${n}`); Snd.sfx('coin'); }
+    else if (capped) toast(`🧧 ${why} · 오늘 받을 수 있는 복주머니(${DAILY_CAP}개)를 다 받았어요`);
     return n;
   }
   function attend() {
@@ -361,7 +368,7 @@ const Hub = (() => {
         ? `<button class="hme" id="hmMe"><span class="ddi" title="${a.ddi}띠">${DDI_E[a.p.y.b]}</span><div><b>${esc(p.name)}님 <em class="ddit">${a.ddi}띠</em></b><small>${pLine(p)}</small></div><em>${ICONS.ic('chev')}</em></button>`
         : `<button class="hme cta" data-item="today"><span>🎂</span><div><b>생년월일을 입력하고 시작해요</b><small>한 번 입력하면 모든 운세·사주·궁합에 쓰여요 · 가입 없음</small></div><em>${ICONS.ic('chev')}</em></button>`}
       ${karmaCardHTML()}
-      <button class="hhero" data-item="today"><div class="hh-top"><small>오늘의 운세</small>${(() => { const st = store.get(DTK, {}), done = p && st.d === dtDay() && st.k === p.date && st.i != null;
+      <button class="hhero" data-item="today"><div class="hh-top"><small>오늘의 운세</small>${(() => { const st = store.get(DTK, {}), done = p && dtToday(st) && st.k === p.date && st.i != null;
           return `<span class="hh-tarot${done ? ' done' : ''}" id="hhTarot" role="button" aria-label="${done ? '오늘 뽑은 타로 카드 보기' : '무료 타로 카드 뽑기'}"><i>🃏</i>${done ? '오늘 타로' : '무료 타로'}</span>`; })()}<em class="hgo">시작하기 ›</em></div>
         <div class="hh-mid"><div><b>${f ? `${f.sc[0]}점 · ${f.grade}` : '내 하루 미리 보기'}</b><span>${f ? f.lines[0] : '생년월일로 보는 오늘의 총운과 분야별 운세'}</span></div><i>☀️</i></div></button>
       ${sec('사주 · 운세', 'saju')}
@@ -425,9 +432,11 @@ const Hub = (() => {
   /* ---------- 오늘 ---------- */
   /* ---------- 🃏 매일 타로 1장 (무료) : 날짜·사람마다 같은 카드, 하루 한 번 뒤집기 ---------- */
   const DTK = 'p8b_dtarot';
-  const dtDay = () => { const d = KST.now(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };
+  const dtDay = () => KST.ymd();
+  const dtOld = () => { const d = KST.now(); return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`; };   // 예전 키 형식
+  const dtToday = st => st && (st.d === dtDay() || st.d === dtOld());
   let dtPhase = 'intro', dtQ = '';
-  const dtSeed = p => { let h = 2166136261; for (const ch of dtDay() + '|' + p.date + '|' + (p.time || '') + '|' + p.name) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
+  const dtSeed = p => { let h = 2166136261; for (const ch of dtOld() + '|' + p.date + '|' + (p.time || '') + '|' + p.name) { h ^= ch.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; } return h; };
   const DT_N = 7;   // 펼쳐 놓는 카드 수
   function dailyCard(p, i) {
     const h = dtSeed(p), D = Tarot.DECK, k = (h + (i + 1) * 2654435761) >>> 0;
@@ -440,7 +449,7 @@ const Hub = (() => {
     ['밀어붙이던 일이 진척을 보여요. 제안·발표는 오늘 하면 좋아요.', '하던 일을 꾸준히 이어 가는 날이에요. 새 일보다 마무리에 집중하세요.', '실수가 나오기 쉬워요. 보내기 전에 한 번 더 확인하고, 결정은 내일로 미뤄도 돼요.'],
     ['작은 이익이 생기는 흐름이에요. 미뤄 둔 정산·환급을 챙겨 보세요.', '들어오고 나가는 돈이 비슷한 날이에요. 계획한 지출만 하세요.', '충동구매·분실을 조심하세요. 결제 전에 장바구니에서 하루 묵혀 보세요.']];
   function dailyTarotHTML(p) {
-    const st = store.get(DTK, {}), done = st.d === dtDay() && st.k === p.date && st.i != null;
+    const st = store.get(DTK, {}), done = dtToday(st) && st.k === p.date && st.i != null;
     const head = `<span class="vfreetag">매일 무료</span><h3 class="ht">🃏 오늘의 타로 한 장</h3>`;
     if (!done && dtPhase === 'shuffle') return `<div class="hcard hdt">${head}<p class="tguide">${dtQ ? `「${esc(dtQ)}」<br>` : ''}질문을 마음에 담고 카드를 섞고 있어요…</p>
       <div class="tshuf hdt-shuf">${Array.from({ length: 8 }, (_, k) => `<span class="sc${k % 2 ? ' r' : ' l'}" style="--k:${k}">${Tarot.TBACK}</span>`).join('')}</div></div>`;
@@ -497,7 +506,7 @@ const Hub = (() => {
     const box = $('#hDTbox'); if (!box) return;
     const re = () => { box.innerHTML = dailyTarotHTML(p); bindDailyTarot(p); };
     const sh = $('#hDTshuf'); if (sh) sh.onclick = () => { const q = $('#hDTq'); dtQ = q ? q.value.trim() : ''; dtPhase = 'shuffle'; Snd.sfx('tap'); re(); setTimeout(() => { if (dtPhase === 'shuffle') { dtPhase = 'pick'; re(); } }, window.__fastTarot ? 50 : 1600); };
-    document.querySelectorAll('#hDTrow .hdt-pc').forEach(b => b.onclick = () => { store.set(DTK, { d: dtDay(), k: p.date, i: +b.dataset.i, q: dtQ }); dtPhase = 'intro'; Snd.sfx('reveal'); try { Karma.metric('daily_tarot'); } catch (e) { } re(); box.scrollIntoView({ block: 'start' }); });
+    document.querySelectorAll('#hDTrow .hdt-pc').forEach(b => b.onclick = () => { store.set(DTK, { d: dtDay(), k: p.date, i: +b.dataset.i, q: dtQ }); dtPhase = 'intro'; Snd.sfx('reveal'); mission('tarot'); try { Karma.metric('daily_tarot'); } catch (e) { } re(); box.scrollIntoView({ block: 'start' }); });
     const dm = $('#hDTmore'); if (dm) dm.onclick = () => go('tarot');
   }
   function todayHTML(p, a) {
@@ -1035,6 +1044,6 @@ const Hub = (() => {
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { cur: () => tab, init, go, render, mission, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openLogin };
+  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openLogin };
 })();
 Hub.init();
