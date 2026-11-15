@@ -8,9 +8,15 @@ function openOverlay(title, html, btns = [{ t: '닫기' }]) {
   const o = document.getElementById('overlay'), sh = document.getElementById('osheet');
   sh.innerHTML = `<button class="mclose" aria-label="닫기">✕</button><h3>${title}</h3>${html}`;
   sh.firstChild.onclick = () => { Snd.sfx('tap'); const c = btns.find(b => /^(닫기|취소|계속 하기)$/.test(b.t)); closeOverlay(); c && c.f && c.f(); };
+  // 한 번 띄운 창의 버튼은 한 번만 처리 (빠른 연속 클릭으로 결제·차감이 두 번 되지 않게) — keep 버튼은 창을 닫지 않으므로 0.8초 간격 제한만
+  let fired = false, last = 0;
   btns.forEach(b => {
     const el = document.createElement('button'); el.className = 'obtn' + (b.pri ? ' pri' : ''); el.innerHTML = b.t;
-    el.onclick = () => { Snd.sfx('tap'); if (!b.keep) closeOverlay(); b.f && b.f(); };
+    el.onclick = () => {
+      if (fired || Date.now() - last < 800) return;
+      last = Date.now(); if (!b.keep) fired = true;
+      Snd.sfx('tap'); if (!b.keep) closeOverlay(); b.f && b.f();
+    };
     sh.appendChild(el);
   });
   o.classList.add('on'); sh.scrollTop = 0;
@@ -96,7 +102,7 @@ function reportHTML(name, a, age) {
   return `${Saju.summaryHTML(a)}
     <div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
     <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
-    <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div>
+    <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${Saju.gaeun(a).dmLine} ${Saju.gaeun(a).fillLine} ${Saju.gaeun(a).note}</p></div>
     <p class="sjnote" style="text-align:center">📜 사주풀이는 무료예요 · 2027 운세·12개월·대운은 신년운세 상세에서 볼 수 있어요.<br>※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
 }
 function showReport(name, a, age, fromGame) {

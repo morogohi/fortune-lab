@@ -500,7 +500,7 @@ const Hub = (() => {
       <div class="hcard"><h3 class="ht">👥 오늘의 사람운</h3><div class="cm one"><div class="cm-row hi"><b>잘 맞는 띠</b><span>${good.join(' · ')}띠 — 도움을 주고받기 좋아요</span></div><div class="cm-row lo"><b>조심할 띠</b><span>${bad}띠 — 의견이 부딪히기 쉬워요. 말은 부드럽게</span></div>${ppl}</div>
         ${ppl ? '' : '<p class="sjnote">궁합에 사람을 등록하면 그 사람과의 오늘 기운도 보여 드려요.</p>'}</div>
       <div class="hcard"><h3 class="ht">📅 이번 주 흐름</h3><div class="cm">${week}</div><p class="sjnote">점수가 높은 날에 중요한 약속·결정을 맞춰 보세요.</p></div>
-      <div class="hcard"><h3 class="ht">${G[0]} 오늘의 개운 습관</h3><p class="sjtxt">부족한 <b>${S.EK[a.weak]}</b> 기운을 채우는 하루 — 🍽️ <b>${G[1]}</b> · 🚶 <b>${G[2]}</b></p></div>`;
+      <div class="hcard"><h3 class="ht">${G[0]} 오늘의 개운 습관</h3><p class="sjtxt">겉으로 드러나지 않는 <b>${S.EK[a.weak]}</b> 기운을 전통적으로 상징하는 것 — 🍽️ <b>${G[1]}</b> · 🚶 <b>${G[2]}</b></p><p class="sjnote">운세가 좋아진다는 뜻이 아니라, 하루 생활을 돌아보는 참고예요.</p></div>`;
   }
   function bindDailyTarot(p) {
     const box = $('#hDTbox'); if (!box) return;
@@ -813,7 +813,7 @@ const Hub = (() => {
       ${L ? `<div class="sjnow">${L.e} 지금 대운 (${L.start}세~) <b>${L.name}</b><br><span>${L.desc}</span></div>` : ''}
       <div class="hcard"><h3 class="ht">📜 사주풀이 <em class="vch free">무료</em></h3><div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
         <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
-        <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${a.dm.개운}</p></div></div>
+        <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${Saju.gaeun(a).dmLine} ${Saju.gaeun(a).fillLine} ${Saju.gaeun(a).note}</p></div></div>
       <div class="hmenu one">
         <button id="hPdf" class="${PdfReport.ready() ? '' : 'pdf-off'}"><span>📑</span><div><b>종합 사주 리포트 PDF</b><small>모든 풀이를 주제별·월별로 묶어 한 권으로 · ✨ ${Views.item('pdf').k}</small></div></button>
         ${PdfReport.noteHTML()}

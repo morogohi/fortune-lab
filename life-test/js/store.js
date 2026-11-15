@@ -167,16 +167,26 @@ window.Store = (() => {
     return '결제를 마치지 못했어요. 잠시 후 다시 시도해 주세요.';
   }
   /* 구매: 성공하면 onDone(true) */
+  // 결제: 진행 중에는 다시 시작하지 않고(이중 결제 방지), 같은 거래 번호는 한 번만 지급 (재시도·중복 콜백 대비)
+  let paying = false;
+  const TXK = 'p8b_txn_done';
+  const txDone = () => { try { const v = JSON.parse(localStorage.getItem(TXK) || '[]'); return Array.isArray(v) ? v : []; } catch (e) { return []; } };
   async function buy(k, onDone) {
     const p = CFG.products[k];
     if (!native || !NP) { onDone && onDone(false, 'web'); return; }
+    if (paying) { onDone && onDone(false, 'busy cancel'); return; }   // 결제 창이 떠 있는 동안 다시 누르면 무시
+    paying = true;
     try {
       const t = await NP.purchaseProduct({ productIdentifier: p.id, productType: 'inapp', isConsumable: !!p.consumable, quantity: 1 });
       if (!t) throw new Error('no transaction');
+      const tid = t.transactionId || t.purchaseToken || t.orderId || null, L = txDone();
+      if (tid && L.includes(tid)) { onDone && onDone(false, 'already processed cancel'); return; }
+      if (tid) { L.push(tid); try { localStorage.setItem(TXK, JSON.stringify(L.slice(-100))); } catch (e) { } }
       if (!p.consumable) { owned[k] = true; save(); }
       if (p.passDays) addPass(p.passDays * 864e5);
       fire(); onDone && onDone(true);
     } catch (e) { onDone && onDone(false, String(e && (e.code || '') + ' ' + (e.message || '') || e)); }
+    finally { paying = false; }
   }
   return { native, errText, lastErr: () => lastErr, init, has, why, buy, restore, price, newYear, grant, unlock, isKarmaItem, notify: fire, packs: () => Object.keys(CFG.products).filter(k => CFG.products[k].karma), contents: () => Object.keys(CFG.products).filter(k => CFG.products[k].k && !CFG.products[k].legacy), ownedReal, addPass, passUntil, passOn, onChange: f => subs.add(f), list: () => Object.keys(CFG.products), item: k => CFG.products[al(k)], info: k => { k = al(k); return (CFG.products[k] && CFG.products[k].info) || CFG.info[k] || []; } };
 })();

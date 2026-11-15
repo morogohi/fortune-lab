@@ -4,11 +4,11 @@ window.Saju = (() => {
   const GRPN = ['독립·경쟁운', '재능·표현운', '재물운', '승진·명예운', '학업·귀인운'];
   const GRPE = ['🔥', '🎨', '💰', '👔', '📚'];
   const GRPDESC = [
-    '내 힘으로 개척하는 시기. 창업·독립이 유리하지만 경쟁도 치열해요.',
-    '재능이 터지는 시기. 취미·예술·콘텐츠가 빛나요.',
-    '돈이 움직이는 시기. 투자·사업 성과가 좋아요.',
-    '책임과 명예의 시기. 승진·합격 운이 강해요.',
-    '배움과 귀인의 시기. 공부·자격증·도움받을 일이 생겨요.',
+    '내 힘으로 개척하려는 마음이 커지는 시기로 해석해요. 독립·창업 같은 선택에 관심이 커지지만 경쟁과 책임도 함께 커져요.',
+    '재능과 표현이 드러나기 쉬운 시기로 해석해요. 취미·예술·콘텐츠처럼 내 것을 보여 주는 일에 관심이 커져요.',
+    '돈과 실리를 다루는 일에 관심이 커지는 시기로 해석해요. 투자·사업은 기대만큼 조건과 위험을 꼼꼼히 따져 보는 것이 중요해요.',
+    '책임과 평가가 커지는 시기로 해석해요. 승진·시험처럼 평가받는 일에 기회와 부담이 함께 와요.',
+    '배움과 도움이 들어오기 쉬운 시기로 해석해요. 공부·자격증이나 조언을 구하는 일에 힘이 실리기 쉬워요.',
   ];
   // 연령대별 대운 풀이: 어린이(0~12) · 청소년(13~19) · 성인(20~64) · 노년(65~)
   const GRPDESC_AGE = {
@@ -82,6 +82,47 @@ window.Saju = (() => {
       ELSUB[i].forEach(k => P.sub[k] = Math.max(0, Math.min(100, P.sub[k] + Math.max(0, n - 1) * 4)));
     });
     if (a.dom === 1) P.art = true;
+  }
+
+  /* ---------- 기준 연도 · 나이 · 대운 (공통) ----------
+   * 대운 표의 시작 나이(d.age)는 세는나이, 시작 연도(d.yr)는 그 대운이 시작되는 해(만세력 라이브러리).
+   * 같은 대운 = 시작 연도 ~ 다음 대운 시작 연도 − 1 (세는나이도 같은 범위) → 나이와 연도가 항상 일치 */
+  function birthYear(a) { return a && a.p && a.p.solar ? a.p.solar.y : null; }
+  // 한국 기준 나이: 세는나이(그해 1월 1일 기준) · 만 나이(생일 전 / 생일 뒤)
+  function ages(by, year) { return { kor: year - by + 1, manBefore: year - by - 1, manAfter: year - by }; }
+  function luckYear(a, year) {
+    if (!a) return null;
+    const by = birthYear(a) || (a.p && a.p.y && a.dy[0] ? a.dy[0].yr - a.dy[0].age + 1 : year), kor = year - by + 1;
+    let i = -1;
+    a.dy.forEach((d, k) => { const ys = d.yr || (by + d.age - 1); if (year >= ys) i = k; });
+    if (i < 0) return { g: a.pre, txt: '초년', start: 0, end: a.dy[0] ? a.dy[0].age - 1 : null, yrS: by, yrE: a.dy[0] ? (a.dy[0].yr || by + a.dy[0].age - 1) - 1 : null, name: GRPN[a.pre], e: GRPE[a.pre], desc: descAt(a.pre, kor - 1), year, kor };
+    const d = a.dy[i], nx = a.dy[i + 1], yrS = d.yr || (by + d.age - 1), yrE = nx ? (nx.yr || by + nx.age - 1) - 1 : yrS + 9;
+    return { g: d.g, txt: d.txt, start: d.age, end: d.age + (yrE - yrS), yrS, yrE, name: GRPN[d.g], e: GRPE[d.g], desc: descAt(d.g, kor - 1), year, kor };
+  }
+  // 대운 기간 문구: '세는나이 38~47세, 2027~2036년'
+  const luckSpan = L => L ? (L.start ? `세는나이 ${L.start}~${L.end}세, ${L.yrS}~${L.yrE}년` : `첫 대운 전, ~${L.yrE}년`) : '';
+
+  /* ---------- 개운: 일간 성향 습관 ↔ 부족한 오행의 상징적 보완 (서로 다른 기준이라 따로 관리) ----------
+   *  · 일간 성향 습관(a.dm.개운): 타고난 일간(나를 나타내는 글자)의 기질에 맞는 생활 습관
+   *  · 부족한 오행 보완(WEAK_FILL): 겉으로 드러난 글자에서 가장 적은 오행을 전통적으로 상징하는 활동
+   *  어느 쪽도 운세·건강이 좋아진다고 단정하지 않는다 (생활을 돌아보는 참고) */
+  const WEAK_FILL = [
+    '아침 산책, 식물 가꾸기, 새로운 것을 꾸준히 배우는 시간',
+    '햇볕 아래 활동, 사람들과 어울리는 자리, 생각을 밖으로 표현해 보는 기회',
+    '규칙적인 식사와 생활 리듬, 공간 정리, 꾸준한 저축 습관',
+    '정리정돈, 마감과 기준 지키기, 근력 운동',
+    '충분한 잠, 물 자주 마시기, 혼자 생각을 정리하는 시간, 독서',
+  ];
+  const HAN5 = ['木', '火', '土', '金', '水'];
+  function gaeun(a) {
+    if (!a) return null;
+    const w = a.weak, wk = S.EK[w], dmN = a.dm.nm;
+    return {
+      dm: a.dm.개운, dmName: dmN, weak: w, weakEK: wk, weakHan: HAN5[w], fill: WEAK_FILL[w],
+      dmLine: `${dmN} 일간의 성향에는 ${a.dm.개운} 같은 습관이 잘 맞는 편이에요.`,
+      fillLine: `겉으로 드러난 글자 중 ${wk}(${HAN5[w]}) 기운이 가장 적어요. 전통적으로 ${wk} 기운은 ${WEAK_FILL[w]} 같은 활동으로 상징해요.`,
+      note: '운세나 건강이 좋아진다는 뜻이 아니라 생활 리듬을 돌아보는 참고예요.',
+    };
   }
 
   function luckAt(a, age) {
@@ -159,7 +200,7 @@ window.Saju = (() => {
         <h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
         <h4>💕 연애</h4><p>${a.dm.연애}</p><h4>💰 재물</h4><p>${a.dm.재물}</p><h4>🩺 건강</h4><p>${a.dm.건강}</p>
         <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p>
-        <h4>🍀 개운법</h4><p>${a.dm.개운} · 부족한 ${S.EK[a.weak]}(${['木','火','土','金','水'][a.weak]}) 기운을 채워 주세요.</p>
+        <h4>🍀 개운법</h4><p>${gaeun(a).dmLine} ${gaeun(a).fillLine} ${gaeun(a).note}</p>
       </div>
       <p class="sjnote">※ 사주 풀이는 재미로 보는 콘텐츠예요. 중요한 결정은 스스로 판단하세요.</p>`;
   }
@@ -198,5 +239,5 @@ window.Saju = (() => {
       <div class="cmpw">재미로 보는 궁합 지수 · ${c.word}</div><div class="cmpn" style="opacity:.75">점수 산정 요소 (오행 관계 기본점 ± 띠 합·충 · 부족한 기운 보완)</div>${c.notes.map(n => `<div class="cmpn">· ${n}</div>`).join('')}<div class="cmpn" style="opacity:.6">※ 관계가 잘될 확률이 아니라 재미용 지수예요.</div></div>`;
   }
 
-  return { premiumHTML, compatPair, compatHTML, relWord, ok, randomBirth, analyze, applyStats, luckAt, compat, stemName, summaryHTML, fullHTML, GRPN, GRPE, ELSUB, ELE, ELC };
+  return { luckYear, luckSpan, ages, birthYear, gaeun, WEAK_FILL, premiumHTML, compatPair, compatHTML, relWord, ok, randomBirth, analyze, applyStats, luckAt, compat, stemName, summaryHTML, fullHTML, GRPN, GRPE, ELSUB, ELE, ELC };
 })();
