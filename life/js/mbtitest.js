@@ -50,5 +50,29 @@ window.MbtiTest = (() => {
   }
   // 문항 순서: 네 축을 섞어서 (한 화면에 한 축만 몰리지 않게)
   const ORDER = Array.from({ length: 24 }, (_, i) => (i % 4) * 6 + Math.floor(i / 4));
-  return { Q, SCALE, AX, score, settled, candidates, ORDER };
+  /* ---------- 프로필별 결과 저장 ----------
+   *  p8b_mbti_test = { __v: 2, by: { [프로필]: 결과 }, legacy: 예전 결과(주인 미확인) }
+   *  예전(프로필 구분 없던) 결과: 그 결과로 기록된 실제 유형(p8b_mbti, 이름+생년월일 키)과 맞는 프로필이 있으면 그 프로필로 옮기고,
+   *  알 수 없으면 legacy 로 남겨 둔다(지우지 않음 · 어떤 프로필의 분석에도 쓰지 않음) */
+  const KEY = 'p8b_mbti_test';
+  const subj = p => p ? `${p.date}|${p.cal || 's'}|${p.time || ''}|${p.sex || ''}` : '-';
+  const rd = () => { try { return JSON.parse(localStorage.getItem(KEY)); } catch (e) { return null; } };
+  const wr = v => { try { localStorage.setItem(KEY, JSON.stringify(v)); return true; } catch (e) { return false; } };
+  function db() {
+    let v = rd(); if (v && v.__v === 2) return v;
+    const n = { __v: 2, by: {} };
+    if (v && v.ax) {
+      const real = (() => { try { return JSON.parse(localStorage.getItem('p8b_mbti')) || {}; } catch (e) { return {}; } })();
+      const set = settled(v), cands = [];
+      try { const me = JSON.parse(localStorage.getItem('p8b_me')); const pf = JSON.parse(localStorage.getItem('p8b_profiles')) || []; [me, ...pf].forEach(p => { if (p && p.date && !cands.some(q => subj(q) === subj(p))) cands.push(p); }); } catch (e) { }
+      const own = set ? cands.filter(p => real[p.date + p.name] === set) : [];
+      if (own.length === 1) n.by[subj(own[0])] = Object.assign({}, v, { mig: 'matched' }); else n.legacy = v;
+    }
+    wr(n); return n;
+  }
+  const get = p => (db().by || {})[subj(p)] || null;
+  function put(p, res) { const d = db(); d.by[subj(p)] = res; return wr(d); }
+  function clear(p) { const d = db(); delete d.by[subj(p)]; return wr(d); }
+  const legacy = () => db().legacy || null;
+  return { Q, SCALE, AX, score, settled, candidates, ORDER, get, put, clear, legacy };
 })();

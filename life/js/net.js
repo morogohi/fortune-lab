@@ -89,7 +89,8 @@ const Net = (() => {
   }
 
   /* ---------- 테스트 도구 (QA 패널) — 주소 끝에 ?qa=1 또는 더보기 → 앱 정보 5번 누르기 ---------- */
-  function qaOn() { return /[?&]qa=1/.test(location.search) || store.get('p8b_qa', false); }
+  // 테스트 페이지(테스트 모드)에서만 — 운영 웹·앱에서는 ?qa=1·5번 누르기로도 열리지 않음
+  function qaOn() { return (typeof Karma !== 'undefined' && Karma.testMode()) && (/[?&]qa=1/.test(location.search) || store.get('p8b_qa', false)); }
   function qaPanel() {
     if (!P) { Hub.toast('인생을 시작한 뒤에 쓸 수 있어요'); return; }
     const A = (t, f) => ({ t, keep: 1, f: () => { f(); renderStats(); renderActions(); Hub.toast('✅ ' + t); } });
@@ -119,7 +120,7 @@ const Net = (() => {
         '시즌 종료 후: 이미 받은 보상은 계속 유지 · 받지 않은 보상과 단계는 사라짐 · 다음 시즌 패스는 별도 상품'] };
     const _list = actionList; actionList = function () { const l = _list(); extra(l); return l; };
     if (window.Grow) [['family', { '넷시티': 3 }], ['art', { '넷시티': 3 }], ['balance', { '넷시티': 1 }]].forEach(([k, o]) => { const p = Grow.POL.find(x => x.k === k); if (p) Object.assign(p.act, o); });
-    if (/[?&]qa=1/.test(location.search)) store.set('p8b_qa', true);
+    if ((typeof Karma !== 'undefined' && Karma.testMode()) && /[?&]qa=1/.test(location.search)) store.set('p8b_qa', true);
   }
   return { init, open, openPass, season, addPts, qaPanel, state };
 })();

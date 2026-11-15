@@ -66,7 +66,7 @@ const Fun = (() => {
     else t = { e: '🎯', n: '밀당의 고수', d: '다가갈 때와 물러설 때를 아는 타입. 적당한 거리감이 매력이라 상대가 계속 궁금해해요.', tip: '밀당도 적당히! 중요한 순간엔 솔직함이 최고의 기술이에요.' };
     const idx = cl(charm * .45 + swing * .55, 3, 99);
     // 앞으로 10년, 도화 기운이 들어오는 해
-    const now = new Date().getFullYear(), years = [];
+    const now = KST.year(), years = [];
     for (let y = now; y < now + 10; y++) if (dSet.has(S.yearGz(y).b)) years.push(y);
     return { charm, swing, idx, t, why, years, dohwa, hong };
   }
@@ -141,17 +141,15 @@ const Fun = (() => {
     const q = list[idx], a = Hub.analyze(q); if (!a) return;
     const f = flirt(a, q.sex !== 'f'), who = q.self ? '나' : esc(q.name);
     Snd.sfx('love');
-    openOverlay('💘 사주 바람기 테스트', `${chips(list, idx)}
+    openOverlay('💘 사주 바람기 테스트', `${chips(list, idx)}<span class="vfreetag">무료 개요</span>
       <div class="fhero"><div class="fmeter" style="--v:${f.idx}"><b>${f.idx}</b><small>바람기 지수</small></div>
         <div><span class="ftype">${f.t.e} ${f.t.n}</span><p>${f.t.d}</p></div></div>
       <div class="fbox">${bar('💐 인기', '', f.charm, 'var(--look)', '#ffffff14')}<small class="fval">이성을 끌어당기는 힘 ${f.charm}</small>
         ${bar('🌀 흔들림', '', f.swing, 'var(--hp)', '#ffffff14')}<small class="fval">마음이 흔들리는 정도 ${f.swing}</small></div>
-      <div class="sjtxt"><h4>🔍 ${who}의 사주에서 찾은 근거</h4>
-        ${f.why.length ? f.why.map(w => `<p>${w[0]} <b>${w[1]}</b> · ${w[2]}</p>`).join('') : '<p>눈에 띄는 연애 신살이 없는 담백한 사주예요. 인연은 생활 속에서 천천히 와요.</p>'}
-        <h4>📅 이성 인연이 몰리는 해 (도화의 해)</h4><p>${f.years.length ? f.years.map(y => `<b>${y}년</b>`).join(' · ') + ' — 새로운 만남이 많아지는 시기예요.' : '앞으로 10년 안엔 도화의 해가 없어요. 대신 꾸준한 인연이 와요.'}</p>
-        <h4>💡 연애 조언</h4><p>${f.t.tip}</p></div>
+      <div class="lock"><b>🔒 바람기 테스트 상세</b><small>${Views.item('flirt').d}</small></div>
       <p class="sjnote" style="text-align:center">※ 도화살·홍염살·십성·일지 합충으로 계산한 재미용 테스트예요. 실제 사람의 마음과 행동은 사주로 정해지지 않아요.</p>`,
-      [{ t: '📤 결과 공유하기', pri: 1, keep: 1, f: () => share(`💘 사주 바람기 테스트\n${who}: ${f.t.e} ${f.t.n} (바람기 지수 ${f.idx})\n인기 ${f.charm} · 흔들림 ${f.swing}\n\n운명 연구소에서 내 바람기 확인하기`) },
+      [{ t: `🔓 상세 풀이 보기 · ${dtail('flirt', q)}`, pri: 1, keep: 1, f: () => Detail.openFlirt(q) },
+       { t: '📤 결과 공유하기', keep: 1, f: () => share(`💘 사주 바람기 테스트\n${who}: ${f.t.e} ${f.t.n} (바람기 지수 ${f.idx})\n인기 ${f.charm} · 흔들림 ${f.swing}\n\n운명 연구소에서 내 바람기 확인하기`) },
        { t: '🧩 사주 MBTI도 보기', f: () => openMbti(idx) }, { t: '닫기' }]);
     bindChips(openFlirt);
   }
@@ -160,33 +158,42 @@ const Fun = (() => {
     const list = targets(); if (!list.length) { Hub.toast('먼저 내 생년월일을 입력해 주세요'); return; }
     const q = list[idx], a = Hub.analyze(q); if (!a) return;
     const m = mbti(a), who = q.self ? '나' : esc(q.name);
+    try { PdfReport.mark('mbti'); } catch (e) { }
     const saved = store.get('p8b_mbti', {}), key = q.date + q.name;
     real = real !== undefined ? real : saved[key] || '';
     const mt = matchMbti(m.type, real);
     const cols = [['var(--hap)', 'var(--smart)'], ['var(--money)', 'var(--look)'], ['var(--smart)', 'var(--bond)'], ['var(--accent)', 'var(--hp)']];
     const nm = { E: '외향', I: '내향', S: '감각', N: '직관', T: '사고', F: '감정', J: '판단', P: '인식' };
     Snd.sfx('reveal');
-    openOverlay('🧩 사주 MBTI', `${chips(list, idx)}
-      <div class="mhero"><small>${who}의 사주가 말하는 성격 유형</small><div class="mtype">${[...m.type].map((c, i) => `<span style="animation-delay:${i * .12}s">${c}</span>`).join('')}</div>
+    openOverlay('🧩 사주 MBTI', `${chips(list, idx)}<span class="vfreetag">무료 개요</span>
+      <div class="mhero"><small>${who}의 사주로 본 타고난 기질 경향</small><div class="mtype">${[...m.type].map((c, i) => `<span style="animation-delay:${i * .12}s">${c}</span>`).join('')}</div>
         <b>${m.info[0]}</b><p>${m.info[1]}</p></div>
       <div class="fbox">${m.ax.map((o, i) => bar(`${o.x} ${nm[o.x]}`, `${nm[o.y]} ${o.y}`, o.p, cols[i][0], cols[i][1])).join('')}</div>
-      <div class="sjtxt"><h4>🔍 이렇게 계산했어요</h4>
-        <p><b>E/I</b> 양·비겁·식상은 바깥으로, 음·인성은 안으로 — ${m.why.EI}</p>
-        <p><b>S/N</b> 토·금·재성은 현실 감각, 목·수·인성·상관은 직관 — ${m.why.SN}</p>
-        <p><b>T/F</b> 금·관성은 논리, 화·목·식신·정인은 공감 — ${m.why.TF}</p>
-        <p><b>J/P</b> '정' 계열 십성은 계획, '편' 계열 십성은 즉흥 — ${m.why.JP}</p>
-        <h4>🪞 실제 MBTI와 비교하기</h4>
+      ${(() => { try { const L = Detail.mbtiRelList(q); if (!L.length) return ''; const RE = { love: '💕', family: '🏠', friend: '🤝', work: '💼' };
+        return `<div class="sjtxt"><h4>💞 MBTI 관계 궁합</h4>${L.map(o => { const P = Detail.mbtiPair(m.type, o.t, o.rel); return `<p>${RE[o.rel] || '💕'} <b>${q.self ? esc(o.x.name) : '나'}</b> ${o.t} — <b>${P.s}점</b> ${P.word}</p>`; }).join('')}<p class="sjnote">축별 조심할 점·관계 유지법은 상세 풀이에서 볼 수 있어요.</p></div>`; } catch (e) { return ''; } })()}
+      <div class="lock"><b>🔒 사주 MBTI 상세</b><small>${Views.item('mbti').d}</small></div>
+      <div class="sjtxt"><h4>🪞 실제 MBTI와 비교하기</h4>
         <select id="fReal"><option value="">실제 MBTI 고르기</option>${Object.keys(MBTI).map(k => `<option${k === real ? ' selected' : ''}>${k}</option>`).join('')}</select>
-        ${mt ? `<div class="fmatch"><b>${mt.pct}%</b> 일치 · ${mt.word}</div>` : ''}</div>
+        ${mt ? `<div class="fmatch"><b>${mt.pct}%</b> 일치 · ${mt.word}</div>` : ''}
+        <p class="sjnote">사주 MBTI는 타고난 기운(오행·음양·십성)을 MBTI 네 글자로 옮겨 본 <b>타고난 기질의 경향</b>이에요. 지금의 실제 MBTI는 살아오며 다듬어진 성향이라 다를 수 있고, 다르다고 사주풀이가 틀렸다는 뜻은 아니에요. ${real ? `실제 MBTI(<b>${esc(real)}</b>)를 골라 두었으니 사주 상담·리포트의 성향 조언은 실제 MBTI를 기준으로 해요.` : '실제 MBTI를 골라 두면 사주 상담·리포트의 성향 조언은 실제 MBTI를 기준으로 해요.'}</p></div>
       <p class="sjnote" style="text-align:center">※ 오행·음양·십성을 MBTI 네 축에 대응시킨 운명 연구소의 재미용 모델이에요. 공식 MBTI 검사가 아니에요.</p>`,
-      [{ t: '📤 결과 공유하기', pri: 1, keep: 1, f: () => share(`🧩 사주 MBTI\n${who}: ${m.type} · ${m.info[0]}\n${m.ax.map(o => `${o.pick} ${o.pick === o.x ? o.p : 100 - o.p}%`).join(' · ')}${mt ? `\n실제 ${real}와 ${mt.pct}% 일치` : ''}\n\n운명 연구소에서 내 사주 MBTI 확인하기`) },
+      [{ t: `🔓 상세 풀이 보기 · ${dtail('mbti', q)}`, pri: 1, keep: 1, f: () => Detail.openMbti(q, real) },
+       { t: '📤 결과 공유하기', keep: 1, f: () => share(`🧩 사주 MBTI\n${who}: ${m.type} · ${m.info[0]}\n${m.ax.map(o => `${o.pick} ${o.pick === o.x ? o.p : 100 - o.p}%`).join(' · ')}${mt ? `\n실제 ${real}와 ${mt.pct}% 일치` : ''}\n\n운명 연구소에서 내 사주 MBTI 확인하기`) },
        { t: '💘 바람기 테스트도 보기', f: () => openFlirt(idx) }, { t: '닫기' }]);
     bindChips(i => openMbti(i));
     $('#fReal').onchange = e => { const s = store.get('p8b_mbti', {}); s[key] = e.target.value; store.set('p8b_mbti', s); openMbti(idx, e.target.value); };
   }
+  // 상세 버튼 꼬리표: 가격 또는 오늘 무료 다시보기
+  function dtail(k, q) { const st = Views.status(k, Views.subj(q)); return st.legacy ? '무료 (이전 구매)' : st.paid && st.freeLeft > 0 ? `오늘 다시보기 ${st.freeLeft}회 무료` : `✨ ${Views.item(k).k}`; }
   function bindChips(fn) { document.querySelectorAll('.fchips [data-t]').forEach(b => b.onclick = () => { Snd.sfx('tap'); fn(+b.dataset.t); }); }
   async function share(text) { try { const r = await Native.share(text); if (r === 'copied') Hub.toast('결과를 복사했어요'); } catch (e) {} }
 
-  return { flirt, mbti, openFlirt, openMbti, MBTI };
+  // 이 프로필의 실제 MBTI: ① 이 프로필의 성향 검사에서 뚜렷하게 나온 유형 ② 직접 고른 실제 MBTI (없으면 null)
+  function realMbti(p) {
+    if (!p) return null;
+    const t = window.MbtiTest ? MbtiTest.settled(MbtiTest.get(p)) : null; if (t) return { type: t, src: 'test' };
+    const v = (store.get('p8b_mbti', {}) || {})[p.date + p.name]; return /^[EI][SN][TF][JP]$/.test(v || '') ? { type: v, src: 'input' } : null;
+  }
+  return { flirt, mbti, openFlirt, openMbti, MBTI, realMbti };
 })();
 window.Fun = Fun;

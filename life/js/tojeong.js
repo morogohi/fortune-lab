@@ -34,7 +34,7 @@ window.Tojeong = (() => {
   const MSUM=["기운이 살아나는 달","평탄하게 지키는 달","조심하며 다지는 달"];
   const COST = 30;                                   // 카르마 30 = 인생 게임 2~4판
   // 11월부터는 다음 해 토정비결 (연말에 새해 신수를 보는 전통)
-  const year = () => { const d = new Date(); return d.getMonth() >= 10 ? d.getFullYear() + 1 : d.getFullYear(); };
+  const year = () => KST.fortuneYear();
 
   // 생일 → 음력 생월·생일
   function lunarBirth(p) {
@@ -54,7 +54,7 @@ window.Tojeong = (() => {
       const perm = (n, seed) => { const a = [...Array(n).keys()]; for (let i = n - 1; i > 0; i--) { const j = hash(seed * 31 + i) % (i + 1); [a[i], a[j]] = [a[j], a[i]]; } return a; };
       const P3 = [MGOOD, MMID, MBAD].map((pool, j) => perm(pool.length, code + j * 11)), used = [0, 0, 0];
       const months = Array.from({ length: 12 }, (_, i) => { const q = hash(code * 3 + i * 5) % 3, pool = [MGOOD, MMID, MBAD][q], ix = P3[q][used[q]++ % pool.length], a = pool[ix];
-        return { a, b: [AGOOD, AMID, ABAD][q][ix], q, s: MSUM[q] }; });
+        return { a, b: [AGOOD, AMID, ABAD][q][ix], q, ix, s: MSUM[q] }; });
       return { Y, lm, ld, age, tae, up, dc, wg, ij, mid, low, code, tone, months };
     } catch (e) { return null; }
   }
@@ -70,7 +70,7 @@ window.Tojeong = (() => {
     return `<div class="tjgwae"><b>${t.up}·${t.mid}·${t.low}</b><small>작괘 (상·중·하)</small></div>
       <p class="tjtone">${t.tone}</p><p class="sjtxt" style="margin:0">${UP[t.up - 1]}.</p>`;
   }
-  function fullHTML(t) {
+  function fullHTML(t, noMonths) {
     const good = t.months.map((m, i) => m.q === 0 ? i + 1 : 0).filter(Boolean), bad = t.months.map((m, i) => m.q === 2 ? i + 1 : 0).filter(Boolean);
     return `<div class="sjtxt">
       <div class="tjgwae"><b>${t.up}·${t.mid}·${t.low}</b><small>작괘 (상·중·하)</small></div>
@@ -79,10 +79,15 @@ window.Tojeong = (() => {
       <h4>💰 재물·가정 (중괘 ${t.mid})</h4><p>${MID[t.mid - 1]}. ${MIDD[t.mid - 1]}</p>
       <h4>🧭 처세 (하괘 ${t.low})</h4><p>${LOW[t.low - 1]}. ${LOWD[t.low - 1]}</p>
       <h4>🌙 좋은 달 · 조심할 달 (음력)</h4><p>👍 ${good.length ? good.map(x => x + '월').join(' · ') : '고르게 평탄'} &nbsp; ⚠️ ${bad.length ? bad.map(x => x + '월').join(' · ') : '특별히 없음'}</p>
-      <h4>📅 월별 신수</h4>
-      <div class="tjmonths">${t.months.map((m, i) => `<div class="${['hi', '', 'lo'][m.q]}"><b>${i + 1}월</b><span>${m.a}<small>${m.s || ['기운 좋음', '보통', '조심'][m.q]} · 실천: ${m.b}</small></span></div>`).join('')}</div>
+      ${noMonths ? '' : `<h4>📅 월별 신수</h4>
+      <div class="tjmonths">${t.months.map((m, i) => `<div class="${['hi', '', 'lo'][m.q]}"><b>${i + 1}월</b><span>${m.a}<small>${m.s || ['기운 좋음', '보통', '조심'][m.q]} · 실천: ${m.b}</small></span></div>`).join('')}</div>`}
       <p class="sjnote">전통 계산: 작괘는 음력 생월·생일, ${t.Y}년 음력 ${t.lm}월의 크기(${t.dc}일), 태세·월건·일진의 수로 뽑았어요 (세는나이 ${t.age} + 태세수 ${t.tae} · ${t.dc} + 월건수 ${t.wg} · 생일 ${t.ld} + 일진수 ${t.ij}). 풀이 문장은 원전 괘사를 옮긴 것이 아니라 괘 번호에 맞춰 쓴 현대어 해설이에요. 재미로 보는 콘텐츠예요.</p>
     </div>`;
   }
-  return { COST, year, calc, opened, open, previewHTML, fullHTML };
+  // 무료 개요: 월별 신수 한 줄씩 (상세에서는 달마다 깊게 풀이)
+  function briefHTML(t) {
+    return `<div class="tjbrief">${t.months.map((m, i) => `<div class="${['hi', '', 'lo'][m.q]}"><b>${i + 1}월</b><i>${['👍', '·', '⚠️'][m.q]}</i><span>${m.a}</span></div>`).join('')}</div>
+      <p class="sjnote">음력 기준 · 👍 기운이 좋은 달 · ⚠️ 조심할 달</p>`;
+  }
+  return { COST, year, calc, opened, open, previewHTML, fullHTML, briefHTML };
 })();

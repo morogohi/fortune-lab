@@ -1,12 +1,14 @@
 /* =====================================================================
- *  yearfull.js — 상세 사주 리포트 (대표 유료 상품 · 카르마 50)
+ *  yearfull.js — 2027 신년운세 상세의 계산 엔진 (섹션별 HTML: parts) — 화면은 detail.js 「신년운세 상세」
+ *   예전: 상세 사주 리포트 한 덩어리(카르마 50·영구) → 지금: 신년운세 상세(볼 때마다 · 다시보기 3회 무료), 예전 구매자는 무료
  *   무료: 신년운세·토정비결 간략 버전 (기존 화면)
  *   무료 화면 아래에 '무료 vs 상세'를 내 데이터 일부로 보여 주고, 카르마로 열면 기간 제한 없이 열람
  *   구성: 한눈에 보는 한 해 · 나의 사주 바탕 · 2027년이 나에게 오는 방식 · 분야별 상세 6개
  *        · 토정비결 전체 · 12개월 상세(좋은 날 포함) · 분기 전략 · 개운 가이드 · 주의할 점
  * ===================================================================== */
 const YearFull = (() => {
-  const Y = 2027, PASS = 'p8b_yf_pass';
+  // 기준 연도: 신년운세·토정비결·상담·리포트 공통 (11월부터 다음 해) — 화면 문구의 연도도 이 값을 씀
+  const Y = KST.fortuneYear(), PASS = 'p8b_yf_pass';
   const esc = t => String(t == null ? '' : t).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
   // 받침에 맞는 조사 (을/를, 이/가, 은/는, 와/과)
   const jo = (w, a, b) => { const t = String(w).replace(/[^가-힣]+$/, ''), c = t.charCodeAt(t.length - 1); return w + (c >= 0xAC00 && c <= 0xD7A3 && (c - 0xAC00) % 28 ? a : b); };
@@ -14,7 +16,7 @@ const YearFull = (() => {
   const keyOf = p => `${p.date}|${p.cal}|${p.time || ''}|${p.sex}`;
 
   /* ---------- 열람 권한 ---------- */
-  const endOfToday = () => { const d = new Date(); d.setHours(23, 59, 59, 999); return d.getTime(); };
+  const endOfToday = () => KST.endOfDay();
   function passOf(p) { const o = store.get(PASS, null); return o && o.k === keyOf(p) && o.until > Date.now() ? o : null; }
   const owned = () => Store.has('report');
   const unlocked = p => owned() || !!passOf(p);
@@ -102,15 +104,15 @@ const YearFull = (() => {
   const WITH = ['함께 새 일을 벌이기', '함께 배우고 만들기', '돈 계획·살림 함께 세우기', '역할을 나눠 목표 이루기', '함께 공부하고 조언 주고받기'];
   function relHTML(p, a, B) {
     const ppl = store.get('p8b_people', []).map(q => ({ q, b: Hub.analyze(q) })).filter(x => x.b).slice(0, 4);
-    if (!ppl.length) return `<div class="hcard"><h3 class="ht">💞 2027 관계 · 궁합</h3><p class="sjtxt" style="margin:0">궁합 메뉴에 가족·연인·친구·동료를 등록하면, 여기에서 그 사람과의 2027년 흐름을 함께 풀어 드려요.</p></div>`;
+    if (!ppl.length) return `<div class="hcard pdf-skip"><h3 class="ht">💞 ${Y} 관계 · 궁합</h3><p class="sjtxt" style="margin:0">궁합 메뉴에 가족·연인·친구·동료를 등록하면, 여기에서 그 사람과의 ${Y}년 흐름을 함께 풀어 드려요.</p></div>`;
     const myBest = B.n.best.map(m => m.solarM);
-    return `<div class="hcard"><h3 class="ht">💞 2027 관계 · 궁합</h3><p class="sjnote">궁합 관계도에 등록한 사람과 올해를 함께 보낼 때의 흐름이에요.</p>
+    return `<div class="hcard"><h3 class="ht">💞 ${Y} 관계 · 궁합</h3><p class="sjnote">궁합 관계도에 등록한 사람과 올해를 함께 보낼 때의 흐름이에요.</p>
       ${ppl.map(({ q, b }) => {
         const c = Saju.compatPair(a, b), nb = Fortune.newYear(b, Y), r = RELN[q.rel] || RELN.love;
         const both = nb.best.map(m => m.solarM).filter(m => myBest.includes(m));
         const same = nb.ts.g === B.gA;
         return `<div class="yf-rel"><div class="yf-relh"><b>${r[0]} ${esc(q.name)}</b><span>${r[1]} · 궁합 ${c ? c.score : '-'}점</span></div>
-          <p>${esc(q.name)}님의 2027년은 <b>${GN[nb.ts.g]}</b>의 해예요. ${same ? '나와 같은 방향의 해라 서로의 상황을 잘 이해해요.' : `나는 ${GN[B.gA]}, 상대는 ${GN[nb.ts.g]} — 서로 다른 쪽에 힘을 쓰는 해라 역할을 나누면 좋아요.`}</p>
+          <p>${esc(q.name)}님의 ${Y}년은 <b>${GN[nb.ts.g]}</b>의 해예요. ${same ? '나와 같은 방향의 해라 서로의 상황을 잘 이해해요.' : `나는 ${GN[B.gA]}, 상대는 ${GN[nb.ts.g]} — 서로 다른 쪽에 힘을 쓰는 해라 역할을 나누면 좋아요.`}</p>
           <p>🤝 올해 함께하면 좋은 일: <b>${WITH[nb.ts.g]}</b>${both.length ? ` · 둘 다 좋은 달: <b>${both.map(m => m + '월').join(', ')}</b>` : ''}</p>
           ${c && c.notes ? `<small>${c.notes.slice(0, 2).join(' · ')}</small>` : ''}</div>`;
       }).join('')}</div>`;
@@ -119,36 +121,61 @@ const YearFull = (() => {
     S: '구체적인 계획과 숫자로 움직일 때 운이 붙어요. 월별 목표를 작게 쪼개세요.', N: '새 아이디어가 올해의 자산이에요. 떠오른 생각을 기록하고 한 가지는 실행해 보세요.',
     T: '판단은 빠르지만 사람의 마음을 놓치기 쉬워요. 결정 전에 한 번 더 상대 입장을 물어보세요.', F: '사람을 챙기는 힘이 귀인을 부르지만, 거절해야 할 땐 분명히 하세요.',
     J: '계획대로 밀고 갈 때 강해요. 다만 변수가 생기면 계획을 고치는 것도 실력이에요.', P: '유연함이 기회를 잡지만 마감이 흐려지기 쉬워요. 중요한 일은 날짜부터 정하세요.' };
-  function mbtiHTML(a, B) {
-    const test = store.get('p8b_mbti_test', null), set = window.MbtiTest ? MbtiTest.settled(test) : null, sm = Fun.mbti(a);
+  function mbtiHTML(a, B, p) {
+    const test = window.MbtiTest ? MbtiTest.get(p) : null, rm = Fun.realMbti ? Fun.realMbti(p) : null, set = rm ? rm.type : null, sm = Fun.mbti(a);
     const type = set || sm.type, info = Fun.MBTI[type] || ['', ''];
-    return `<div class="hcard"><h3 class="ht">🧩 MBTI로 본 2027 전략 · ${type}</h3><div class="sjtxt">
+    return `<div class="hcard yf-mbti"><h3 class="ht">🧩 MBTI로 본 ${Y} 전략 · ${type}</h3><div class="sjtxt">
       <p><b>${info[0]}</b> ${info[1]}</p>
       <p>올해는 <b>${GN[B.gA]}</b>의 해 — ${type}에게는 이렇게 쓰면 좋아요.</p>
       ${(() => { const T = type, act = ['내 이름을 건 작은 프로젝트', '글·영상·발표 같은 결과물', '수입 구조 정비와 저축 계획', '성과 정리와 승진·평가 준비', '자격증·학위 같은 긴 공부'][B.gA];
         const how = T[0] === 'E' ? '사람들과 함께하는 방식(스터디·모임·협업)' : '혼자 집중하는 방식(정해진 시간의 루틴·온라인 강의)';
         const pace = T[3] === 'J' ? '월별 계획표를 만들어' : '2주 단위로 짧게 시험해 보며';
         const bm = B.n.best.map(m => `${m.solarM}월`).join('·');
-        return `<div class="yf-mb"><b>📌 ${T}의 2027 실천 시나리오</b><p>올해는 <b>${act}</b>에 운이 실려요. ${T}에게는 ${how}이 잘 맞으니, ${pace} 진행하세요. 시작하기 좋은 달은 <b>${bm}</b>이에요.</p>
+        return `<div class="yf-mb"><b>📌 ${T}의 ${Y} 실천 시나리오</b><p>올해는 <b>${act}</b>에 운이 실려요. ${T}에게는 ${how}이 잘 맞으니, ${pace} 진행하세요. 시작하기 좋은 달은 <b>${bm}</b>이에요.</p>
           <p>${T[2] === 'T' ? '⚠️ 숫자와 효율만 보다 동료의 마음을 놓치기 쉬워요. 중요한 결정 전에 한 사람에게 의견을 물어보세요.' : '⚠️ 사람을 챙기다 내 일이 밀리기 쉬워요. 거절할 일은 이번 주 안에 분명히 말하세요.'} ${T[1] === 'N' ? '아이디어가 많아도 올해는 한 가지를 끝까지 해 보는 것이 성과로 남아요.' : '익숙한 방식이 안전하지만, 올해 한 가지는 새 방법을 시도해 보세요.'}</p></div>`; })()}
       ${[...type].map(c => `<p>· <b>${c}</b> ${MB_Y[c] || ''}</p>`).join('')}
-      <p class="sjnote">기준: ${set ? 'MBTI 성향 검사 결과' : test ? '성향 검사 결과가 뚜렷하지 않아 사주로 본 MBTI' : '사주로 본 MBTI (성향 검사를 하면 더 정확해요)'}${set && set !== sm.type ? ` · 사주로 본 MBTI는 ${sm.type}` : ''}</p></div></div>`;
+      <p class="sjnote">기준: ${rm ? (rm.src === 'test' ? 'MBTI 성향 검사 결과' : '직접 고른 실제 MBTI') : test ? '성향 검사 결과가 뚜렷하지 않아 사주로 본 MBTI(타고난 기질 경향)' : '사주로 본 MBTI(타고난 기질 경향) · 실제 MBTI를 고르거나 성향 검사를 하면 그 결과로 바꿔 드려요'}${set && set !== sm.type ? ` · 사주로 본 타고난 기질은 ${sm.type} (보는 대상이 달라 다를 수 있어요)` : ''}</p></div></div>`;
   }
   function gameHTML(B) {
     const h = store.get('p8b_hist', []);
-    if (!h.length) return `<div class="hcard"><h3 class="ht">🎲 인생 게임으로 미리 보는 선택</h3><p class="sjtxt" style="margin:0">인생 게임에서 갈림길마다 두 갈래 인생을 미리 살아 볼 수 있어요. 한 판 끝까지 살면 카르마도 모여요.</p></div>`;
+    if (!h.length) return `<div class="hcard yf-game"><h3 class="ht">🎲 인생 게임으로 미리 보는 선택</h3><p class="sjtxt" style="margin:0">인생 게임에서 갈림길마다 두 갈래 인생을 미리 살아 볼 수 있어요. 한 판 끝까지 살면 카르마도 모여요.</p></div>`;
     const GV = { S: 5, A: 4, B: 3, C: 2, D: 1 }, best = h.reduce((m, x) => (GV[x.grade] || 0) > (GV[m.grade] || 0) ? x : m, h[0]);
-    return `<div class="hcard"><h3 class="ht">🎲 인생 게임 속 나</h3><div class="sjtxt">
+    return `<div class="hcard yf-game"><h3 class="ht">🎲 인생 게임 속 나</h3><div class="sjtxt">
       <p>지금까지 <b>${h.length}번</b>의 인생을 살아 봤어요. 가장 좋았던 인생은 ${best.f} ${esc(best.name)} — 「${esc(best.title)}」(${best.grade}등급).</p>
       <p>올해의 중심 기운 <b>${jo(GN[B.gA], '을', '를')}</b> 게임 속 육성 방침으로 시험해 보고, 갈림길 극장에서 선택의 결과를 비교해 보세요.</p></div></div>`;
   }
 
   /* ---------- 화면 ---------- */
-  function html(p, a) {
-    if (!a) return '<div class="hcard"><p class="hsub">생년월일을 먼저 입력해 주세요.</p></div>';
-    if (!unlocked(p)) return `<div class="hhead"><small>${esc(p.name)}님</small><h2>상세 사주 리포트</h2></div>${ctaHTML(p, true)}`;
-    const B = build(p, a), n = B.n, dm = a.dm, L = LUCK[a.weak], ps = passOf(p);
-    try { Karma.metric('report_view'); } catch (e) { }
+
+  /* 달의 기운(십성 그룹 0 비겁·1 식상·2 재성·3 관성·4 인성) × 분야(일·재물·사람·건강) × 변형 3개
+   * 같은 기운의 달이 여러 번 나와도 문장이 겹치지 않게 차례로 씀 (토정비결 월별 상세와 함께 사용) */
+  const MA = [
+    [['내 이름을 걸고 하는 일, 경쟁이 있는 자리에서 힘을 내요. 다만 동료와 공을 다투지 않게 역할을 먼저 나누세요.', '혼자 밀고 나가는 힘이 강한 달이에요. 큰 그림은 내가 잡되 세부는 동료에게 맡기면 속도가 붙어요.', '경쟁 상대가 눈에 띄는 달이에요. 비교보다 내 기록을 넘는 데 집중하면 결과가 좋아요.'],
+     ['돈이 사람을 따라 나가기 쉬워요. 모임비·경조사·지인 돈거래 같은 나눠 쓰는 지출을 미리 정해 두세요.', '함께 쓰는 돈이 늘어나는 달이에요. 더치페이 기준을 분명히 하고, 빌려주는 돈은 못 받아도 괜찮은 만큼만.', '내 힘으로 버는 돈(성과급·부업)은 늘지만 씀씀이도 커져요. 들어온 날 바로 저축분을 떼어 두세요.'],
+     ['친구·형제·동료 같은 수평 관계가 활발해요. 함께 운동하거나 공부하면 서로 힘이 돼요.', '자존심 싸움이 생기기 쉬운 달이에요. 이기는 대화보다 푸는 대화를 고르세요.', '오랜 친구에게서 도움이나 소식이 와요. 먼저 연락하면 관계가 한층 깊어져요.'],
+     ['체력이 좋아지는 대신 무리하기 쉬워요. 몰아서 하지 말고 나눠서 하세요.', '근육·관절 피로가 쌓이기 쉬워요. 운동 뒤 스트레칭을 빼먹지 마세요.', '기운이 넘쳐 잠이 줄 수 있어요. 잠자는 시간을 정해 두면 컨디션이 오래가요.']],
+    [['기획·발표·창작·영업처럼 보여 주는 일에 성과가 나요. 아이디어를 메모해 두면 나중에 큰 자산이 돼요.', '말솜씨가 무기가 되는 달이에요. 협상·설득·면접 일정을 이 달에 잡으세요.', '새 아이디어가 쏟아지는 달이에요. 다 하려 하지 말고 가장 좋은 하나를 끝까지 밀어 보세요.'],
+     ['재능이 돈이 되는 흐름이에요. 부업·작은 판매·강의처럼 내가 가진 것을 내놓아 보세요.', '먹고 즐기는 데 쓰는 돈이 늘어요. 기분 좋은 소비와 필요 없는 소비를 나눠 적어 보세요.', '내 실력으로 받는 보상이 커질 수 있어요. 견적·몸값을 제대로 부르는 연습을 해 보세요.'],
+     ['말이 많아지는 달이라 칭찬도 비판도 커져요. 윗사람에게는 한 번 더 다듬은 말로 전하세요.', '재치와 매력이 돋보여 새 인연이 생겨요. 다만 농담이 지나치지 않게 선을 지키세요.', '아랫사람·후배를 챙길 일이 생겨요. 가르쳐 주는 만큼 나도 성장해요.'],
+     ['에너지를 많이 쓰니 먹고 자는 것을 거르지 마세요. 소화기와 목을 특히 챙기세요.', '말을 많이 하는 달이라 목이 쉽게 상해요. 따뜻한 물을 자주 마셔요.', '과식·야식이 늘기 쉬워요. 저녁 식사 시간을 일정하게 지켜요.']],
+    [['목표를 숫자로 정하면 결과가 따라와요. 실적·매출·마감처럼 성과를 보이는 일에 집중하세요.', '현실적인 판단이 빛나는 달이에요. 일의 우선순위를 돈과 시간 기준으로 다시 정리해 보세요.', '거래·협상에서 실리를 챙기기 좋아요. 조건은 꼭 문서로 남기세요.'],
+     ['돈의 흐름이 활발해요. 들어오는 만큼 나가기도 쉬우니 수입의 일부는 바로 따로 떼어 두세요.', '투자 정보가 많이 들어오는 달이에요. 확인하지 않은 정보로는 움직이지 마세요.', '작은 수입원이 생길 수 있어요. 꾸준히 들어오는 돈의 구조를 만들어 보세요.'],
+     ['이성·거래처와의 인연이 활발해요. 새로 만나는 사람이 늘고 활동 범위가 넓어지는 흐름이에요.', '실속 있는 인맥이 생기는 달이에요. 명함·연락처를 정리해 두면 나중에 쓸 일이 생겨요.', '가족의 경제 문제로 이야기할 일이 생겨요. 감정보다 숫자로 차분히 나누세요.'],
+     ['바쁘게 뛰다 몸을 놓치기 쉬워요. 식사 시간을 지키고 허리·어깨를 챙기세요.', '이동이 많아 피로가 쌓여요. 장거리 이동 뒤에는 하루 쉬어 가세요.', '일에 쫓겨 운동을 빼먹기 쉬워요. 짧게라도 매일 걷는 시간을 정하세요.']],
+    [['맡은 일이 늘고 평가를 받는 일이 생겨요. 규칙과 절차를 지키면 신뢰가 쌓여 승진·합격으로 이어져요.', '책임자로 나설 기회가 와요. 부담스러워도 받아들이면 한 단계 올라서요.', '윗사람의 기대가 커지는 달이에요. 중간 보고를 자주 하면 실수를 줄일 수 있어요.'],
+     ['고정 지출(세금·보험·이자)을 점검하기 좋은 달이에요. 큰 수입보다 지키는 재물에 집중하세요.', '과태료·벌금처럼 규칙을 어겨 생기는 손실을 조심하세요. 기한을 달력에 적어 두세요.', '안정적인 수입이 이어지는 달이에요. 무리한 투자보다 적금·저축이 이로워요.'],
+     ['윗사람·조직과의 관계가 중요해요. 책임 있는 자리에서 나를 지켜보는 사람이 늘어나는 흐름이에요.', '예의와 격식이 필요한 자리가 생겨요. 옷차림과 말투를 한 번 더 챙기세요.', '나를 지켜보는 사람이 많은 달이에요. 약속을 지키는 모습이 평판을 만들어요.'],
+     ['스트레스가 몸으로 오기 쉬워요. 두통·근육 긴장에 주의하고 퇴근 뒤에는 일을 내려놓으세요.', '긴장으로 어깨·목이 굳기 쉬워요. 자기 전 가볍게 풀어 주세요.', '쉬는 날에도 일 생각이 떠나지 않을 수 있어요. 휴대폰 알림을 끄는 시간을 정하세요.']],
+    [['배우고 준비하는 일에 좋아요. 시험·자격증·교육·서류 작업을 이 달에 하세요.', '생각을 정리하고 계획을 세우기 좋은 달이에요. 다음 분기 계획표를 만들어 보세요.', '선배·스승의 조언이 길을 열어 줘요. 혼자 고민하지 말고 물어보세요.'],
+     ['부동산·계약·문서에서 이득이 생길 수 있어요. 다만 생각만 많고 실행이 늦어지지 않게 하세요.', '가족·윗사람에게서 도움을 받을 수 있는 달이에요. 받은 만큼 감사를 표현하세요.', '공부·자기계발에 쓰는 돈은 아끼지 않아도 돼요. 오래 남는 투자예요.'],
+     ['부모·스승·선배의 도움이 들어와요. 조언을 구하면 생각보다 큰 도움이 돼요.', '마음이 너그러워져 관계가 부드러워져요. 서운했던 사람과 화해하기 좋아요.', '나를 믿어 주는 사람이 곁에 있어요. 고마운 마음을 말로 전하세요.'],
+     ['마음이 편해지는 달이에요. 다만 게을러지기 쉬우니 가벼운 운동을 꾸준히 하세요.', '잠이 많아질 수 있어요. 낮잠은 20분 안으로 줄이세요.', '생각이 많아 밤에 잠들기 어려울 수 있어요. 자기 전 메모로 머리를 비우세요.']]];
+  const AREA_N = ['💼 일·학업', '💰 재물', '💞 사람·연애', '🩺 건강'];
+  // 그룹 g의 n번째 등장 → 분야별 문장 4개 (변형을 차례로)
+  const monthAreas = (g, n) => MA[g].map((v, i) => [AREA_N[i], v[(n + i) % v.length]]);
+  const areaGrid = (g, n) => `<div class="tjm-g">${monthAreas(g, n).map(([t, x]) => `<div><b>${t}</b><span>${x}</span></div>`).join('')}</div>`;
+  function parts(p, a, opt) {
+    const B = build(p, a), n = B.n, dm = a.dm, L = LUCK[a.weak], mp = Fortune.monthPlan(a, Y);   // mp: 상담·리포트 공통 월별 판단
     const mm = m => `${m.yr !== Y ? '이듬해 ' : ''}${m.solarM}월`;
     const bar = (lab, v) => `<div class="yf-ar"><span>${lab}</span><div class="yf-b"><i style="width:${v}%"></i></div><b>${v}</b></div>`;
     const S6 = n.sx, S7 = n.sb;
@@ -157,7 +184,7 @@ const YearFull = (() => {
       `${S6.재물} ${S7.재물} 타고난 재물 성향으로 보면 — ${dm.재물}`,
       `${S6.연애} 하반기 흐름: ${S7.연애} ${dm.연애}`,
       `${S6.건강} ${dm.건강} 올해는 특히 부족한 ${EKN[a.weak]} 기운과 관련된 ${L.b} 관리가 중요해요.`,
-      `${FAM[B.gA]} ${n.yrel ? `내 띠와 2027 양띠는 「${n.yrel.n}」 관계 — ${n.yrel.d.replace('날', '해')}` : ''}`,
+      `${FAM[B.gA]} ${n.yrel ? `내 띠와 ${Y} ${SAJU.ANI[n.yg.b]}띠는 「${n.yrel.n}」 관계 — ${n.yrel.d.replace('날', '해')}` : ''}`,
       `${STUDY[B.gA]} ${B.gB !== B.gA ? '하반기에는 ' + STUDY[B.gB].replace(/해예요/, '시기예요') : ''}`,
     ];
     const QI = [[0, 1, 2], [3, 4, 5], [6, 7, 8], [9, 10, 11]];
@@ -172,100 +199,62 @@ const YearFull = (() => {
       return { v, g, txt: `<b>${GN[g]}</b> 흐름 · ${['밀고 나갈 때', '다지는 때', '쉬어 가는 때'][mode]} — 핵심 과제: ${(() => { const o = qOcc[g] = (qOcc[g] || 0) + 1; return QACT[g][(mode + o - 1) % 3]; })()}. 이 분기의 가장 좋은 달은 <b>${mm(best)}</b>(${best.v}점)이에요.` };
     });
     const occ = {}, seenT = {};
+    const occA = {};
+    const minfo = [];
     const months = n.months.map(m => {
       const g = TEN_G[m.ten] != null ? TEN_G[m.ten] : 0, tj = B.t ? B.t.months[m.n] : null, gd = goodDays(a, p, m);
-      const good = m.v >= 66, oc = occ[g + (good ? 'g' : 'b')] = (occ[g + (good ? 'g' : 'b')] || 0) + 1, tip = TIPG[g][(good ? 0 : 1) + ((oc - 1) % 2) * 2];
-      return `<div class="yf-m ${m.v >= 74 ? 'hi' : m.v < 58 ? 'lo' : ''}"><div class="yf-mh"><b>${mm(m)}</b><span>${SAJU.STK[m.s]}${SAJU.BRK[m.b]}월 · ${m.ten}</span><em>${m.v}</em></div>
-        <p>${(() => { const k = m.txt, c = seenT[k] = (seenT[k] || 0) + 1; return c === 1 ? k : WOL_ALT[g][(c - 2) % 2]; })()}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</p>
+      const cz = mp.isCaution(m), good = m.v >= 66 && !cz, oc = occ[g + (good ? 'g' : 'b')] = (occ[g + (good ? 'g' : 'b')] || 0) + 1, tip = TIPG[g][(good ? 0 : 1) + ((oc - 1) % 2) * 2];
+      const wt = (() => { const k = m.txt, c = seenT[k] = (seenT[k] || 0) + 1; return c === 1 ? k : WOL_ALT[g][(c - 2) % 2]; })();
+      // 주의 달에 토정 신수가 '시작'을 권하면: 같은 달에 '쉬어 가라'와 '시작하라'가 함께 나오지 않게 준비·점검 중심으로 맞춤
+      const tjb = tj ? (cz && /(시작|새로|새 일|계약|투자|확장|움직|벌이)/.test(tj.b) ? `${tj.b.replace(/[.\s]+$/, '')} — 다만 사주 월운으로는 한 해 중 주의가 큰 달이라, 실행은 준비와 조건 점검을 마친 뒤로 미뤄 보세요` : tj.b) : '';
+      minfo.push({ m, g, tj, tjb, cz, gd, tip, good, wt, mm: mm(m) });
+      const F = opt && opt.fold, nowM = F ? KST.now() : null, open = F && nowM.getFullYear() === m.yr && nowM.getMonth() + 1 === m.solarM;
+      return `<${F ? `details${open ? ' open' : ''}` : 'div'} class="yf-m ${F ? 'nyfold ' : ''}${m.v >= 74 ? 'hi' : m.v < 58 ? 'lo' : ''}"><${F ? 'summary' : 'div'} class="yf-mh"><b>${mm(m)}</b><span>${SAJU.STK[m.s]}${SAJU.BRK[m.b]}월 · ${m.ten}</span><em>${m.v}</em>${F ? `<small class="yf-ms">${wt.split(/(?<=[.요다])\s/)[0]}</small>` : ''}</${F ? 'summary' : 'div'}>
+        <p>${wt}${m.rel ? ` <small>(${m.rel.n})</small>` : ''}</p>
         <p class="yf-mf">🎯 이달의 초점: <b>${GN[g]}</b> — ${tip}</p>
-        ${tj ? `<p class="yf-mt">📜 토정 신수 · 음력 ${m.n + 1}월 (${tj.s || ['기운 좋음', '보통', '조심'][tj.q]}): ${tj.a}. 실천 — ${tj.b}.</p>` : ''}
-        ${gd.length ? `<p class="yf-md">📌 좋은 날: ${gd.map(d => `${m.solarM}/${d}`).join(', ')}</p>` : ''}</div>`;
+        ${areaGrid(g, (occA[g] = (occA[g] || 0) + 1) - 1)}
+        ${tj ? `<p class="yf-mt">📜 토정 신수 · 음력 ${m.n + 1}월 (${tj.s || ['기운 좋음', '보통', '조심'][tj.q]}): ${tj.a}. 실천 — ${tjb}.</p>` : ''}${cz ? '<p class="yf-mf">🧭 월별 판단: 한 해 중 주의가 큰 달 — 시작보다 준비·검증·조건 점검 중심으로 쓰세요.</p>' : ''}${tj && opt && opt.tjNote ? opt.tjNote(tj) : ''}
+        ${gd.length ? `<p class="yf-md">📌 좋은 날: ${gd.map(d => `${m.solarM}/${d}`).join(', ')}</p>` : ''}${opt && opt.monthExtra ? opt.monthExtra(m, tj) : ''}</${opt && opt.fold ? 'details' : 'div'}>`;
     }).join('');
     const cautions = [
-      `${mm(n.worst)}은 한 해 중 기운이 가장 약한 달이에요. 큰 계약·이사·투자는 피하고 점검과 휴식에 쓰세요.`,
+      `${mm(n.worst)}은 한 해 중 기운이 가장 약하게 드러나는 달로 해석해요. 중요한 계약·이사·투자는 조건과 위험을 평소보다 꼼꼼히 점검해 보고, 점검과 휴식에 쓰기 좋은 달이에요.`,
       `분야 중 ${AREAS[B.area.indexOf(Math.min(...B.area))][1]} 점수가 가장 낮아요(${Math.min(...B.area)}). ${TIPG[B.gA][1]}`,
-      n.drel && n.drel.v < 0 ? `일지와 올해 지지가 「${n.drel.n}」 관계라 생활 리듬·거처의 변화가 생기기 쉬워요. 일정에 여유를 두세요.` : `부족한 ${EKN[a.weak]} 기운을 채우지 않으면 하반기에 피로가 쌓이기 쉬워요. ${jo(L.b, '을', '를')} 챙기세요.`,
+      n.drel && n.drel.v < 0 ? `일지와 올해 지지가 「${n.drel.n}」 관계라 생활 리듬·거처의 변화가 생기기 쉬워요. 일정에 여유를 두세요.` : `겉으로 드러나지 않는 ${EKN[a.weak]} 기운은 전통 해석에서 ${jo(L.b, "과", "와")} 연결해 보는 기운이에요. 사주만으로 건강을 판단할 수는 없으니, 하반기에 일정이 몰리지 않게 쉬는 시간을 미리 정해 두고 몸 상태는 실제 검진으로 확인하세요.`,
     ];
-    return `<div class="hhead"><small>${esc(p.name)}님 · ${n.gzHan}년 · 만 ${B.age - 1}~${B.age}세</small><h2>상세 사주 리포트 · 2027</h2></div>
-
-      <div class="hcard"><h3 class="ht">📊 한눈에 보는 2027</h3>
-        <div class="yf-top"><div class="yf-sc"><b>${B.total}</b><small>한 해 총점</small></div><div><div class="yf-kw">${B.kw.map(k => `<span>#${k}</span>`).join('')}</div><p>${S6.총운}</p></div></div>
-        ${AREAS.map((x, i) => bar(`${x[0]} ${x[1]}`, B.area[i])).join('')}
-        <p class="sjnote">좋은 달 <b>${n.best.map(mm).join(', ')}</b> · 조심할 달 <b>${mm(n.worst)}</b></p></div>
-      <div class="hcard"><h3 class="ht">🧭 나의 사주 바탕</h3><div class="sjtxt">
+    return {
+      B, minfo, GN, mp,
+      head: `<div class="hhead"><small>${esc(p.name)}님 · ${n.gzHan}년 · 만 ${B.age - 1}~${B.age}세</small><h2>${Y} 상세 운세</h2></div>`,
+      base: `<div class="hcard"><h3 class="ht">🧭 나의 사주 바탕</h3><div class="sjtxt">
         <p><b>${dm.nm}</b> — ${dm.key}</p><p>${dm.성격}</p>
         <p>오행: ${a.el.map((v, i) => `${['🌳', '🔥', '⛰️', '⚔️', '💧'][i]}${EKN[i]} ${v}`).join(' · ')} → 가장 강한 기운 <b>${EKN[a.strong]}</b>, 부족한 기운 <b>${EKN[a.weak]}</b></p>
-        <p>✨ 강점: ${dm.강점}</p><p>⚠️ 약점: ${dm.약점}</p></div></div>
-      <div class="hcard"><h3 class="ht">🔄 2027년이 나에게 오는 방식</h3><div class="sjtxt">
-        <p>2027년 ${n.gzTxt}(${n.gzHan})년은 상반기에 <b>${n.ts.n}</b>, 하반기에 <b>${n.tb.n}</b>의 기운으로 들어와요.</p>
+        <p>✨ 강점: ${dm.강점}</p><p>⚠️ 약점: ${dm.약점}</p></div></div>`,
+      y_total: `<div class="hcard"><h3 class="ht">📊 한눈에 보는 ${Y}</h3>
+        <div class="yf-top"><div class="yf-sc"><b>${B.total}</b><small>한 해 총점</small></div><div><div class="yf-kw">${B.kw.map(k => `<span>#${k}</span>`).join('')}</div><p>${S6.총운}</p></div></div>
+        ${AREAS.map((x, i) => bar(`${x[0]} ${x[1]}`, B.area[i])).join('')}
+        <p class="sjnote">움직이기 좋은 달 <b>${mp.go.map(mm).join(', ')}</b> · 조건을 점검할 달 <b>${mp.caution.map(mm).join(', ')}</b></p></div>
+      <div class="hcard"><h3 class="ht">🔄 ${Y}년이 나에게 오는 방식</h3><div class="sjtxt">
+        <p>${Y}년 ${n.gzTxt}(${n.gzHan})년은 상반기에 <b>${n.ts.n}</b>, 하반기에 <b>${n.tb.n}</b>의 기운으로 들어와요.</p>
         <p>🌱 상반기 — ${S6.총운}</p><p>🍂 하반기 — ${S7.총운}</p>
-        ${B.luck ? `<p>🔮 지금은 <b>${B.luck.name}</b> 대운(${B.luck.start}살~)이에요. ${B.luck.g === B.gA || B.luck.g === B.gB ? '올해 세운과 대운이 같은 방향이라 그 기운이 <b>크게</b> 작용해요. 기회도 변화도 평소보다 커요.' : '대운과 세운의 방향이 달라, 큰 흐름은 대운이 잡고 올해는 그 안에서 ' + GN[B.gA] + ' 쪽 일이 두드러져요.'}</p>` : ''}
-        ${n.yrel ? `<p>🐑 띠 관계: 내 띠 ↔ 2027 양띠 「${n.yrel.n}」 — ${n.yrel.d.replace('날', '해')}</p>` : ''}
+        ${B.luck ? `<p>🔮 ${Y}년은 <b>${B.luck.name}</b> 대운(${Saju.luckSpan(Saju.luckYear(a, Y))})에 속해요. ${B.luck.g === B.gA || B.luck.g === B.gB ? '올해 세운과 대운이 같은 방향이라 그 기운이 <b>크게</b> 작용해요. 기회도 변화도 평소보다 커요.' : '대운과 세운의 방향이 달라, 큰 흐름은 대운이 잡고 올해는 그 안에서 ' + GN[B.gA] + ' 쪽 일이 두드러져요.'}</p>` : ''}
+        ${n.yrel ? `<p>🐑 띠 관계: 내 띠 ↔ ${Y} ${SAJU.ANI[n.yg.b]}띠 「${n.yrel.n}」 — ${n.yrel.d.replace('날', '해')}</p>` : ''}
         ${n.drel ? `<p>🏠 일지 관계: 「${n.drel.n}」 — ${n.drel.d.replace('날', '해')}</p>` : ''}</div></div>
-      <div class="hcard"><h3 class="ht">🗂️ 분야별 상세</h3><div class="sjtxt">${AREAS.map((x, i) => `<h4>${x[0]} ${x[1]} <small class="yf-s">${B.area[i]}점</small></h4><p>${areaTxt[i]}</p>`).join('')}</div></div>
-      <div class="hcard"><h3 class="ht">🔮 10년 대운 흐름</h3><table class="dytbl"><tr><th>시기</th><th>대운</th><th>기운</th></tr>
-        ${a.dy.slice(0, 8).map(d => { const L = Saju.luckAt(a, d.age); return `<tr class="${B.luck && B.luck.start === d.age ? 'on' : ''}"><td>${d.age}세~</td><td><b>${d.txt}</b></td><td>${Saju.GRPE[d.g]} ${Saju.GRPN[d.g]}<small style="display:block;color:var(--dim)">${L ? L.desc : ''}</small></td></tr>`; }).join('')}</table>
-        <p class="sjnote">표시된 줄이 지금 지나고 있는 대운이에요. 대운은 10년마다 바뀌는 큰 흐름이고, 그 안에서 해마다 세운이 더해져요.</p></div>
-      ${relHTML(p, a, B)}
-      ${mbtiHTML(a, B)}
-      ${B.t ? `<div class="hcard"><h3 class="ht">📜 2027 토정비결 전체</h3>${Tojeong.fullHTML(B.t)}</div>` : ''}
-      <div class="hcard"><h3 class="ht">📅 12개월 상세</h3><p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터 寅월). 토정 신수는 음력 달 기준이라, 寅월(양력 2월 무렵)에는 음력 1월 신수를 붙였어요. 좋은 날은 그달 일진 중 오늘의 운세 점수가 가장 높은 날이에요.</p>${months}</div>
-      <div class="hcard"><h3 class="ht">🗓️ 분기 전략</h3>${qs.map((q, i) => `<div class="yf-q"><b>${['1분기 (2~4월)', '2분기 (5~7월)', '3분기 (8~10월)', '4분기 (11~1월)'][i]}</b><em>${q.v}</em><span>${q.txt}</span></div>`).join('')}</div>
-      <div class="hcard"><h3 class="ht">🍀 2027 개운 가이드</h3><div class="sjtxt">
-        <p>부족한 <b>${EKN[a.weak]}</b> 기운을 채우면 한 해가 고르게 흘러요.</p>
-        <ul class="yf-ul"><li>🎨 행운의 색: ${L.c}</li><li>🔢 행운의 숫자: ${L.n}</li><li>🧭 좋은 방향: ${L.d}</li><li>🍽️ 도움 되는 음식: ${L.f}</li><li>🩺 챙길 몸: ${L.b}</li><li>🌱 개운 습관: ${dm.개운}</li></ul></div></div>
-      ${gameHTML(B)}
-      <div class="hcard"><h3 class="ht">⚠️ 2027 주의할 점</h3><div class="sjtxt">${cautions.map(c => `<p>· ${c}</p>`).join('')}</div></div>
-      <div class="hcard"><p class="sjtxt" style="margin:0">💌 ${esc(p.name)}님, 2027년은 <b>${B.kw[0]}</b>의 기운이 중심이 되는 해예요. 좋은 달에 움직이고 조심할 달에 쉬어 가며, 부족한 기운을 채워 가면 한 해를 내 편으로 만들 수 있어요.</p>
-        <p class="sjnote">※ 전통 명리·토정비결 이론을 바탕으로 한 참고·재미용 풀이예요.</p></div>`;
+      <div class="hcard"><h3 class="ht">⚠️ ${Y} 주의할 점</h3><div class="sjtxt">${cautions.map(c => `<p>· ${c}</p>`).join('')}</div></div>
+      <div class="hcard"><p class="sjtxt" style="margin:0">💌 ${esc(p.name)}님, ${Y}년은 <b>${B.kw[0]}</b>의 기운이 중심이 되는 해예요. 좋은 달에 움직이고 조심할 달에 쉬어 가며, 부족한 기운을 채워 가면 한 해를 내 편으로 만들 수 있어요.</p>
+        <p class="sjnote">※ 전통 명리·토정비결 이론을 바탕으로 한 참고·재미용 풀이예요.</p></div>`,
+      area: i => `<div class="hcard"><h3 class="ht">${AREAS[i][0]} ${Y} ${AREAS[i][1]}운 <small class="yf-s">${B.area[i]}점</small></h3>${bar(`${AREAS[i][0]} ${AREAS[i][1]}`, B.area[i])}<div class="sjtxt"><p>${areaTxt[i]}</p></div><p class="sjnote">한 해 총점 ${B.total} · 여섯 분야 평균 ${Math.round(B.area.reduce((x, y) => x + y, 0) / 6)}</p></div>`,
+      y_month: `<div class="hcard"><h3 class="ht">📅 12개월 상세</h3><p class="sjnote">명리의 달은 절기로 바뀌어요 (2월은 입춘부터 寅월). 토정 신수는 음력 달 기준이라, 寅월(양력 2월 무렵)에는 음력 1월 신수를 붙였어요. 좋은 날은 그달 일진 중 오늘의 운세 점수가 가장 높은 날이에요.</p>${months}</div>`,
+      y_luck: `<div class="hcard"><h3 class="ht">🔮 10년 대운 흐름</h3><table class="dytbl"><tr><th>시기</th><th>대운</th><th>기운</th></tr>
+        ${a.dy.slice(0, 8).map(d => { const L = Saju.luckAt(a, d.age); return `<tr class="${B.luck && B.luck.start === d.age ? 'on' : ''}"><td>${d.age}세~${d.yr ? `<small style="display:block;color:var(--dim)">${d.yr}~${d.yr + 9}년</small>` : ''}</td><td><b>${d.txt}</b></td><td>${Saju.GRPE[d.g]} ${Saju.GRPN[d.g]}<small style="display:block;color:var(--dim)">${L ? L.desc : ''}</small></td></tr>`; }).join('')}</table>
+        <p class="sjnote">나이는 세는나이(태어난 해를 1살로 셈) 기준이에요. 표시된 줄이 ${Y}년에 해당하는 대운이에요. 대운은 10년마다 바뀌는 큰 흐름이고, 그 안에서 해마다 세운이 더해져요.</p></div>`,
+      y_rel: relHTML(p, a, B),
+      y_guide: `<div class="hcard"><h3 class="ht">🗓️ 분기 전략</h3>${qs.map((q, i) => `<div class="yf-q"><b>${['1분기 (2~4월)', '2분기 (5~7월)', '3분기 (8~10월)', '4분기 (11~1월)'][i]}</b><em>${q.v}</em><span>${q.txt}</span></div>`).join('')}</div>
+      ${mbtiHTML(a, B, p)}
+      <div class="hcard"><h3 class="ht">🍀 ${Y} 개운 가이드</h3><div class="sjtxt">
+        <p>겉으로 드러나지 않는 <b>${EKN[a.weak]}</b> 기운을 전통 오행 해석에서 상징하는 것들이에요. 운세나 건강이 좋아진다는 뜻이 아니라 생활을 돌아보는 참고로 활용해 보세요.</p>
+        <ul class="yf-ul"><li>🎨 행운의 색: ${L.c}</li><li>🔢 행운의 숫자: ${L.n}</li><li>🧭 좋은 방향: ${L.d}</li><li>🍽️ 오행으로 연결되는 음식: ${L.f}</li><li>🩺 오행으로 연결되는 몸(전통 해석): ${L.b}</li><li>🌿 ${EKN[a.weak]} 기운을 상징하는 활동: ${Saju.WEAK_FILL[a.weak]}</li><li>🌱 ${dm.nm} 일간 성향에 맞는 습관: ${dm.개운}</li></ul></div></div>
+      ${gameHTML(B)}`,
+      tojeong: B.t ? `<div class="hcard"><h3 class="ht">📜 ${Y} 토정비결 전체</h3>${Tojeong.fullHTML(B.t)}</div>` : '',
+    };
   }
-  // 무료 화면(신년운세·토정비결) 아래에 붙는 안내 카드
-  // 무료 화면 아래: '무료 vs 상세'를 내 데이터로 보여 주는 맛보기 (일부만 공개, 나머지는 잠금)
-  function ctaHTML(p, page) {
-    const K = (Store.item('report') || {}).k || 50;
-    if (unlocked(p)) return `<div class="hcard yf-cta open"><b>📜 상세 사주 리포트</b><small>${Store.why('report') || '열림'} · 언제든 다시 볼 수 있어요</small><button class="bigbtn wide" id="yfGo">📜 상세 사주 리포트 보기</button></div>`;
-    const a = Hub.analyze(p); let B = null; try { B = a ? build(p, a) : null; } catch (e) { }
-    const have = typeof karma !== 'undefined' ? karma : 0, lock = '<i class="yf-lk">🔒</i>';
-    let teaser = '';
-    if (B) {
-      const n = B.n, m0 = n.months.find(m => m.yr > Y || m.solarM >= Math.max(2, new Date().getFullYear() >= Y ? new Date().getMonth() + 1 : 2)) || n.months[0];
-      const gd = goodDays(a, p, m0), top = B.area.indexOf(Math.max(...B.area));
-      const ppl = store.get('p8b_people', []).filter(q => Hub.analyze(q));
-      const luck = B.luck, next = a.dy.find(d => d.age > B.age);
-      teaser = `<div class="yf-vs"><div class="yf-vsh"><span></span><b>무료 요약</b><b>상세 리포트</b></div>
-        <div class="yf-vsr"><span>분야별</span><em>총운 한 줄</em><em>6개 분야 점수·풀이<br><small>${AREAS[top][0]} ${AREAS[top][1]} <b>${B.area[top]}점</b> · 나머지 5개 ${lock}</small></em></div>
-        <div class="yf-vsr"><span>달마다</span><em>점수·한마디</em><em>좋은 날까지<br><small>${m0.solarM}월 좋은 날 <b>${gd.map(d => `${m0.solarM}/${d}`).join(' · ')}</b> · 11달 더 ${lock}</small></em></div>
-        <div class="yf-vsr"><span>대운</span><em>—</em><em>10년 대운 8구간<br><small>지금 <b>${luck ? luck.name : ''}</b>${next ? ` → ${next.age}살부터 ${lock}` : ''}</small></em></div>
-        <div class="yf-vsr"><span>궁합</span><em>지수만</em><em>${ppl.length ? `${ppl.length > 2 ? `${ppl.slice(0, 2).map(q => esc(q.name)).join('·')} 외 ${ppl.length - 2}명과` : jo(ppl.slice(0, 2).map(q => esc(q.name)).join('·'), '과', '와')} 2027 흐름 ${lock}` : '관계도 상대별 2027 흐름'}</em></div>
-        <div class="yf-vsr"><span>토정비결</span><em>총평 한 줄</em><em>상·중·하괘 · 월별 신수 ${lock}</em></div>
-        <div class="yf-vsr"><span>실행</span><em>—</em><em>MBTI 전략 · 분기 전략 · 개운 · 주의점 ${lock}</em></div></div>`;
-    }
-    return `<div class="hcard yf-cta"><b>📜 상세 사주 리포트 · 무료와 무엇이 다를까요?</b>
-      <small>${esc(p.name)}님의 사주로 계산한 실제 내용 중 일부를 미리 보여 드려요.</small>
-      ${teaser}
-      <div class="kbal sm"><span>보유 카르마</span><b>✨ ${have}</b>${have < K ? `<small><b>${K - have}</b> 더 모으면 열려요 · 광고 1번 +${Karma.AD_K} · 인생 게임 엔딩 5~15</small>` : '<small>지금 열 수 있어요 · 한 번 열면 계속 볼 수 있어요</small>'}</div>
-      <button class="bigbtn wide" id="yfOpen">${have >= K ? `✨ 카르마 ${K}로 상세 리포트 열기` : `✨ 카르마 모으기 (${K - have} 부족)`}</button></div>`;
-  }
-  // 긴 리포트: 위쪽에 목차, 긴 섹션은 접어 두고 제목을 눌러 펼침
-  const FOLD = /12개월|토정비결|10년 대운|관계 · 궁합|MBTI|분야별 상세|인생 게임|나의 사주|오는 방식/;
-  function buildToc() {
-    const body = document.getElementById('hubBody'); if (!body || !body.querySelector('.yf-top') || body.querySelector('.yf-toc')) return;
-    const cards = [...body.querySelectorAll('.hcard')].filter(c => c.querySelector(':scope > h3.ht'));
-    cards.forEach((c, i) => { c.id = 'yfs' + i; const h = c.querySelector(':scope > h3.ht'); if (i && FOLD.test(h.textContent)) { c.classList.add('yf-fold', 'folded'); } h.onclick = () => { if (c.classList.contains('yf-fold')) c.classList.toggle('folded'); }; });
-    const toc = document.createElement('div'); toc.className = 'hcard yf-toc';
-    toc.innerHTML = `<b>📑 목차</b><div>${cards.map((c, i) => `<button data-s="yfs${i}">${c.querySelector(':scope > h3.ht').textContent.replace(/·.*$/, '').trim()}</button>`).join('')}</div><small>접힌 섹션은 제목을 누르면 펼쳐져요</small>`;
-    cards[0].after(toc);
-    toc.querySelectorAll('[data-s]').forEach(b => b.onclick = () => { const c = document.getElementById(b.dataset.s); c.classList.remove('folded'); c.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
-  }
-  function bind(p, a, rerender) {
-    buildToc();
-    const g = document.getElementById('yfGo'); if (g) g.onclick = () => { Snd.sfx('reveal'); Hub.go('yearfull'); };
-    const o = document.getElementById('yfOpen'); if (o) o.onclick = () => Karma.unlock('report', () => Hub.go('yearfull'));
-  }
-  function init() {
-    Hub.register({ page: 'yearfull', title: '상세 사주 리포트', html: (p, a) => html(p, a), bind: (p, a) => bind(p, a) });
-    Store.onChange(() => { if (document.getElementById('hub').classList.contains('on')) try { Hub.render(); } catch (e) { } });
-  }
-  init();
-  return { unlocked, ctaHTML, bind, html, build };
+  return { unlocked, build, parts, AREAS, GN, MA, monthAreas, areaGrid };
 })();

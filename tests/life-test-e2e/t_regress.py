@@ -30,7 +30,8 @@ async def main():
     # 생년월일이 시간대 변환으로 바뀌지 않음 (LA 시간대 브라우저)
     ctx2 = await b.new_context(timezone_id='America/Los_Angeles', locale='ko-KR')
     p2 = await ctx2.new_page()
-    await p2.add_init_script("localStorage.setItem('p8bT_me', JSON.stringify(%s))" % json.dumps({'name':'시간대','date':'1990-05-15','cal':'s','time':'','sex':'m'}))
+    _k = 'p8b_me' if '/life/' in BASE else 'p8bT_me'
+    await p2.add_init_script("localStorage.setItem('%s', JSON.stringify(%s))" % (_k, json.dumps({'name':'시간대','date':'1990-05-15','cal':'s','time':'','sex':'m'})))
     await p2.goto(BASE); await p2.wait_for_timeout(1200)
     r2 = await p2.evaluate("()=>{const a=Hub.analyze(Hub.me()); return [a.p.solar.y,a.p.solar.m,a.p.solar.d, a.pillarTxt.join(' ')]}")
     r1 = await pg.evaluate("()=>{const a=Hub.analyze({name:'x',date:'1990-05-15',cal:'s',time:'',sex:'m'}); return [a.p.solar.y,a.p.solar.m,a.p.solar.d, a.pillarTxt.join(' ')]}")

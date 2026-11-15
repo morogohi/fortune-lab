@@ -19,7 +19,7 @@ window.Ads = (() => {
   const listeners = new Set();
   const notify = () => listeners.forEach(f => { try { f() } catch (e) {} });
 
-  const day = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; };   // 출석과 같은 기기 현지 날짜
+  const day = () => KST.ymd();   // 출석과 같은 기기 현지 날짜
   const store = {
     get(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d } catch (e) { return d } },
     set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)) } catch (e) {} },
@@ -35,6 +35,7 @@ window.Ads = (() => {
 
   function setBannerHeight(h) {
     document.documentElement.style.setProperty('--ad-h', (h || 0) + 'px');
+    document.documentElement.classList.toggle('adon', (h || 0) > 0);   // 게임 버튼과 배너 사이 여백 (잘못 누름 방지)
     window.dispatchEvent(new Event('resize'));
   }
 
@@ -83,6 +84,7 @@ window.Ads = (() => {
   const noAds = () => !!(window.Store && Store.has('noads'));
   async function banner(on) {
     if (noAds()) on = false;
+    if (!native) { mockBanner(on); return; }
     wantBanner = on;
     if (!ready || !ID.banner) return;
     try {
@@ -97,6 +99,14 @@ window.Ads = (() => {
         await A.hideBanner(); bannerShown = false; setBannerHeight(0);
       }
     } catch (e) { console.warn('[Ads] banner', e); }
+  }
+
+  /* 웹 테스트 모드: 앱과 같은 자리에 '배너 광고 자리'를 보여 줘 화면 배치를 미리 확인 (실제 광고 아님) */
+  function mockBanner(on) {
+    const el = document.getElementById('adMock'); if (!el) return;
+    on = on && typeof Karma !== 'undefined' && Karma.testMode();
+    if (el.classList.contains('on') === on) return;
+    el.classList.toggle('on', on); setBannerHeight(on ? 50 : 0);
   }
 
   /* 엔딩으로 넘어갈 때 호출. 광고가 닫히면 done() 실행 (광고를 안 띄우면 바로 실행) */
@@ -169,17 +179,17 @@ window.Native = (() => {
       await navigator.clipboard.writeText(text); return 'copied';
     },
     /* 인생 카드 이미지 저장·공유: 앱은 공유 시트, 웹은 공유(지원 시) 또는 다운로드 */
-    async shareImage(dataUrl, text, mode) {
+    async shareImage(dataUrl, text, mode, opt = {}) {
       text = withLink(text);
       const b64 = dataUrl.split(',')[1];
       if (native && C.Plugins.Filesystem && C.Plugins.Share) {
-        const w = await C.Plugins.Filesystem.writeFile({ path: 'life-card.png', data: b64, directory: 'CACHE' });
-        await C.Plugins.Share.share({ title: '프로젝트 80억 인생 카드', text, files: [w.uri] });
+        const w = await C.Plugins.Filesystem.writeFile({ path: opt.file || 'life-card.png', data: b64, directory: 'CACHE' });
+        await C.Plugins.Share.share({ title: opt.title || '프로젝트 80억 인생 카드', text, files: [w.uri] });
         return 'shared';
       }
-      const blob = await (await fetch(dataUrl)).blob(), file = new File([blob], 'life-card.png', { type: 'image/png' });
+      const blob = await (await fetch(dataUrl)).blob(), file = new File([blob], opt.file || 'life-card.png', { type: 'image/png' });
       if (mode === 'share' && navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], text }); return 'shared'; }
-      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'life-card.png'; document.body.appendChild(a); a.click(); a.remove();
+      const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = opt.file || 'life-card.png'; document.body.appendChild(a); a.click(); a.remove();
       return 'downloaded';
     },
     hideSplash() { if (native && C.Plugins.SplashScreen) C.Plugins.SplashScreen.hide().catch(() => {}); },

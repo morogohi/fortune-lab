@@ -6,10 +6,12 @@
  *  앱(Android·iOS)에서는 사용하지 않음 — 앱은 AdMob(ads.js)
  * ===================================================================== */
 window.WEB_AD_CONFIG = {
-  client: '',              // ← AdSense 게시자 ID (예: 'ca-pub-1234567890123456'). 비어 있으면 광고 끔
+  client: 'ca-pub-8387477370861262',   // AdSense 게시자 ID (AdMob과 같은 계정). 비우면 웹 광고 끔
+                           //  ※ 실제로 광고가 나오려면 AdSense에서 morogohi.github.io 사이트 승인이 필요 (승인 전엔 빈칸 → 자리 숨김)
   displaySlot: '',         // ← 디스플레이 광고 단위 슬롯 ID (예: '1234567890'). 비어 있으면 배너 안 띄움
   h5: true,                // H5 Games Ads(전면·보상형) 사용 — 베타 승인 전엔 false 권장
-  test: true,              // 테스트 모드(data-adbreak-test="on"). 실제 수익은 false
+  // 테스트 페이지(life-test/)는 항상 테스트 광고(data-adtest·data-adbreak-test) — 본인 클릭으로 계정 정지 방지. 운영(life/)은 실제 광고
+  test: /\/life-test\//.test(location.pathname),
   frequencyHint: '120s',   // 전면 광고 최소 간격
 };
 
@@ -47,7 +49,7 @@ window.WebAds = (() => {
     const box = document.getElementById(containerId);
     if (!box || box.dataset.filled) return;
     box.dataset.filled = '1'; box.style.display = 'block';
-    box.innerHTML = `<div class="adlabel">광고</div><ins class="adsbygoogle" style="display:block" data-ad-client="${W.client}" data-ad-slot="${W.displaySlot}" data-ad-format="auto" data-full-width-responsive="true"></ins>`;
+    box.innerHTML = `<div class="adlabel">광고</div><ins class="adsbygoogle" style="display:block" data-ad-client="${W.client}" data-ad-slot="${W.displaySlot}" data-ad-format="auto" data-full-width-responsive="true"${W.test ? ' data-adtest="on"' : ''}></ins>`;
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
   }
 

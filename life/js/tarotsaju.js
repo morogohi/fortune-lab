@@ -79,7 +79,7 @@ const TarotSaju = (() => {
       <p>일간 <b>${dm.nm || EK[a.meEl]}</b>, 가장 강한 기운은 <b>${GNAME[a.dom]}</b>. 이번 카드와 사주를 함께 보면 — <b>${full.verdict}</b></p>
       <div class="ts-lock"><b>🔒 열면 이런 내용이 나와요</b><ul>
         <li>🧭 ${tn} 바탕: 타고난 ${topic === 'love' ? '연애' : topic === 'money' ? '재물' : topic === 'work' ? '일' : ''} 스타일과 부족한 오행이 고민에 주는 영향</li>
-        <li>⏳ 대운·${new Date().getFullYear()}년·이번 달이 ${tn}에 유리한지 (시기 점수 ${'●'.repeat(full.period)}${'○'.repeat(3 - full.period)})</li>
+        <li>⏳ 대운·${KST.year()}년·이번 달이 ${tn}에 유리한지 (시기 점수 ${'●'.repeat(full.period)}${'○'.repeat(3 - full.period)})</li>
         <li>🃏 ${D.n}장 자리별 카드 × 사주 오행 해석</li>
         <li>⚖️ 판단 근거와 앞으로 6개월 중 ${tn}에 좋은 달 ${full.ahead}개</li>
         ${ctx.partners && ctx.partners.length && (topic === 'love' || topic === 'all') ? `<li>💞 ${esc(ctx.partners[0].name)}님과의 궁합 · 지금 관계 조언</li>` : ''}
@@ -91,7 +91,7 @@ const TarotSaju = (() => {
   function html(D, ctx, meta) {
     const { a, p } = ctx; if (!a) return '';
     const topic = D.topic in TK ? D.topic : 'all', key = TK[topic], tn = TN[topic], meE = a.meEl;
-    const pos = Tarot.SPREADS[D.n], now = new Date(), Y = now.getFullYear(), M = now.getMonth() + 1;
+    const pos = Tarot.SPREADS[D.n], now = KST.now(), Y = now.getFullYear(), M = now.getMonth() + 1;
     const dm = a.dm || {}, nm = (p && p.name) || '나';
     // 지금 시기
     const lk = Saju.luckAt(a, ctx.age || 30), yg = tgOf(a, S.yearGz(Y)), ny = tgOf(a, S.yearGz(Y + 1));
@@ -163,7 +163,7 @@ const TarotSaju = (() => {
     return `<div class="hcard tsaju"><h3 class="ht">🔮☯️ 사주 × 타로 심층 풀이 · ${tn}</h3>
       <p class="sjnote">뽑은 카드를 ${nm}님의 사주(일간·오행·대운·올해·이번 달)와 엮어 풀었어요. 계산은 이 기기에서만 해요.</p>
       ${secA}${secB}${secC}${secD}${secE}${secF}
-      <button class="hbtn" id="tsCounsel">🤖 이 고민, AI 사주상담으로 두 선택지 비교하기</button></div>`;
+      <button class="hbtn" id="tsCounsel">🤖 이 고민, 사주 상담으로 두 선택지 비교하기</button></div>`;
   }
   return { html, teaser };
 })();

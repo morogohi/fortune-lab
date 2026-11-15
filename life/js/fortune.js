@@ -95,7 +95,7 @@ window.Fortune = (() => {
   function grade(v) { return v >= 85 ? '대길' : v >= 72 ? '길' : v >= 58 ? '평' : '주의'; }
 
   /* a = Saju.analyze 결과, key = 사람 식별 문자열 */
-  function today(a, key, d = new Date()) {
+  function today(a, key, d = KST.now()) {
     const gz = dayGz(d), me = a.me;
     const ts = S.tg10(me, gz.s), tb = S.tg10(me, S.HID[gz.b]);
     const rnd = seeded(key + '|' + ymd(d));
@@ -141,5 +141,29 @@ window.Fortune = (() => {
     return { year, yg, ts, tb, sx, sb, yrel, drel, months, best, worst, gzTxt: S.STK[yg.s] + S.BRK[yg.b], gzHan: S.ST[yg.s] + S.BR[yg.b] };
   }
 
-  return { today, brief, newYear, dayGz, ymd, AREAS, AREA_E, LUCK, grade, seeded };
+  /* ---------- 월별 판단 (공통) ----------
+   * 요약·선택지 상세·4주 계획·실천 조언·리포트가 모두 이 판단을 쓴다 → 같은 달에 '쉬어 가라'와 '시작하라'가 함께 나오지 않음
+   *  · caution : 한 해 중 기운이 가장 약한 달과, 그와 거의 같은(2점 이내) 달 → 준비·검증·조건 점검 중심
+   *  · go      : 움직이기 좋은 달(상위 2개, 주의 달 제외)
+   *  · fieldMonths(g): 분야(g) 기운이 들어오는 달 → exec(실행을 권하는 달) / prep(관련 기운은 있지만 주의가 커서 준비하는 달)으로 나눔 */
+  function monthPlan(a, year) {
+    const n = newYear(a, year), M = n.months, lowV = n.worst.v;
+    const caution = M.filter(x => x.v <= lowV + 2);
+    const isC = x => caution.includes(x);
+    const go = n.best.filter(x => !isC(x));
+    const ord = L => [...L].sort((x, y) => x.yr - y.yr || x.solarM - y.solarM);
+    const label = x => `${x.yr !== year ? x.yr + '년 ' : ''}${x.solarM}월`;
+    function fieldMonths(g) {
+      let L = [];
+      if (g >= 0 && g <= 4) L = M.filter(x => S.tg10(a.me, x.s).g === g);
+      else if (g === 5) L = M.filter(x => x.rel && x.rel.v > 0);
+      else if (g === 6) L = M.filter(x => x.rel && x.rel.k === 'chung');
+      const exec = ord(L.filter(x => !isC(x)).sort((x, y) => y.v - x.v).slice(0, 3));
+      const prep = ord(L.filter(isC));
+      return { all: ord(L), exec, prep, fallback: exec.length ? null : ord(go.length ? go : [...M].filter(x => !isC(x)).sort((x, y) => y.v - x.v).slice(0, 2)) };
+    }
+    return { n, year, caution: ord(caution), go: ord(go), worst: n.worst, isCaution: isC, fieldMonths, label, labels: L => ord(L).map(label).join('·') };
+  }
+
+  return { today, brief, newYear, monthPlan, dayGz, ymd, AREAS, AREA_E, LUCK, grade, seeded };
 })();

@@ -11,22 +11,30 @@ function wpick(arr,wf){const t=arr.reduce((s,x)=>s+wf(x),0);let r=Math.random()*
 const M=x=>Math.round(x*P.mult); // 선진국 기준 금액 → 출생국 물가
 
 /* ================= 저장(가능할 때만) ================= */
-const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
-let karma=store.get('p8b_karma',20);
+const store={get(k,d){try{const v=localStorage.getItem(k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){try{localStorage.setItem(k,JSON.stringify(v));return true}catch(e){return false}}};   // set: 저장 성공 여부를 돌려줌
+const KSTART=(window.STORE_CONFIG&&STORE_CONFIG.startKarma)||100;   // 처음 시작 카르마
+let karma=store.get('p8b_karma',KSTART);
 let hist=store.get('p8b_hist',[]);
 // 카르마가 바뀔 때마다 거래 내역에 남김 (이유는 window.KREASON에 직전 동작이 적어 둠, 없으면 추정)
-const saveMeta=()=>{const before=store.get('p8b_karma',20);store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20));
-  const d=karma-before;if(d){const why=window.KREASON||(d>0?'인생 게임 보상':'게임에서 사용');window.KREASON=null;const l=store.get('p8b_klog',[]);l.unshift({t:Date.now(),d,why,bal:karma});store.set('p8b_klog',l.slice(0,60))}};
+// 반환: 카르마 저장 성공 여부 (저장 공간이 꽉 차는 등 실패하면 false → 호출한 쪽이 성공으로 표시하지 않음)
+const saveMeta=()=>{const before=store.get('p8b_karma',KSTART);const ok=store.set('p8b_karma',karma);store.set('p8b_hist',hist.slice(0,20));
+  const d=karma-before;if(d){const why=window.KREASON||(d>0?'인생 게임 보상':'게임에서 사용');const c=window.KCAT==='sync'?'sync':d<0?'spend':(window.KCAT||null);window.KREASON=null;window.KCAT=null;const l=store.get('p8b_klog',[]);l.unshift(c?{t:Date.now(),d,why,bal:karma,c}:{t:Date.now(),d,why,bal:karma});store.set('p8b_klog',l.slice(0,200))}if(ok!==false&&typeof window.onMetaSaved==='function')window.onMetaSaved();return ok};
 /* 다른 탭에서 카르마·기록이 바뀌면 이 탭도 따라감 (예전 값으로 덮어쓰는 것 방지) */
+/* 화면이 다시 켜지거나 다른 탭에서 바뀌면: 값이 실제로 달라졌을 때만 다시 그리고, 보던 위치(스크롤)는 그대로 둠
+   (예전에는 화면만 껐다 켜도 매번 다시 그려 리포트를 보던 위치가 맨 위로 돌아갔음) */
 function syncMeta(repaint){
-  karma=store.get('p8b_karma',20);hist=store.get('p8b_hist',[]);
-  if(!repaint)return;
+  const k0=karma,h0=JSON.stringify(hist);
+  karma=store.get('p8b_karma',KSTART);hist=store.get('p8b_hist',[]);
+  if(!repaint||(karma===k0&&JSON.stringify(hist)===h0))return;
   const on=id=>{const e=document.getElementById(id);return e&&e.classList.contains('on')};
   if(on('title')&&typeof renderTitle==='function')renderTitle();
   const ae=document.activeElement;
-  if(on('hub')&&typeof Hub!=='undefined'&&!(ae&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName))&&!on('overlay'))Hub.render();
+  if(on('hub')&&typeof Hub!=='undefined'&&!(ae&&/INPUT|SELECT|TEXTAREA/.test(ae.tagName))&&!on('overlay')){
+    const b=document.getElementById('hubBody'),y=b?b.scrollTop:0;if(b)b.dataset.keep='1';
+    try{Hub.render()}finally{if(b){b.scrollTop=y;delete b.dataset.keep}}
+  }
 }
-addEventListener('storage',e=>{if(e.key==='p8b_karma'||e.key==='p8b_hist'||e.key===null)syncMeta(false)});
+addEventListener('storage',e=>{if(e.key===null||/^p8bT?_(karma|hist)$/.test(e.key))syncMeta(true)});
 document.addEventListener('visibilitychange',()=>{if(!document.hidden)syncMeta(true)});
 
 /* ================= 세계 데이터 (인구 비중 %) ================= */
@@ -510,7 +518,7 @@ function die(reason){
   const grade=E.grade;
   const title=lifeTitle(avg);
   const epi=pick(['"그래도 꽤 괜찮은 인생이었다."','"한 번 더 산다면, 덜 걱정하고 더 사랑할 거야."','"다음 생엔 어디서 태어날까."','"후회는 없다. 아니, 조금 있다."','"인생, 생각보다 짧더라."']);
-  const gain=Math.max(5,Math.round(score/8));karma+=gain;window.KREASON=`인생 게임 엔딩 (${grade}등급)`;
+  const gain=Math.max(5,Math.round(score/8));karma+=gain;window.KREASON=`인생 게임 엔딩 (${grade}등급)`;window.KCAT='game';
   hist.unshift({f:P.country.f,name:P.name,age:P.age,grade,title});saveMeta();
   hist[0].years=P.age;hist[0].c=P.country.n;hist[0].bk=bk;saveMeta();
   snapAlbum(true);
@@ -551,7 +559,7 @@ function die(reason){
       ${fr?`<div class="box fold"><div class="jua sec">📜 사주 vs 실제 인생</div>${Saju.summaryHTML(P.saju)}
         <div class="fate"><div><span>사주가 말한 운명</span><b>${Saju.GRPE[P.saju.dom]} ${fr.pred}</b><small>${P.saju.dm.key}</small></div>
         <div><span>실제로 산 인생</span><b>${fr.real}</b></div><div class="verdict ${fr.ok?'ok':''}">${fr.verdict}</div>
-        <p class="sjnote">부족한 기운 ${SAJU.EK[P.saju.weak]}${['목','금'].includes(SAJU.EK[P.saju.weak])?'을':'를'} 채우는 개운법: ${P.saju.dm.개운}</p></div></div>`:''}
+        <p class="sjnote">${Saju.gaeun(P.saju).fillLine} 일간 성향에 맞는 습관: ${P.saju.dm.개운}</p></div></div>`:''}
       <div class="box story fold"><div class="jua sec">📝 인생 경험 요약</div>${st.paras.map(p=>`<p>${p}</p>`).join('')}</div>
 
       <div class="box fold"><div class="jua sec">⭐ 결정적 순간</div>
@@ -680,7 +688,7 @@ function drawGraph(){
 const MOOD_OF={title:'title',setup:'title',roll:'roll',end:'ending'};
 function show(id){
   document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('on',s.id===id));
-  Ads.banner(id!=='game');refreshAdUI();
+  Ads.banner(true);refreshAdUI();   // 인생 게임 중에도 하단 배너 (광고 제거 구매 시 없음)
   if(window.WebAds&&!Store.has('noads')){if(id==='title')WebAds.banner('webAdTitle');if(id==='end')setTimeout(()=>WebAds.banner('webAdEnd'),1600)}
   Snd.mood(id==='game'&&P?stageOf(P.age).k:(MOOD_OF[id]||'title'));
   const sb=$('#sndbar');if(id==='game'){$('#stageWrap').appendChild(sb);sb.classList.add('ingame')}else{$('#app').appendChild(sb);sb.classList.remove('ingame')}
@@ -712,7 +720,7 @@ function initSetup(){
     const [y,m,d]=v.split('-').map(Number),t=$('#fTime').value,sx=document.querySelector('#fSex .on').dataset.v;
     const birth={cal:$('#fCal').value,y,m,d,hh:t?+t.split(':')[0]:12,mm:t?+t.split(':')[1]:0,unk:!t};
     if(Saju.ok()&&!Saju.analyze(birth,true)){$('#fErr').textContent='존재하지 않는 날짜예요 (음력이면 날짜를 확인해 주세요)';Snd.sfx('bad');return}
-    const today=Fortune.ymd(new Date());
+    const today=KST.ymd();
     const useMe=$('#fUseMe').checked;
     if(useMe&&v>today){$('#fErr').textContent='오늘 이후 날짜는 내 운세 정보로 쓸 수 없어요. ‘내 운세에도 사용’을 끄면 가상 인물로 플레이할 수 있어요';Snd.sfx('bad');return}
     if(useMe&&sx==='r'){$('#fErr').textContent='내 운세에도 쓰려면 성별을 골라 주세요 (랜덤은 게임 인물에만 쓸 수 있어요)';Snd.sfx('bad');return}

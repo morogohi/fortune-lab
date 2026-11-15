@@ -8,9 +8,15 @@ function openOverlay(title, html, btns = [{ t: '닫기' }]) {
   const o = document.getElementById('overlay'), sh = document.getElementById('osheet');
   sh.innerHTML = `<button class="mclose" aria-label="닫기">✕</button><h3>${title}</h3>${html}`;
   sh.firstChild.onclick = () => { Snd.sfx('tap'); const c = btns.find(b => /^(닫기|취소|계속 하기)$/.test(b.t)); closeOverlay(); c && c.f && c.f(); };
+  // 한 번 띄운 창의 버튼은 한 번만 처리 (빠른 연속 클릭으로 결제·차감이 두 번 되지 않게) — keep 버튼은 창을 닫지 않으므로 0.8초 간격 제한만
+  let fired = false, last = 0;
   btns.forEach(b => {
     const el = document.createElement('button'); el.className = 'obtn' + (b.pri ? ' pri' : ''); el.innerHTML = b.t;
-    el.onclick = () => { Snd.sfx('tap'); if (!b.keep) closeOverlay(); b.f && b.f(); };
+    el.onclick = () => {
+      if (fired || Date.now() - last < 800) return;
+      last = Date.now(); if (!b.keep) fired = true;
+      Snd.sfx('tap'); if (!b.keep) closeOverlay(); b.f && b.f();
+    };
     sh.appendChild(el);
   });
   o.classList.add('on'); sh.scrollTop = 0;
@@ -40,7 +46,7 @@ function doBuy(k, after) {
   Snd.sfx('tap');
   if (!Store.native && Karma.testMode()) {
     openOverlay('🧪 테스트 결제', `<p class="sjtxt" style="text-align:center">${it.e} <b>${it.n}</b> · ${it.price}<br>테스트 모드라 실제 결제 없이 적용돼요.</p>`,
-      [{ t: `🧪 ${it.price} 결제한 것으로 하기`, pri: 1, f: () => { Store.grant(k); if (k === 'noads') Ads.banner(false); Snd.sfx('fanfare'); after ? after() : openShop(null, true); } }, { t: '취소' }]);
+      [{ t: `🧪 무료로 결제한 것으로 하기 (실제 ${it.price})`, pri: 1, f: () => { Store.grant(k); if (k === 'noads') Ads.banner(false); Snd.sfx('fanfare'); after ? after() : openShop(null, true); } }, { t: '취소' }]);
     return;
   }
   Store.buy(k, (ok, err) => {
@@ -49,39 +55,59 @@ function doBuy(k, after) {
     else if (err && !/cancel/i.test(err)) openOverlay('결제하지 못했어요', `<p class="sjtxt" style="text-align:center">${Store.errText(err)}</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
   });
 }
-function openShop(focus, full) {
-  if (focus && !full && Store.item(focus)) return openProduct(focus);
+// 상점 목록 (팝업 상점과 하단 「상점」 탭이 함께 씀)
+function shopListHTML(page) {
   const row = k => { const it = Store.item(k), own = Store.has(k);
     return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small>${own ? `<small style="color:var(--money)">${Store.why(k)}</small>` : ''}</div>
       <button data-c="${k}" class="${own ? 'own' : ''}">${own ? '열림' : `✨ ${it.k}`}</button></div>`; };
   const main = Store.contents().filter(k => !Store.item(k).game), game = Store.contents().filter(k => Store.item(k).game);
-  const cont = main.map(row).join('') + `<div class="shopitem"><span class="se">🤖</span><div><b>AI 사주상담</b><small>인생의 갈림길 고민 — 선택지별 적합도·대운·MBTI·가상 인생 비교 · 첫 회 무료</small></div><button data-go="counsel">✨ 20/회</button></div>`
-    + `<h4 class="kh">☕ 가볍게</h4><div class="shopitem"><span class="se">🔮</span><div><b>타로 사주 심층 풀이</b><small>뽑은 카드를 내 사주·대운·올해·이번 달과 엮은 주제별 상담 · 매일 1회 무료 (리포트 보유 시 3회)</small></div><button data-go="tarot">✨ 10/회</button></div>`
+  // 서비스별 상세 풀이 가격 (개요는 무료 · 볼 때 차감 · 결제한 날 다시보기 3회 무료)
+  const SV = [['newyear', 'newyear'], ['tojeong', 'tojeong'], ['compat', 'compat'], ['flirt', 'flirt'], ['mbti', 'mbti']];
+  const vrow = (k, go) => { const it = Views.item(k); return `<div class="shopitem"><span class="se">${it.e}</span><div><b>${it.n}</b><small>${it.d}</small></div><button data-go="${go}">✨ ${it.k}/회</button></div>`; };
+  const cont = `<p class="sjnote" style="margin:4px 0 8px">📜 사주풀이는 무료 · 각 서비스의 개요는 무료로 보고, 더 자세한 풀이만 볼 때 카르마를 써요 (결제한 날 자정까지 다시보기 ${Views.FREE()}회 무료 · 신년운세 · 토정비결 · 종합 리포트는 같은 프로필 · 같은 연도면 다시 보기 무료, 이 기기에 보관).</p>`
+    + SV.map(([k, g]) => vrow(k, g)).join('')
+    + `<div class="shopitem pdfrow"><span class="se">📑</span><div><b>${Views.item('pdf').n}</b><small>${Views.item('pdf').d}</small></div><button data-pdf="1" class="${PdfReport.ready() ? '' : 'pdf-off'}">✨ ${Views.item('pdf').k}</button></div>${PdfReport.noteHTML()}`
+    + `<div class="shopitem"><span class="se">🃏</span><div><b>타로 상세 리딩</b><small>${Views.item('tarot5').d}</small></div><button data-go="tarot">1장 ✨${Views.item('tarot1').k} · 3장 ✨${Views.item('tarot3').k} · 5장 ✨${Views.item('tarot5').k}</button></div>`
+    + main.map(row).join('') + `<div class="shopitem"><span class="se">🧭</span><div><b>사주 상담</b><small>기기 안 규칙 기반 풀이 · 대화 상담 · 선택 상담 · ${CounselPrice.text()}</small></div><button data-go="counsel">✨ ${(STORE_CONFIG.counsel || {}).perQ || 3}/질문</button></div>`
+    + ''
     + (game.length ? `<h4 class="kh">🎮 게임 아이템</h4>` + game.map(row).join('') : '');
   const noads = Store.item('noads'), nown = Store.has('noads');
+  const charge = `<h4 class="kh">✨ 카르마 모으기 · 구매</h4>` + Karma.chargeHTML(0, '', page);
+  // 상점 탭: 카르마 모으기를 먼저 (무엇을 살지보다 '어떻게 모으는지'가 첫 질문)
+  return (page ? charge : '') + `<h4 class="kh">⭐ 카르마로 여는 콘텐츠</h4>` + cont + (page ? '' : charge)
+    + (noads ? `<h4 class="kh">🚫 광고 제거</h4><div class="shopitem"><span class="se">${noads.e}</span><div><b>${noads.n}</b><small>${noads.d}</small></div><button data-buy="noads" class="${nown ? 'own' : ''}">${nown ? '보유 중' : Store.native || Karma.testMode() ? noads.price : '앱 전용'}</button></div>` : '');
+}
+function bindShopList(root, re) {
+  Karma.bindCharge(re, root);
+  root.querySelectorAll('[data-c]').forEach(b => b.onclick = () => openProduct(b.dataset.c, re));
+  root.querySelectorAll('[data-pdf]').forEach(b => b.onclick = () => { if (document.getElementById('overlay').classList.contains('on')) closeOverlay(true); PdfReport.open(Hub.me()); });
+  root.querySelectorAll('[data-go]').forEach(b => b.onclick = () => { if (document.getElementById('overlay').classList.contains('on')) closeOverlay(); Hub.go(b.dataset.go); });
+  root.querySelectorAll('[data-buy]').forEach(b => b.onclick = () => doBuy(b.dataset.buy, re));
+}
+async function restoreBuys(re) { const n = await Store.restore(); re && re(); Hub.toast(n > 0 ? `구매 ${n}건을 복원했어요` : n === 0 ? '복원할 구매 내역이 없어요 (카르마는 이 기기에만 저장돼 복원되지 않아요)' : Store.errText(Store.lastErr())); }
+function openShop(focus, full) {
+  if (focus && !full && Store.item(focus)) return openProduct(focus);
   openOverlay('✨ 카르마 상점',
-    `<p class="sjnote" style="text-align:center;margin-top:0">유료 콘텐츠는 모두 <b>카르마</b>로 열어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요.</p>`
-    + `<h4 class="kh">⭐ 대표 상품</h4>` + cont + `<h4 class="kh">✨ 카르마</h4>` + Karma.chargeHTML(0)
-    + (noads ? `<h4 class="kh">🚫 광고 제거</h4><div class="shopitem"><span class="se">${noads.e}</span><div><b>${noads.n}</b><small>${noads.d}</small></div><button data-buy="noads" class="${nown ? 'own' : ''}">${nown ? '보유 중' : Store.native || Karma.testMode() ? noads.price : '앱 전용'}</button></div>` : ''),
-    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: async () => { const n = await Store.restore(); openShop(null, true); Hub.toast(n > 0 ? `구매 ${n}건을 복원했어요` : n === 0 ? '복원할 구매 내역이 없어요 (카르마는 로그인 계정으로 복원돼요)' : Store.errText(Store.lastErr())); } }] : []), { t: '닫기' }]);
-  Karma.bindCharge(() => openShop(null, true));
-  document.querySelectorAll('#osheet [data-c]').forEach(b => b.onclick = () => openProduct(b.dataset.c, () => openShop(null, true)));
-  document.querySelectorAll('#osheet [data-go]').forEach(b => b.onclick = () => { closeOverlay(); Hub.go(b.dataset.go); });
-  document.querySelectorAll('#osheet [data-buy]').forEach(b => b.onclick = () => doBuy(b.dataset.buy));
+    `<p class="sjnote" style="text-align:center;margin-top:0">유료 콘텐츠는 모두 <b>카르마</b>로 열어요. 카르마는 광고·인생 게임으로 모으거나 살 수 있어요. <a class="kqa" data-k="help">카르마가 뭔가요?</a></p>` + shopListHTML(false),
+    [...(Store.native ? [{ t: '🔄 구매 복원', keep: true, f: () => restoreBuys(() => openShop(null, true)) }] : []), { t: '닫기' }]);
+  const sh = document.getElementById('osheet');
+  bindShopList(sh, () => openShop(null, true));
+  const hq = sh.querySelector('[data-k=help]'); if (hq) hq.onclick = () => Karma.openHelp(() => openShop(null, true));
 }
 
 /* ---------- 프리미엄 사주 리포트 ---------- */
+// 사주풀이는 무료 (타고난 성향 전체). 2027 운세·대운 등 시기 풀이는 목적별 상세 보기에서
 function reportHTML(name, a, age) {
-  if (Store.has('report')) return Saju.premiumHTML(a, age, new Date().getFullYear());
+  const S = window.SAJU;
   return `${Saju.summaryHTML(a)}
-    ${(() => { try { const S = window.SAJU, y = new Date().getFullYear(), sx = S.SEUN[S.tg10(a.me, S.yearGz(y).s).g]; return `<div class="sjtxt"><h4>👀 미리보기 · ${y}년 총운</h4><p>${sx.총운}</p></div>`; } catch (e) { return ''; } })()}
-    <div class="lock"><b>🔒 프리미엄 사주 리포트</b><small>${new Date().getFullYear()}년 분야별 운세(일·재물·연애·건강, 상·하반기) · 이번 달 한마디 · 10년 대운 8구간 · 성격·강점·약점 · 개운법</small></div>
-    <p class="sjnote" style="text-align:center">※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
+    <div class="sjtxt"><h4>🧭 성격</h4><p>${a.dm.성격}</p><h4>💪 강점</h4><p>${a.dm.강점}</p><h4>⚠️ 약점</h4><p>${a.dm.약점}</p>
+    <h4>💕 연애 성향</h4><p>${a.dm.연애}</p><h4>💰 재물 성향</h4><p>${a.dm.재물}</p><h4>🩺 건강 성향</h4><p>${a.dm.건강}</p>
+    <h4>✨ 타고난 흐름</h4><p>${S.GDOM[a.dom]}</p><h4>🧩 보완할 점</h4><p>${S.GLACK[a.dom]}</p><h4>🍀 개운법</h4><p>${Saju.gaeun(a).dmLine} ${Saju.gaeun(a).fillLine} ${Saju.gaeun(a).note}</p></div>
+    <p class="sjnote" style="text-align:center">📜 사주풀이는 무료예요 · 2027 운세·12개월·대운은 신년운세 상세에서 볼 수 있어요.<br>※ 사주 풀이는 재미로 보는 콘텐츠예요.</p>`;
 }
 function showReport(name, a, age, fromGame) {
-  const locked = !Store.has('report');
-  openOverlay(`📜 ${name}의 사주`, reportHTML(name, a, age), [
-    ...(locked ? [{ t: `🔓 상세 사주 리포트 열기 (${Store.price('report')})`, pri: 1, f: () => openProduct('report', () => showReport(name, a, age, fromGame)) }] : []),
+  openOverlay(`📜 ${name}의 사주풀이`, reportHTML(name, a, age), [
+    ...(fromGame ? [] : [{ t: '🧧 2027 신년운세 보기', pri: 1, f: () => Hub.go('newyear') }]),
     { t: '닫기' }]);
 }
 function myReport() {
@@ -94,7 +120,7 @@ function myReport() {
   const birth = { cal: me.cal || 's', y, m, d, hh: t ? +t.split(':')[0] : 12, mm: t ? +t.split(':')[1] : 0, unk: !t };
   const a = Saju.analyze(birth, me.sex !== 'f');
   if (!a) return;
-  showReport(me.name || '나', a, new Date().getFullYear() - y, false);
+  showReport(me.name || '나', a, KST.year() - y, false);
 }
 
 /* ---------- 궁합 모드: 운명의 상대 ---------- */
