@@ -824,7 +824,7 @@ const Hub = (() => {
       // 이미지 카드 공유 창 (이름은 기본 숨김 · 생년월일 없음) → 공유하면 오늘의 미션 완료
       // 오늘 뽑은 타로가 있으면 그 카드 메시지도 공유 카드에 담음 (안 뽑았으면 뽑으라는 안내만)
       const st = store.get(DTK, {}), x = dtToday(st) && st.k === p.date && st.i != null ? dailyCard(p, st.i) : null;
-      const tr = x ? { name: x.c.ko, kw: x.c.kw, rev: x.rev, msg: x.rev ? x.c.rev : x.c.up } : null;
+      const tr = x ? { name: x.c.ko, kw: x.c.kw, rev: x.rev, msg: x.rev ? x.c.rev : x.c.up, img: Tarot.img(x.c) } : null;
       TodayShare.open(p, f, () => { const d = daily(); if (!d.shared) { d.shared = true; store.set('p8b_daily', d); addPouch(SHARE_POUCH, '운세 공유'); render(); } }, tr);
     };
   }

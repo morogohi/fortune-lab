@@ -75,19 +75,29 @@ window.TodayShare = (() => {
     g.strokeStyle = C.line; g.lineWidth = 2; g.beginPath(); g.moveTo(100, y); g.lineTo(W - 100, y); g.stroke();
     g.fillStyle = C.navy; g.font = `700 40px ${SANS}`; g.fillText('🃏 오늘의 타로', 100, y + 58);
     if (tr) {
-      g.fillStyle = C.gold; g.font = `700 40px ${SANS}`; g.fillText(`${tr.name} · ${tr.rev ? '역방향' : '정방향'}`, 100, y + 120);
-      const nw = g.measureText(`${tr.name} · ${tr.rev ? '역방향' : '정방향'}`).width;
-      g.fillStyle = C.dim; g.font = `500 34px ${SANS}`; g.fillText(`「${tr.kw}」`, 120 + nw, y + 120);
-      g.fillStyle = C.ink; g.font = `500 38px ${SANS}`;
-      const tl = wrap(g, tr.msg, W - 200); if (tl.length > 2) { tl.length = 2; tl[1] = tl[1].replace(/.$/, '…'); }
-      tl.forEach((l, i) => g.fillText(l, 100, y + 182 + i * 56));
+      // 카드 그림 (오른쪽) — 역방향이면 뒤집어서
+      const CW = 144, CH = 240, cx = W - 100 - CW, cy = y + 22; let pic = null;
+      if (tr.img) pic = await new Promise(res => { const im = new Image(); im.onload = () => res(im); im.onerror = () => res(null); im.src = tr.img; });
+      if (pic) {
+        g.save(); round(g, cx, cy, CW, CH, 14); g.clip();
+        if (tr.rev) { g.translate(cx + CW, cy + CH); g.rotate(Math.PI); g.drawImage(pic, 0, 0, CW, CH); } else g.drawImage(pic, cx, cy, CW, CH);
+        g.restore(); g.strokeStyle = C.gold; g.lineWidth = 3; round(g, cx, cy, CW, CH, 14); g.stroke();
+      }
+      const TW = pic ? W - 200 - CW - 30 : W - 200;
+      const nm = `${tr.name} · ${tr.rev ? '역방향' : '정방향'}`;
+      g.fillStyle = C.gold; g.font = `700 40px ${SANS}`; g.fillText(nm, 100, y + 120);
+      const nw = g.measureText(nm).width; g.font = `500 32px ${SANS}`;
+      if (nw + 20 + g.measureText(`「${tr.kw}」`).width <= TW) { g.fillStyle = C.dim; g.fillText(`「${tr.kw}」`, 120 + nw, y + 120); }
+      g.fillStyle = C.ink; g.font = `500 35px ${SANS}`;
+      const tl = wrap(g, tr.msg, TW); if (tl.length > 3) { tl.length = 3; tl[2] = tl[2].replace(/.$/, '…'); }
+      tl.forEach((l, i) => g.fillText(l, 100, y + 176 + i * 50));
     } else {
       g.fillStyle = C.ink; g.font = `500 38px ${SANS}`;
       g.fillText('하루 한 장, 질문을 떠올리고 카드를 골라 보세요.', 100, y + 120);
       g.fillStyle = C.dim; g.font = `400 34px ${SANS}`; g.fillText('운명 연구소에서 매일 무료로 뽑을 수 있어요.', 100, y + 176);
     }
     // 오늘의 명언
-    y = 1410;
+    y = 1440;
     const [qt, qs] = quote();
     g.strokeStyle = C.line; g.lineWidth = 2; g.beginPath(); g.moveTo(100, y); g.lineTo(W - 100, y); g.stroke();
     g.fillStyle = C.navy; g.font = `700 40px ${SANS}`; g.fillText('📜 오늘의 명언', 100, y + 58);
