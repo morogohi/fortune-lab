@@ -118,7 +118,15 @@ const Grow = (() => {
   }
   function flashBtn(n) { document.querySelectorAll('#actions .act').forEach(b => { if (b.textContent.trim().endsWith(n)) { b.classList.add('auto'); setTimeout(() => b.classList.remove('auto'), 500); } }); }
   function markBig() { const s = $('#sheet'); s.classList.add('big'); setTimeout(() => s.classList.remove('big'), 1600); }
-  function userTouched() { /* 사람이 직접 누르면 자동은 그대로 두되 다음 틱을 조금 늦춤 */ holdUntil = performance.now() + 900; }
+  function userTouched() { /* 자동 진행 중 사람이 직접 누르면 자동을 멈춤 (아래 pointerdown 에서 처리) */ holdUntil = performance.now() + 900; }
+  // 자동·빠르게·5년 건너뛰기 중 화면을 누르면 즉시 정지 — 사람이 직접 누른 것(pointerdown)만, 상단 자동 진행 바(속도 버튼)는 제외
+  //  (자동 진행이 선택지를 대신 누르는 click 은 pointerdown 이 아니라서 멈추지 않음)
+  document.addEventListener('pointerdown', e => {
+    if (!speed || !e.isTrusted) return;
+    const g = document.getElementById('game'); if (!g || !g.classList.contains('on')) return;
+    if (e.target && e.target.closest && e.target.closest('#autoBar')) return;
+    ffTo = 0; stop('⏸ 자동 진행을 멈췄어요 · ▶ 버튼으로 다시 시작');
+  }, true);
 
   function paintAuto() {
     const b = $('#autoBar'); if (!b) return;

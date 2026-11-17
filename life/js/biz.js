@@ -51,7 +51,7 @@ function doBuy(k, after) {
   }
   Store.buy(k, (ok, err) => {
     if (ok) { Snd.sfx('fanfare'); if (k === 'noads') Ads.banner(false); refreshFateLock(); closeOverlay(); after ? after() : openShop(null, true); }
-    else if (err === 'web') openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">결제는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
+    else if (err === 'web') openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">결제는 <b>안드로이드 앱</b>에서 할 수 있어요.</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
     else if (err && !/cancel/i.test(err)) openOverlay('결제하지 못했어요', `<p class="sjtxt" style="text-align:center">${Store.errText(err)}</p>`, [{ t: '상점으로', f: () => openShop(null, true) }]);
   });
 }

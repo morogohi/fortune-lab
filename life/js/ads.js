@@ -101,10 +101,13 @@ window.Ads = (() => {
     } catch (e) { console.warn('[Ads] banner', e); }
   }
 
-  /* 웹 테스트 모드: 앱과 같은 자리에 '배너 광고 자리'를 보여 줘 화면 배치를 미리 확인 (실제 광고 아님) */
+  /* 웹: 앱과 같은 자리(화면 아래)·같은 때에 배너 — AdSense 배너 단위(WEB_AD_CONFIG.displaySlot)가 있으면 실제 광고,
+   *  없으면 테스트 모드에서만 '배너 광고 자리'를 보여 줘 배치를 미리 확인 */
   function mockBanner(on) {
     const el = document.getElementById('adMock'); if (!el) return;
-    on = on && typeof Karma !== 'undefined' && Karma.testMode();
+    const real = !!(window.WebAds && WebAds.on && WebAds.bottomReady && WebAds.bottomReady());
+    if (real) { if (on) WebAds.bottom(el); }
+    else on = on && typeof Karma !== 'undefined' && Karma.testMode();
     if (el.classList.contains('on') === on) return;
     el.classList.toggle('on', on); setBannerHeight(on ? 50 : 0);
   }

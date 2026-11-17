@@ -518,7 +518,8 @@ function die(reason){
   const grade=E.grade;
   const title=lifeTitle(avg);
   const epi=pick(['"그래도 꽤 괜찮은 인생이었다."','"한 번 더 산다면, 덜 걱정하고 더 사랑할 거야."','"다음 생엔 어디서 태어날까."','"후회는 없다. 아니, 조금 있다."','"인생, 생각보다 짧더라."']);
-  const gain=Math.max(5,Math.round(score/8));karma+=gain;window.KREASON=`인생 게임 엔딩 (${grade}등급)`;window.KCAT='game';
+  const gain=(window.Karma&&Karma.GAME_K)||30;karma+=gain;   // 엔딩 보상: 한 판 30 (등급과 무관)
+  window.KREASON=`인생 게임 엔딩 (${grade}등급)`;window.KCAT='game';
   hist.unshift({f:P.country.f,name:P.name,age:P.age,grade,title});saveMeta();
   hist[0].years=P.age;hist[0].c=P.country.n;hist[0].bk=bk;saveMeta();
   snapAlbum(true);
@@ -804,7 +805,7 @@ renderTitle();
 /* ===== 광고 UI ===== */
 function refreshAdUI(){
   // 게임 화면의 광고 버튼도 카르마 충전과 같은 규칙(1회 +5 · 3분 간격 · 하루 10회 공유)으로
-  const ok=Ads.canReward(),txt=`📺 광고 보고 카르마 +${Karma.AD_K}<small>3분 간격 · 하루 10회</small>`;
+  const ok=Ads.canReward(),txt=`📺 광고 보고 카르마 +${Karma.AD_K}<small>3분 간격 · 하루 ${Karma.AD_DAY}회</small>`;
   ['#adKarmaBtn','#adKarmaBtn2'].forEach(id=>{const b=$(id);if(!b)return;b.style.display=ok?'inline-block':'none';b.innerHTML=txt;
     b.onclick=()=>Karma.adReward(()=>{renderTitle();const kg=$('#karmaGain');if(kg)kg.textContent=`✨ 광고 보상 +${Karma.AD_K} (보유 ${karma})`;buzz(30)})});
   const pb=$('#privBtn');if(pb){pb.style.display=Ads.privacyRequired?'inline':'none';pb.onclick=()=>Ads.privacyOptions()}

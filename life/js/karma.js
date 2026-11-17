@@ -2,7 +2,7 @@
  *  karma.js — 카르마 하나로 단순화한 유료 모델
  *   · 대표 상품 2개: 상세 사주 리포트(카르마 50) · 사주 상담(1회 20, 첫 회 무료)
  *   · 상세 풀이: 서비스별 5~15 · 타로 1/3/5장 5/10/15 · AI 상담 질문당 3 (views.js·detail.js·counsel.js) / 게임 아이템은 별도
- *   · 카르마 모으기: 📺 광고 1번 +5 (3분 간격 · 하루 6번) · 🎲 인생 게임 엔딩 5~15 · 게임 중간 광고 휴식 +3
+ *   · 카르마 모으기: 📺 광고 1번 +20 (3분 간격 · 하루 6번) · 🎲 인생 게임 엔딩 +30 · 게임 중간 광고 휴식 +20
  *   · 💳 카르마는 돈으로도 살 수 있다 (100 · 330 · 1,200)
  *   · 🧪 테스트 모드(테스트 페이지·테스트 계정): 광고·결제를 실제 없이 가상으로 처리
  *   · 📒 사용 내역: 모으기(광고·게임·보너스) · 구매 · 사용을 나눠 기록하고 필터·요약으로 보여 줌
@@ -10,7 +10,8 @@
  *   · ❓ 카르마 안내: 무엇인지 · 어떻게 모으는지 · 어디에 쓰는지 (홈·상점의 ? 버튼)
  * ===================================================================== */
 const Karma = (() => {
-  const AD_K = 5, AD_GAP = 3 * 60e3, AD_DAY = 6, BREAK_K = 3, BREAK_EVERY = 10, AKEY = 'p8b_adk';
+  const AD_K = 20, AD_GAP = 3 * 60e3, AD_DAY = 6, BREAK_K = 20, BREAK_EVERY = 10, AKEY = 'p8b_adk';
+  const GAME_K = 30;   // 인생 게임 엔딩 한 번에 받는 카르마 (game.js 엔딩과 같은 값)
   const day = () => KST.ymd();
   const testMode = () => !Store.native && (!!window.P8B_COMMERCIAL || !!(window.Auth && Auth.isTest && Auth.isTest()));
   const bal = () => (typeof karma !== 'undefined' ? karma : 0);
@@ -131,9 +132,9 @@ const Karma = (() => {
       <p class="sjtxt"><b>카르마(✨)</b>는 운명 연구소의 유료 콘텐츠를 여는 <b>하나뿐인 재화</b>예요. 좋은 일을 쌓으면 복이 돌아오듯, 광고를 보거나 인생을 끝까지 살아 내면 쌓여요.</p>
       <h4 class="kh">어떻게 모으나요?</h4>
       <div class="kway"><i>📺</i><span><b>광고 보기 +${AD_K}</b><small>3분 간격 · 하루 ${AD_DAY}번 (최대 ${AD_K * AD_DAY})</small></span></div>
-      <div class="kway"><i>🎲</i><span><b>인생 게임 엔딩 +5~15</b><small>한 판을 끝까지 살면 점수에 따라 지급 · 10살마다 광고 휴식 +${BREAK_K}</small></span></div>
+      <div class="kway"><i>🎲</i><span><b>인생 게임 엔딩 +${GAME_K}</b><small>한 판을 끝까지 살면 지급 · 10살마다 광고 휴식 +${BREAK_K}</small></span></div>
       <div class="kway"><i>✨</i><span><b>처음 시작 +${START()}</b><small>처음 앱을 열면 기본으로 드려요</small></span></div>
-      ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 카르마가 계정에 저장돼 다른 기기에서도 이어져요 · 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
+      ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 카르마·내 정보·기록이 계정에 보관돼 어느 기기에서나 이어져요</small></span></div>` : ''}
       ${events().map(g => `<div class="kway"><i>${g.e}</i><span><b>${esc(g.n)} +${g.karma}</b><small>${fmtD(g.until)}까지 앱을 열면 1회 · ${gotEvent(g.id) ? '받았어요 ✅' : '곧 지급돼요'}</small></span></div>`).join('')}
       <div class="kway"><i>🎁</i><span><b>복주머니 교환 +10</b><small>출석·미션으로 모은 복주머니 3개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>
@@ -173,7 +174,7 @@ const Karma = (() => {
       ${testMode() ? '<div class="webtrial">🧪 테스트 모드 · 광고와 결제가 실제 없이 가상으로 처리돼요</div>' : ''}
       <h4 class="kh">무료로 모으기</h4>
       <button class="kopt" data-k="ad"><i>📺</i><span><b>광고 보고 +${AD_K}</b><small class="kAdT">${adLabel()}</small></span></button>
-      <button class="kopt" data-k="game"><i>🎲</i><span><b>인생 게임 한 판</b><small>엔딩마다 5~15 · 10살마다 광고 휴식 +${BREAK_K}</small></span></button>
+      <button class="kopt" data-k="game"><i>🎲</i><span><b>인생 게임 한 판</b><small>엔딩마다 +${GAME_K} · 10살마다 광고 휴식 +${BREAK_K}</small></span></button>
       <h4 class="kh">카르마 구매</h4>
       ${Store.packs().map(k => { const it = Store.item(k); return `<button class="kopt" data-pack="${k}"><i>${it.e}</i><span><b>${it.n}</b><small>${it.d}</small></span><em>${testMode() ? `<s>${Store.price(k)}</s> 무료` : Store.native ? Store.price(k) : '앱'}</em></button>`; }).join('')}
       ${ledgerHTML()}
@@ -205,7 +206,7 @@ const Karma = (() => {
          { t: '취소', f: () => { metric('pay_cancel'); after && after(); } }]);
       return;
     }
-    openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">카르마 구매는 <b>안드로이드·아이폰 앱</b>에서 할 수 있어요.<br>웹에서는 광고 체험과 인생 게임으로 카르마를 모아 보세요.</p>`, [{ t: '돌아가기', f: () => after && after() }]);
+    openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">카르마 구매는 <b>안드로이드 앱</b>에서 할 수 있어요.<br>웹에서는 광고 체험과 인생 게임으로 카르마를 모아 보세요.</p>`, [{ t: '돌아가기', f: () => after && after() }]);
   }
 
   /* ---------- 🧪 테스트 모드 / ✅ 실제 서비스 모드 ----------
@@ -311,6 +312,6 @@ const Karma = (() => {
   }
   init();
   setTimeout(() => { try { window.__kstTestOK = testMode(); if (!testMode()) store.set(OFFK, 0); } catch (e) { } if (!dailyCheck()) grants(); }, 600);   // 매일 초기화가 돌면 그 안에서 기본 지급까지 함   // 허브가 뜬 뒤 지급 (토스트·잔액 갱신)
-  return { metric, openMetrics, spend, unlock, openCharge, chargeHTML, bindCharge, adReward, showAd, testMode, add, bal, buyPack, AD_K, BREAK_K, AD_DAY,
+  return { metric, openMetrics, spend, unlock, openCharge, chargeHTML, bindCharge, adReward, showAd, testMode, add, bal, buyPack, AD_K, BREAK_K, GAME_K, AD_DAY,
     openHistory, openHelp, helpHTML, ledgerHTML, today, nextGoal, cat, adLabel, grants, events, note, recentHTML, mode, modeBadge, modeLine, toolsHTML, bindTools, resetAll, nextDay, dailyCheck, dailyOn };
 })();
