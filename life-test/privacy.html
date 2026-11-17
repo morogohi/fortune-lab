@@ -15,10 +15,10 @@
 <body><main>
 <p><a href="index.html">← 운명 연구소로 돌아가기</a></p>
 <h1>개인정보 처리방침</h1>
-<p class="dim">서비스: 운명 연구소 · 인생 게임 「프로젝트 80억 : 또 다른 인생」(웹·Android·iOS) · 개발자: Mysitic Cho · 시행일: 2026년 11월 15일 (선택 로그인 — 카카오·구글, 카르마 기록만 계정 보관)</p>
+<p class="dim">서비스: 운명 연구소 · 인생 게임 「프로젝트 80억 : 또 다른 인생」(웹·Android·iOS) · 개발자: 운명연구소 · 시행일: 2026년 11월 18일 (선택 로그인 시 기기 간 정보 동기화)</p>
 
 <h2>1. 이용자가 입력하는 정보와 저장 위치</h2>
-<p>이 서비스는 회원가입·로그인 없이도 모든 기능을 이용할 수 있습니다. 아래 정보는 로그인 여부와 관계없이 모두 <b>이용자 기기 안(브라우저 저장소 또는 앱 저장소)에만</b> 저장됩니다. 개발자 서버로 전송하지 않으며, 개발자는 이 정보를 볼 수 없습니다.</p>
+<p>이 서비스는 회원가입·로그인 없이도 모든 기능을 이용할 수 있습니다. <b>로그인하지 않으면</b> 아래 정보는 모두 <b>이용자 기기 안(브라우저 저장소 또는 앱 저장소)에만</b> 저장되며 개발자 서버로 전송하지 않습니다. <b>로그인한 경우</b>에는 어느 기기에서나 같은 정보로 이어 쓸 수 있도록 아래 정보의 사본을 계정에 보관합니다(1-1 참고).</p>
 <ul>
   <li><b>내 사주 정보</b>: 이름(별명), 생년월일, 양력·음력·윤달 구분, 태어난 시간(선택), 성별 — 오늘의 운세·사주·궁합 계산에 사용</li>
   <li><b>궁합 관계도</b>: 이용자가 입력한 상대의 이름(별명)·생년월일·태어난 시간·성별 (최대 20명) — 궁합 계산과 순위 표시에 사용</li>
@@ -30,15 +30,16 @@
 <p>다른 사람의 정보를 궁합에 입력할 때는 실명 대신 별명을 쓰는 것을 권장합니다. 사주 계산에는 생년월일과 시간만 필요합니다.</p>
 
 <h2>1-1. 선택 로그인 (카카오·구글)과 서버 저장 항목</h2>
-<p>로그인은 선택 사항입니다. 카카오 또는 구글 계정으로 로그인하면 기기 간에 카르마를 이어 쓰기 위해 아래 항목만 서버(Supabase, 리전: 서울)에 저장합니다.</p>
+<p>로그인은 선택 사항입니다. 카카오 또는 구글 계정으로 로그인하면 여러 기기에서 같은 정보로 이어 쓸 수 있도록 아래 항목을 서버(Supabase, 리전: 서울)에 저장합니다.</p>
 <ul>
   <li><b>계정 정보</b>: 로그인 공급자(카카오·구글)가 제공하는 계정 식별자, 닉네임(이름), 프로필 사진 주소, 이메일(공급자가 제공하는 경우) — 로그인 유지·화면 표시 목적 (Supabase 인증 서버가 보관)</li>
   <li><b>이용 기록 요약</b>: 카르마 잔액, 살아 본 인생 수, 카르마·구매로 연 콘텐츠 목록, 가입·마지막 접속 시각</li>
+  <li><b>기기에 저장된 정보의 사본</b>: 위 1번의 내 사주 정보(이름·생년월일·양력/음력·태어난 시간·성별), 궁합 관계도 상대 정보, 입력 기록, 운세·타로·MBTI 검사·사주 상담 기록, 게임 저장·지난 생애·출석·복주머니·카르마 사용 내역 — 기기 간 동기화 목적. 로그인 세션, 스토어 구매 기록, 광고 시청 횟수, 소리·화면 설정, 알림 예약은 올리지 않습니다. 이 정보는 행 단위 보안 규칙으로 <b>본인 계정에서만</b> 읽고 쓸 수 있습니다.</li>
   <li><b>회원가입 보너스 지급 기록</b>: 공급자 계정 식별자의 해시값(원래 값으로 되돌릴 수 없음) — 보너스 중복 지급 방지 목적, 탈퇴 후에도 보관</li>
 </ul>
-<p>위 1번의 사주 정보·궁합 상대·입력 기록·상담/검사 기록은 <b>로그인해도 서버로 보내지 않습니다</b>. 사주 상담·리포트(PDF)도 모두 기기 안에서 계산·생성합니다.</p>
-<p><b>보유 기간</b>: 회원 탈퇴 시 계정 정보와 이용 기록 요약을 즉시 삭제합니다(보너스 지급 기록 해시값 제외). 화면 우측 상단 👤 → 내 계정 → 회원 탈퇴에서 직접 탈퇴할 수 있습니다.</p>
-<p><b>로그인하지 않은 경우 정보와 이용 기록은 현재 기기·브라우저에만 저장됩니다. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있습니다.</b> 상담 기록 등은 로그인해도 기기 간에 옮겨지지 않습니다. (스토어에서 결제한 광고 제거 같은 상품은 앱의 「구매 복원」으로 스토어 계정에서 다시 확인할 수 있습니다.)</p>
+<p>사주 상담·리포트(PDF)의 계산과 생성은 모두 기기 안에서 하며, 상담 내용을 외부 AI로 보내지 않습니다. 계정에 보관된 정보는 광고 회사 등 제3자에게 제공하지 않습니다.</p>
+<p><b>보유 기간</b>: 회원 탈퇴 시 계정 정보, 이용 기록 요약, 계정에 보관된 정보 사본을 즉시 삭제합니다(보너스 지급 기록 해시값 제외). 로그아웃해도 기기에 있는 정보는 그대로 남습니다. 화면 우측 상단 👤 → 내 계정 → 회원 탈퇴에서 직접 탈퇴할 수 있습니다.</p>
+<p><b>로그인하지 않은 경우 정보와 이용 기록은 현재 기기·브라우저에만 저장됩니다. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있습니다.</b> 로그인하면 새 기기에서 같은 계정으로 로그인해 정보를 이어 쓸 수 있습니다. (스토어에서 결제한 광고 제거 같은 상품은 앱의 「구매 복원」으로 스토어 계정에서 다시 확인할 수 있습니다.)</p>
 
 <h2>2. 광고 (Google AdMob · AdSense)</h2>
 <p>앱은 무료 운영을 위해 Google AdMob 광고를 표시합니다. 광고 제공 과정에서 Google은 다음 정보를 수집·이용할 수 있습니다. 위 1번의 사주·궁합 정보는 광고 회사에 전달하지 않습니다.</p>
@@ -71,7 +72,7 @@
 <p>방침이 바뀌면 이 페이지에 게시합니다. 개인정보 관련 문의: <b><a href="mailto:support.um09@gmail.com">support.um09@gmail.com</a></b></p>
 
 <h2>Privacy Policy (English summary)</h2>
-<p>There is no sign-up or login. The nickname, birth date, calendar type, birth time and sex you enter, the people you add for compatibility (up to 20), saju counselling history, karma, unlocked content, purchase status and game progress are stored only on this device/browser and are never sent to the developer. Counselling and PDF reports are computed on the device by fixed rules (no external AI or server). Data may not be recoverable if you clear browser data or change devices.</p>
+<p>Login is optional. Without login, the nickname, birth date, calendar type, birth time and sex you enter, the people you add for compatibility (up to 20), saju counselling history, karma, unlocked content and game progress are stored only on this device/browser and are never sent to the developer. If you sign in with Kakao or Google, a copy of this data plus your karma balance is kept in your account (Supabase, Seoul region, readable only by your account) so it follows you across devices; it is deleted immediately when you delete your account. Counselling and PDF reports are computed on the device by fixed rules (no external AI or server). Data may not be recoverable if you clear browser data or change devices.</p>
 <p>The app shows ads via Google AdMob, which may collect advertising identifiers (IDFA only with your permission on iOS), approximate location from IP address and device information to serve and measure ads; your saju/compatibility data is not shared with advertisers. Payments are processed by Google Play / the App Store. Feedback and purchase-intent surveys open Google Forms, which never ask for your name, birth data or partner data. You can erase your data in More → "내 정보·기록 지우기", or by uninstalling the app or clearing site data. Contact: support.um09@gmail.com</p>
 </main></body>
 </html>

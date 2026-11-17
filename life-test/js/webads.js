@@ -53,6 +53,15 @@ window.WebAds = (() => {
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
   }
 
+  /* ①-b 화면 아래 고정 배너 (앱의 AdMob 하단 배너와 같은 자리) — 320×50 */
+  const bottomReady = () => on && !!W.displaySlot;
+  function bottom(el) {
+    if (!bottomReady() || !el || el.dataset.filled) return;
+    el.dataset.filled = '1'; el.classList.add('real'); el.style.background = 'var(--card)';
+    el.innerHTML = `<ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="${W.client}" data-ad-slot="${W.displaySlot}"${W.test ? ' data-adtest="on"' : ''}></ins>`;
+    try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
+  }
+
   /* ② 전면 광고: 엔딩으로 넘어갈 때. 광고가 없으면 바로 done() */
   function interstitial(done) {
     if (!on || !W.h5 || !window.adBreak) { done && done(); return; }
@@ -96,5 +105,5 @@ window.WebAds = (() => {
     return true;
   }
 
-  return { on, load, banner, interstitial, canReward, showReward, onChange: f => listeners.add(f) };
+  return { on, load, banner, bottom, bottomReady, interstitial, canReward, showReward, onChange: f => listeners.add(f) };
 })();

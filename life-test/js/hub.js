@@ -43,7 +43,7 @@ const Hub = (() => {
       (() => { const sv = store.get('p8b_saves', {}), ks = ['auto', 's1', 's2', 's3'].filter(k => sv[k] && sv[k].meta); return ks.length ? `<h4 class="rech">💾 저장한 인생 (이어 하기)</h4>${ks.map(k => { const m = sv[k].meta; return `<div class="recr" data-sv="${k}"><b>${m.f} ${esc(m.name)} · ${m.age}살 (${m.st})</b><small>${k === 'auto' ? '자동 저장' : '슬롯 ' + k.slice(1)} · ${m.year}년${m.job ? ' · ' + esc(m.job) : ''} · 눌러서 이어 하기</small></div>`; }).join('')}` : ''; })(),
       gh.length ? `<h4 class="rech">🎲 인생 게임 (끝난 인생)</h4>${gh.slice(0, 5).map(h => `<div class="recr"><b>${h.f} ${esc(h.name)} · ${h.grade}등급</b><small>「${esc(h.title)}」 · 향년 ${h.age}세</small></div>`).join('')}` : '',
     ].join('');
-    openOverlay('📂 내 기록 보관함', (body || '<p class="sjtxt" style="text-align:center">아직 저장된 기록이 없어요.<br>오늘의 운세·타로·검사·상담을 해 보면 여기에 모여요.</p>') + '<p class="sjnote" style="text-align:center">운세·타로·검사·상담·궁합·인생 게임(끝난 인생과 저장한 진행 중 인생)이 모여요 · 기록은 이 기기에만 저장돼요</p>', [{ t: '닫기' }]);
+    openOverlay('📂 내 기록 보관함', (body || '<p class="sjtxt" style="text-align:center">아직 저장된 기록이 없어요.<br>오늘의 운세·타로·검사·상담을 해 보면 여기에 모여요.</p>') + '<p class="sjnote" style="text-align:center">운세·타로·검사·상담·궁합·인생 게임(끝난 인생과 저장한 진행 중 인생)이 모여요 · ' + (Auth.user() ? '로그인 중이라 계정에도 보관돼요' : '기록은 이 기기에만 저장돼요 (로그인하면 다른 기기에서도 이어져요)') + '</p>', [{ t: '닫기' }]);
     document.querySelectorAll('#osheet [data-go]').forEach(b => b.onclick = () => { closeOverlay(); go(b.dataset.go); });
     document.querySelectorAll('#osheet [data-sv]').forEach(b => b.onclick = () => { closeOverlay(); go('game'); setTimeout(() => Save.load(b.dataset.sv), 150); });
     // 기록 지우기: 항목별 확인 후 이 기기에서 삭제 (오늘의 운세·타로 기록 · 이 프로필의 검사·상담 기록) — 카르마·구매·게임 저장은 그대로
@@ -195,7 +195,7 @@ const Hub = (() => {
     const me = getMe(), list = profiles();
     if (me && !list.some(x => pid(x) === pid(me))) { rememberProfile(me); return openProfiles(); }
     const rows = list.map((x, i) => `<div class="prow${me && pid(x) === pid(me) ? ' on' : ''}"><button data-pick="${i}"><b>${esc(x.name)}</b><small>${pLine(x)}</small></button>${me && pid(x) === pid(me) ? '<em>지금 보는 중</em>' : `<button class="pdel" data-pdel="${i}" aria-label="삭제">✕</button>`}</div>`).join('');
-    openOverlay('🙂 내 정보 · 입력 기록', `<p class="sjnote">입력했던 정보는 이 기기에만 기록돼요 (최대 10명). 고르면 모든 운세가 그 정보로 바뀌어요.</p>
+    openOverlay('🙂 내 정보 · 입력 기록', `<p class="sjnote">입력했던 정보는 ${Auth.user() ? '계정에 보관돼 다른 기기에서도 보여요' : '이 기기에만 기록돼요'} (최대 10명). 고르면 모든 운세가 그 정보로 바뀌어요.</p>
       <div class="plist">${rows || '<p class="sjnote">아직 기록이 없어요.</p>'}</div>`,
       [{ t: '✏️ 지금 정보 수정', f: editProfile }, { t: '➕ 새로운 사람 입력', pri: 1, f: () => { pending = 'today'; draftNew = true; tab = 'input'; editing = false; show('hub'); render(); } }, { t: '닫기' }]);
     document.querySelectorAll('[data-pick]').forEach(b => b.onclick = () => { const x = profiles()[+b.dataset.pick]; store.set('p8b_me', { name: x.name, date: x.date, cal: x.cal, time: x.time, sex: x.sex }); rememberProfile(x); closeOverlay(); scheduleNoti(); toast(`${x.name}님 정보로 바꿨어요`); render(); });
@@ -215,7 +215,7 @@ const Hub = (() => {
       <div class="setrow"><span>🛠️ 운영 모드</span><div>${Karma.modeBadge()} <small>${Karma.modeLine()}</small></div></div>
       ${Karma.toolsHTML()}
       <div class="setrow"><span>ℹ️ 앱 버전</span><div><b>${esc(appVer())}</b> <small>${Store.native ? '앱' : '웹'}</small></div><button id="sShop">상점</button></div>
-      <div class="setrow"><span>🔒 개인정보</span><div><small>사주 정보는 이 기기에만 저장돼요</small></div><button id="sPriv">관리</button></div>
+      <div class="setrow"><span>🔒 개인정보</span><div><small>${Auth.user() ? '로그인 중 · 계정에 함께 보관돼요' : '사주 정보는 이 기기에만 저장돼요'}</small></div><button id="sPriv">관리</button></div>
     </div>`, [{ t: '닫기' }]);
     $('#sMe').onclick = () => { closeOverlay(true); me ? openProfiles() : openItem('today'); };
     if ($('#sAcc')) $('#sAcc').onclick = () => { closeOverlay(true); u ? openAccount() : openLogin(); };
@@ -243,20 +243,20 @@ const Hub = (() => {
       { t: '게임 기록까지 모두 지우기', f: () => wipe(true) }, { t: '취소' }]);
   }
   function openPrivacy() {
-    openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>로그인하지 않아도 모든 기능을 쓸 수 있어요. 이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대, 상담·성향 검사 기록, 구매 기록, 게임 저장은 모두 <b>현재 기기·브라우저에만</b> 저장되고 개발자 서버로 보내지 않아요.</p>
+    openOverlay('🔒 개인정보 관리', `<div class="sjtxt"><p>로그인하지 않아도 모든 기능을 쓸 수 있어요. 로그인하지 않으면 이름(별명)·생년월일·태어난 시간·성별, 입력 기록, 궁합 상대, 상담·성향 검사 기록, 게임 저장은 모두 <b>현재 기기·브라우저에만</b> 저장되고 개발자 서버로 보내지 않아요.</p>
       <p>정보와 이용 기록은 현재 기기·브라우저에 저장됩니다. 브라우저 데이터 삭제나 기기 변경 시 복원되지 않을 수 있습니다.</p>
-      ${!Auth.canLogin() ? '' : `<p>👤 <b>로그인(선택)</b>: 카카오·구글로 로그인하면 <b>카르마 잔액·살아 본 인생 수·연 콘텐츠 목록</b>만 계정에 저장돼 다른 기기에서도 이어져요. 사주 정보·궁합 상대·상담 기록은 로그인해도 보내지 않아요. 탈퇴하면 서버 기록은 바로 지워져요.</p>`}</div>`,
+      ${!Auth.canLogin() ? '' : `<p>👤 <b>로그인(선택)</b>: 카카오·구글로 로그인하면 <b>카르마 잔액·연 콘텐츠와 함께 내 정보(이름·생년월일·태어난 시간·성별)·궁합 상대·운세/타로/상담/검사 기록·게임 저장</b>이 계정에 보관돼, 어느 기기에서 로그인해도 같은 정보로 이어져요. 계정 정보는 본인만 볼 수 있고, 탈퇴하면 서버 기록은 바로 지워져요.</p>`}</div>`,
       [{ t: '🗑️ 내 정보·기록 지우기', f: openWipe }, { t: '📄 개인정보 처리방침', f: () => { location.href = 'privacy.html'; } }, { t: '닫기' }]);
   }
   const KAKAO_SVG = '<svg viewBox="0 0 24 24" width="20" height="20" aria-hidden="true"><path fill="#000" d="M12 3C6.5 3 2 6.6 2 11c0 2.8 1.9 5.3 4.7 6.7l-1 3.7c-.1.3.3.6.6.4l4.4-2.9c.4 0 .9.1 1.3.1 5.5 0 10-3.6 10-8S17.5 3 12 3z"/></svg>';
   const GOOGLE_SVG = '<svg viewBox="0 0 48 48" width="20" height="20" aria-hidden="true"><path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.7 32.7 29.2 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.4-.4-3.5z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 15.1 19 12 24 12c3.1 0 5.8 1.2 7.9 3l5.7-5.7C34 6.1 29.3 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2l-6.2-5.2C29.2 35.1 26.7 36 24 36c-5.2 0-9.6-3.3-11.3-8l-6.5 5C9.5 39.6 16.2 44 24 44z"/><path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.2-4.1 5.6l6.2 5.2C37 39.2 44 34 44 24c0-1.3-.1-2.4-.4-3.5z"/></svg>';
   function openLogin() {
     const ok = Auth.ready(), nat = !Auth.canLogin(), bonus = (STORE_CONFIG.signupBonus || 0);
-    openOverlay('👤 로그인 · 회원가입', `<div class="kbal sm" style="justify-content:center">${bonus ? `<b>🎉 처음 로그인하면 카르마 +${bonus}</b>` : '<b>☁️ 카르마를 계정에 보관</b>'}<small style="text-align:center">${bonus ? '계정당 1번 · ' : ''}카르마와 연 콘텐츠가 계정에 저장돼 다른 기기에서도 이어서 쓸 수 있어요</small></div>
+    openOverlay('👤 로그인 · 회원가입', `<div class="kbal sm" style="justify-content:center">${bonus ? `<b>🎉 처음 로그인하면 카르마 +${bonus}</b>` : '<b>☁️ 카르마를 계정에 보관</b>'}<small style="text-align:center">${bonus ? '계정당 1번 · ' : ''}카르마·내 정보·기록·게임이 계정에 보관돼 어느 기기에서나 이어서 쓸 수 있어요</small></div>
       <button class="sso kakao" id="lgKakao" ${ok && !nat ? '' : 'disabled'}>${KAKAO_SVG}<span>카카오 로그인</span></button>
       <button class="sso google" id="lgGoogle" ${ok && !nat ? '' : 'disabled'}>${GOOGLE_SVG}<span>Google 계정으로 로그인</span></button>
       ${!ok ? '<p class="sjnote" style="text-align:center">로그인 서버 연결을 준비하고 있어요. 곧 열려요!</p>' : nat ? '<p class="sjnote" style="text-align:center">이 기기의 앱에서는 아직 로그인을 지원하지 않아요. 웹에서 로그인할 수 있어요.</p>' : ''}
-      <p class="sjnote" style="text-align:center">🔒 이름·생년월일·태어난 시간·성별·궁합 상대·상담 기록은 <b>서버로 보내지 않고</b> 이 기기에만 저장돼요.<br>로그인하지 않아도 모든 기능을 쓸 수 있어요.</p>`, [{ t: '닫기' }]);
+      <p class="sjnote" style="text-align:center">🔒 로그인하면 내 정보·궁합 상대·기록이 <b>본인만 볼 수 있는 계정</b>에 보관돼요(탈퇴하면 바로 삭제).<br>로그인하지 않아도 모든 기능을 쓸 수 있고, 그때는 이 기기에만 저장돼요.</p>`, [{ t: '닫기' }]);
     const run = async p => { toast('로그인 화면으로 이동해요…'); const r = await Auth.login(p); if (r.error && r.error !== 'cancel') toast(r.error === 'not-configured' ? '로그인 서버 준비 중이에요' : '로그인을 시작하지 못했어요. 잠시 후 다시 시도해 주세요'); };
     $('#lgKakao').onclick = () => run('kakao'); $('#lgGoogle').onclick = () => run('google');
   }
@@ -264,12 +264,12 @@ const Hub = (() => {
     const t = Auth.syncedAt();
     openOverlay('👤 내 계정', `<div class="sets"><div class="setrow"><span>${Auth.provider() === 'kakao' ? '💬 카카오' : '🔵 구글'}</span><div><b>${esc(Auth.name())}</b></div></div>
       <div class="setrow"><span>☁️ 동기화</span><div><small>카르마 ${karma} · ${t ? new Date(t).toLocaleString('ko-KR', { timeZone: 'Asia/Seoul', month: 'numeric', day: 'numeric', hour: '2-digit', minute: '2-digit' }) + ' 저장' : '아직 저장 전'}</small></div><button id="acSync">지금 저장</button></div></div>
-      <p class="sjnote">계정에는 카르마 잔액·인생 수·연 콘텐츠 목록만 있어요. 생년월일 등 사주 정보와 상담 기록은 이 기기에만 있어요. 로그아웃해도 이 기기의 카르마는 그대로예요.</p>`,
+      <p class="sjnote">계정에는 카르마 잔액·연 콘텐츠와 함께 내 정보·궁합 상대·운세/타로/상담/검사 기록·게임 저장이 보관돼, 다른 기기에서 로그인해도 그대로 이어져요. 로그아웃해도 이 기기에 있는 정보는 그대로예요.</p>`,
       [{ t: '로그아웃', f: async () => { await Auth.logout(); toast('로그아웃했어요'); } },
        { t: '회원 탈퇴', f: () => openOverlay('회원 탈퇴', '<p class="sjtxt">서버에 저장된 계정과 카르마·연 콘텐츠 기록이 모두 삭제돼요. 이 기기의 정보와 카르마는 그대로 남아요. 회원가입 보너스는 다시 받을 수 없어요.</p>',
            [{ t: '탈퇴하기', pri: 1, f: async () => toast(await Auth.deleteAccount() ? '탈퇴가 완료됐어요' : '탈퇴하지 못했어요. 문의: support.um09@gmail.com') }, { t: '취소', f: openAccount }]) },
        { t: '닫기' }]);
-    $('#acSync').onclick = async () => { const ok = await Auth.sync(); toast(ok ? '계정에 저장했어요' : '저장하지 못했어요. 잠시 후 다시 시도해 주세요'); closeOverlay(true); openAccount(); };
+    $('#acSync').onclick = async () => { const ok = await Auth.sync(); await Auth.dataSync(); toast(ok ? '계정에 저장했어요' : '저장하지 못했어요. 잠시 후 다시 시도해 주세요'); closeOverlay(true); openAccount(); };
   }
   function topbarUI() {
     const b = $('#loginBtn'); if (!b) return; const u = Auth.user();
@@ -808,7 +808,7 @@ const Hub = (() => {
   function passCard(pass) {
     return '';   // 유료 모델 단순화: 기간제 행운패스 없음 (광고는 카르마 모으기로 통일)   // 광고가 없는 웹에서는 광고 없애기 카드가 의미 없음
     return `<div class="hcard hpass"><div><b>🍀 행운패스</b><small>${pass}</small></div>
-        ${Ads.native ? `<button class="adbtn" id="hPassAd" ${Ads.canReward() ? '' : 'disabled'}>📺 광고 보고 2시간 무료${Ads.canReward() ? '' : '<small>(지금은 불가)</small>'}</button>` : '<small>📺 광고 보고 2시간 무료는 앱에서 이용할 수 있어요 · 복주머니 3개로도 교환 가능</small>'}
+        ${(Ads.native || (window.WebAds && WebAds.on)) ? `<button class="adbtn" id="hPassAd" ${Ads.canReward() ? '' : 'disabled'}>📺 광고 보고 2시간 무료${Ads.canReward() ? '' : '<small>(지금은 불가)</small>'}</button>` : '<small>📺 광고 보고 2시간 무료는 앱에서 이용할 수 있어요 · 복주머니 3개로도 교환 가능</small>'}
         ${Store.item('pass7') ? `<button class="ghost" id="hPassBuy">7일 ${Store.price('pass7')} · 30일 ${Store.price('pass30')}</button>` : ''}</div>`;
   }
   function passLeft() {
@@ -943,7 +943,7 @@ const Hub = (() => {
 
   /* ---------- 더보기 ---------- */
   const EXCH = [
-    { k: 'pass2h', e: '🍀', n: '행운패스 2시간', c: 3, can: () => Ads.native && !Store.has('noads'), show: () => Ads.native, f: () => { Store.addPass(2 * 36e5); Ads.banner(false); } },
+    { k: 'pass2h', e: '🍀', n: '행운패스 2시간', c: 3, can: () => (Ads.native || !!(window.WebAds && WebAds.on)) && !Store.has('noads'), show: () => Ads.native || !!(window.WebAds && WebAds.on), f: () => { Store.addPass(2 * 36e5); Ads.banner(false); } },
     { k: 'karma', e: '✨', n: '카르마 10', c: 3, can: () => true, f: () => { if (typeof karma !== 'undefined') { karma += 10; window.KREASON = '복주머니 교환'; window.KCAT = 'bonus'; saveMeta(); } } },
     { k: 'theme', e: '🎨', n: '오행 컬러 테마 1개', c: 10, can: () => themesOwned().length < 5, f: () => { const o = themesOwned(), nx = [0, 1, 2, 3, 4].find(i => !o.includes(i)); o.push(nx); store.set('p8b_themes', o); setTheme(nx); } },
     { k: 'fate', e: '🎛️', n: '운명 조작 팩 (인생 게임)', c: 20, can: () => !Store.has('fate'), f: () => Store.grant('fate') },

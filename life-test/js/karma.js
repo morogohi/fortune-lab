@@ -134,7 +134,7 @@ const Karma = (() => {
       <div class="kway"><i>📺</i><span><b>광고 보기 +${AD_K}</b><small>3분 간격 · 하루 ${AD_DAY}번 (최대 ${AD_K * AD_DAY})</small></span></div>
       <div class="kway"><i>🎲</i><span><b>인생 게임 엔딩 +${GAME_K}</b><small>한 판을 끝까지 살면 지급 · 10살마다 광고 휴식 +${BREAK_K}</small></span></div>
       <div class="kway"><i>✨</i><span><b>처음 시작 +${START()}</b><small>처음 앱을 열면 기본으로 드려요</small></span></div>
-      ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 카르마가 계정에 저장돼 다른 기기에서도 이어져요 · 사주 정보는 서버로 보내지 않아요</small></span></div>` : ''}
+      ${''}${(window.STORE_CONFIG || {}).signupBonus ? `<div class="kway"><i>🎉</i><span><b>회원가입 +${STORE_CONFIG.signupBonus}</b><small>카카오·구글로 처음 로그인하면 계정당 1번 · 카르마·내 정보·기록이 계정에 보관돼 어느 기기에서나 이어져요</small></span></div>` : ''}
       ${events().map(g => `<div class="kway"><i>${g.e}</i><span><b>${esc(g.n)} +${g.karma}</b><small>${fmtD(g.until)}까지 앱을 열면 1회 · ${gotEvent(g.id) ? '받았어요 ✅' : '곧 지급돼요'}</small></span></div>`).join('')}
       <div class="kway"><i>🎁</i><span><b>복주머니 교환 +10</b><small>출석·미션으로 모은 복주머니 3개</small></span></div>
       <div class="kway"><i>💳</i><span><b>상점에서 구매</b><small>${Store.packs().map(k => { const it = Store.item(k); return `✨${it.karma.toLocaleString()} = ${it.price}`; }).join(' · ')}</small></span></div>
