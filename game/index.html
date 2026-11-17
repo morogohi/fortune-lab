@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>프로젝트 80억: 또 다른 인생 — 운명 연구소 인생 게임</title>
+<meta name="description" content="80억 명 가운데 한 사람으로 태어나 한 해씩 살아 보는 인생 시뮬레이션 게임. 사주로 정해진 운명과 내가 노력으로 만든 삶을 엔딩에서 비교해 보세요. 오늘의 운세·매일 타로·사주도 함께.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="프로젝트 80억: 또 다른 인생 — 운명 연구소">
+<meta property="og:description" content="80억 명 중 한 사람으로 태어나 살아 보는 인생 게임 · 오늘의 운세 · 매일 타로 · 사주">
+<meta property="og:url" content="https://morogohi.github.io/fortune-lab/game/">
+<meta property="og:image" content="https://morogohi.github.io/fortune-lab/game/img/4_ending.jpg">
+<meta name="theme-color" content="#24364B">
+<link rel="icon" href="img/icon.png">
+<link href="../life/fonts/fonts.css" rel="stylesheet">
+<style>
+  :root{--bg:#F7F4EE;--bg2:#ECE6F7;--ink:#292929;--dim:#6b6457;--navy:#24364B;--gold:#9B8457;--line:#D9CFBA;--card:#fff;
+    --sans:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+  @media (prefers-color-scheme:dark){:root{--bg:#16171a;--bg2:#1d1b26;--ink:#ecebe8;--dim:#a9a397;--navy:#9fb6d6;--gold:#d2b67e;--line:#34363c;--card:#202226}}
+  *{box-sizing:border-box}
+  html,body{margin:0}
+  body{font-family:var(--sans);color:var(--ink);background:linear-gradient(160deg,var(--bg),var(--bg2)) fixed;line-height:1.65;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:980px;margin:0 auto;padding:0 20px}
+  header.hero{padding:calc(env(safe-area-inset-top,0px) + 48px) 0 36px;text-align:center}
+  .hero img.icon{width:96px;height:96px;border-radius:22px;box-shadow:0 8px 24px rgba(36,54,75,.25)}
+  .brand{color:var(--gold);font-weight:700;letter-spacing:.04em;margin:18px 0 4px;font-size:15px}
+  h1{font-size:clamp(28px,6vw,44px);line-height:1.25;margin:0 0 14px;color:var(--navy);letter-spacing:-.01em;text-wrap:balance}
+  .lead{font-size:clamp(16px,3.6vw,19px);color:var(--dim);max-width:640px;margin:0 auto 26px;text-wrap:pretty}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:14px 22px;border-radius:999px;font-weight:700;font-size:17px;text-decoration:none;min-height:52px;transition:transform .15s ease,box-shadow .15s ease}
+  .btn:active{transform:scale(.97)}
+  .btn.play{background:var(--navy);color:#fff;box-shadow:0 6px 18px rgba(36,54,75,.28)}
+  @media (prefers-color-scheme:dark){.btn.play{color:#16171a}}
+  .btn.web{border:2px solid var(--navy);color:var(--navy)}
+  .btn small{display:block;font-weight:500;font-size:12px;opacity:.85;line-height:1.2}
+  .note{font-size:13px;color:var(--dim);margin:14px auto 0;max-width:560px}
+  .shots{display:flex;gap:14px;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 20px 22px;margin:0 -20px;-webkit-overflow-scrolling:touch}
+  .shots figure{flex:0 0 200px;margin:0;scroll-snap-align:center}
+  .shots img{width:200px;height:auto;border-radius:18px;box-shadow:0 6px 20px rgba(0,0,0,.14);display:block}
+  .shots figcaption{font-size:13px;color:var(--dim);text-align:center;margin-top:8px}
+  section{padding:30px 0}
+  h2{font-size:clamp(22px,4.6vw,30px);color:var(--navy);margin:0 0 18px;text-wrap:balance}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:14px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:20px}
+  .card b{display:block;font-size:17px;margin-bottom:6px}
+  .card p{margin:0;color:var(--dim);font-size:15px}
+  .card .e{font-size:26px;display:block;margin-bottom:8px}
+  .steps{counter-reset:s;list-style:none;padding:0;margin:0;display:grid;gap:12px}
+  .steps li{background:var(--card);border:1px solid var(--line);border-radius:16px;padding:16px 18px 16px 58px;position:relative}
+  .steps li::before{counter-increment:s;content:counter(s);position:absolute;left:16px;top:16px;width:28px;height:28px;border-radius:50%;background:var(--navy);color:#fff;font-weight:700;display:grid;place-items:center;font-size:14px}
+  @media (prefers-color-scheme:dark){.steps li::before{color:#16171a}}
+  .steps b{display:block}
+  .steps span{color:var(--dim);font-size:15px}
+  .final{text-align:center;padding:40px 0 30px}
+  footer{border-top:1px solid var(--line);padding:22px 0 calc(env(safe-area-inset-bottom,0px) + 28px);font-size:13px;color:var(--dim);text-align:center}
+  footer a{color:var(--dim)}
+  @media (prefers-reduced-motion:reduce){.btn{transition:none}}
+</style>
+</head>
+<body>
+<header class="hero wrap">
+  <img class="icon" src="img/icon.png" alt="프로젝트 80억 앱 아이콘" width="96" height="96">
+  <p class="brand">운명 연구소 · 인생 게임</p>
+  <h1>프로젝트 80억:<br>또 다른 인생</h1>
+  <p class="lead">80억 명 가운데 한 사람으로 태어나 한 해씩 살아 보세요. 사주로 정해진 운명과, 내가 선택과 노력으로 만든 삶이 엔딩에서 어떻게 다른지 확인할 수 있어요.</p>
+  <div class="cta">
+    <a class="btn play" id="playBtn" href="https://play.google.com/store/apps/details?id=com.morogohi.project8b" rel="noopener">▶ <span>Google Play에서 받기<small>안드로이드 앱 · 무료</small></span></a>
+    <a class="btn web" href="../life/">🌐 <span>웹에서 바로 해 보기<small>설치 없이 · 무료</small></span></a>
+  </div>
+  <p class="note">지금은 정식 출시 전 <b>비공개 테스트</b> 기간이에요. 테스터로 등록된 Google 계정에서만 설치할 수 있어요. 테스트에 참여하고 싶다면 <a href="mailto:support.um09@gmail.com?subject=%EC%9A%B4%EB%AA%85%20%EC%97%B0%EA%B5%AC%EC%86%8C%20%ED%85%8C%EC%8A%A4%ED%84%B0%20%EC%8B%A0%EC%B2%AD">support.um09@gmail.com</a>으로 Google 계정 이메일을 보내 주세요.</p>
+</header>
+
+<div class="wrap">
+  <div class="shots" aria-label="게임 화면">
+    <figure><img src="img/1_birth.jpg" alt="탄생: 나라·가정형편·타고난 사주가 정해지는 화면" loading="lazy" width="200" height="435"><figcaption>탄생 — 80억 명 중 한 사람</figcaption></figure>
+    <figure><img src="img/2_life.jpg" alt="한 해씩 나이를 먹으며 공부·일·관계를 키우는 화면" loading="lazy" width="200" height="435"><figcaption>한 해씩 살아 보기</figcaption></figure>
+    <figure><img src="img/3_choice.jpg" alt="인생의 갈림길에서 선택하는 화면" loading="lazy" width="200" height="435"><figcaption>인생의 갈림길</figcaption></figure>
+    <figure><img src="img/4_ending.jpg" alt="사주로 본 운명과 실제 삶을 비교하는 엔딩 화면" loading="lazy" width="200" height="435"><figcaption>엔딩 — 운명 vs 노력</figcaption></figure>
+    <figure><img src="img/5_today.jpg" alt="오늘의 운세 화면" loading="lazy" width="200" height="435"><figcaption>오늘의 운세</figcaption></figure>
+    <figure><img src="img/6_saju.jpg" alt="내 사주 풀이 화면" loading="lazy" width="200" height="435"><figcaption>내 사주</figcaption></figure>
+  </div>
+
+  <section>
+    <h2>이런 게임이에요</h2>
+    <div class="grid">
+      <div class="card"><span class="e">🌍</span><b>실제 인구로 정해지는 탄생</b><p>세계 인구 비율에 따라 태어날 나라와 가정이 정해져요. 매번 다른 사람의 인생을 살아요.</p></div>
+      <div class="card"><span class="e">📜</span><b>사주로 만드는 캐릭터</b><p>타고난 사주가 시작 능력치와 10년 대운이 돼요. 운명은 출발선일 뿐, 결과는 내 선택이 만들어요.</p></div>
+      <div class="card"><span class="e">🎓</span><b>배우고 일하고 투자하기</b><p>학교 공부·취미·7개 외국어·피아노, 직업과 결혼·내 집 마련, 실제 역사 수익률로 하는 투자까지.</p></div>
+      <div class="card"><span class="e">🕰️</span><b>실제 세계사 속에서</b><p>1950~2026년 실제 사건이 내 인생에 영향을 줘요. 시대에 맞춰 살아 남아 보세요.</p></div>
+      <div class="card"><span class="e">⚖️</span><b>엔딩: 운명 vs 노력</b><p>사주가 예언한 삶과 실제로 살아 낸 삶을 나란히 비교해요. 노력으로 운명을 얼마나 바꿨을까요?</p></div>
+      <div class="card"><span class="e">🃏</span><b>오늘의 운세 · 매일 타로</b><p>내 생년월일로 보는 오늘의 운세, 하루 한 장 무료 타로, 사주·궁합·토정비결도 함께 들어 있어요.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <h2>시작하는 방법</h2>
+    <ol class="steps">
+      <li><b>앱 받기</b><span>Google Play에서 「운명 연구소」를 설치하거나, 웹에서 바로 시작하세요.</span></li>
+      <li><b>내 정보 입력</b><span>별명과 생년월일만 넣으면 돼요. 정보는 내 기기에만 저장되고 서버로 보내지 않아요.</span></li>
+      <li><b>인생 게임 시작</b><span>🎲 탭에서 새 인생을 시작하고, 엔딩에서 운명과 노력을 비교해 보세요.</span></li>
+    </ol>
+  </section>
+
+  <section class="final">
+    <h2>오늘, 또 다른 인생을 살아 볼까요?</h2>
+    <div class="cta">
+      <a class="btn play" href="https://play.google.com/store/apps/details?id=com.morogohi.project8b" rel="noopener">▶ <span>Google Play에서 받기<small>안드로이드 앱 · 무료</small></span></a>
+      <a class="btn web" href="../life/">🌐 <span>웹에서 해 보기<small>설치 없이</small></span></a>
+    </div>
+  </section>
+</div>
+
+<footer class="wrap">
+  <p>운명 연구소 · 문의 <a href="mailto:support.um09@gmail.com">support.um09@gmail.com</a> · <a href="../life/privacy.html">개인정보 처리방침</a></p>
+  <p>게임 속 운세와 사주는 전통 명리를 바탕으로 한 참고·재미용 풀이예요.</p>
+</footer>
+</body>
+</html>
