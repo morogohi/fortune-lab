@@ -33,7 +33,7 @@ const Karma = (() => {
     }
     if (window.WebAds && WebAds.on && Ads.canReward()) { Ads.showReward(got => done(!!got)); return; }
     let n = 5;
-    openOverlay(`${title} ${testMode() ? '(테스트)' : '(웹 체험)'}`, `<div class="yf-ad"><div class="yf-adbox">광고 자리<small>${testMode() ? '🧪 테스트 모드 · 실제 광고 대신 5초 기다려요' : '앱에서는 여기에 실제 광고가 나와요'}</small></div><p id="kAdN">${n}초 뒤 보상을 받아요</p></div>`, []);
+    openOverlay(`${title}${testMode() ? ' (테스트)' : ''}`, `<div class="yf-ad"><div class="yf-adbox">광고 자리<small>${testMode() ? '🧪 테스트 모드 · 실제 광고 대신 5초 기다려요' : '지금은 보여 드릴 광고가 없어요 · 잠깐 기다리면 같은 보상을 드려요'}</small></div><p id="kAdN">${n}초 뒤 보상을 받아요</p></div>`, []);
     const iv = setInterval(() => {
       n--; const e = document.getElementById('kAdN'); if (e) e.textContent = n > 0 ? `${n}초 뒤 보상을 받아요` : '완료!';
       if (n <= 0) { clearInterval(iv); setTimeout(() => { if (document.getElementById('kAdN')) closeOverlay(); done(true); }, 350); }

@@ -22,7 +22,7 @@ const Hub = (() => {
   const futureMsg = d => d > todayStr() ? '오늘 이후 날짜는 입력할 수 없어요.' : '';
   const TRIAL = () => Store.native ? '' : (typeof Karma !== 'undefined' && Karma.testMode())
     ? '<div class="webtrial">🧪 테스트 모드 · 광고와 결제가 실제 없이 가상으로 처리돼요. 카르마를 모아 유료 콘텐츠를 열어 보세요.</div>'
-    : '<div class="webtrial">🌐 웹 체험판 · 유료 콘텐츠는 카르마로 열어요. 카르마는 광고 체험·인생 게임으로 모을 수 있고, 구매는 앱에서 할 수 있어요.</div>';
+    : '';   // 웹도 앱과 같은 정식판 (체험판 안내 없음) — 카르마 구매만 안드로이드 앱 전용
   function analyzeP(p) { const b = birthOf(p); return b ? Saju.analyze(b, p.sex !== 'f') : null; }
   const keyOf = p => `${p.date}|${p.time || ''}|${p.sex}`;
 
@@ -978,7 +978,7 @@ const Hub = (() => {
         <button id="mShop"><span>🛍️</span><b>상점</b><small>카르마 모으기·구매 · 리포트 · 광고 제거</small></button>
         <button id="mEdit"><span>✏️</span><b>내 사주 정보 수정</b><small>생년월일·시간·성별</small></button>
         ${typeof Karma !== 'undefined' && Karma.testMode() ? '<button id="mMet"><span>📈</span><b>전환 기록 (테스트)</b><small>광고·결제·해제 횟수와 비율</small></button>' : ''}
-        <button id="mApp"><span>📱</span><b>${Store.native ? '도움말 · 지원' : '앱 소개 · 출시 소식'}</b><small>기능 안내 · 카르마 이용 안내 · 자주 묻는 질문</small></button>
+        <button id="mApp"><span>📱</span><b>도움말 · 기능 안내</b><small>기능 안내 · 카르마 이용 안내 · 자주 묻는 질문</small></button>
         <button id="mRec"><span>📂</span><b>내 기록 보관함</b><small>운세 · 타로 · 검사 · 상담 · 궁합 · 게임</small></button>
       </div>
       <div class="hcard"><h3 class="ht">🎨 화면 테마</h3>
