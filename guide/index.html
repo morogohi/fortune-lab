@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>기능 안내 — 운명 연구소 · 프로젝트 80억</title>
+<meta name="description" content="운명 연구소의 모든 기능 안내: 인생 게임, 오늘의 운세, 내 사주, 신년운세, 토정비결, 궁합, 바람기 테스트, 사주 MBTI, 타로, MBTI 검사, 사주 상담, 출석·미션, 카르마 사용법과 자주 묻는 질문.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="운명 연구소 기능 안내 — 인생 게임 · 사주 · 토정비결 · 궁합 · 타로">
+<meta property="og:description" content="무엇을 할 수 있는지, 무엇이 무료인지, 어떻게 쓰는지 한 페이지에 정리했어요.">
+<meta property="og:url" content="https://morogohi.github.io/fortune-lab/guide/">
+<meta property="og:image" content="https://morogohi.github.io/fortune-lab/game/img/4_ending.jpg">
+<meta name="theme-color" content="#24364B">
+<link rel="icon" href="../game/img/icon.png">
+<link href="../life/fonts/fonts.css" rel="stylesheet">
+<style>
+  :root{--bg:#F7F4EE;--bg2:#ECE6F7;--ink:#292929;--dim:#6b6457;--navy:#24364B;--gold:#9B8457;--line:#D9CFBA;--card:#fff;--chip:#efe9dd;
+    --free:#2f7d55;--free-bg:#e3f2e9;--k:#7a5a1c;--k-bg:#f6ecd6;
+    --sans:'Noto Sans KR','Apple SD Gothic Neo','Malgun Gothic',sans-serif}
+  @media (prefers-color-scheme:dark){:root{--bg:#16171a;--bg2:#1d1b26;--ink:#ecebe8;--dim:#a9a397;--navy:#a9bfdd;--gold:#d2b67e;--line:#34363c;--card:#202226;--chip:#2a2c31;
+    --free:#7fd3a3;--free-bg:#1f3328;--k:#e7c886;--k-bg:#3a3020}}
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth;scroll-padding-top:64px}
+  @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+  body{margin:0;font-family:var(--sans);color:var(--ink);background:linear-gradient(160deg,var(--bg),var(--bg2)) fixed;line-height:1.7;-webkit-font-smoothing:antialiased}
+  a{color:inherit}
+  .wrap{max-width:1000px;margin:0 auto;padding:0 20px}
+  /* 상단 메뉴 */
+  nav.top{position:sticky;top:0;z-index:10;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:saturate(1.4) blur(10px);-webkit-backdrop-filter:saturate(1.4) blur(10px);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+  nav.top .in{display:flex;gap:8px;overflow-x:auto;padding:10px 20px;max-width:1000px;margin:0 auto;scrollbar-width:none}
+  nav.top .in::-webkit-scrollbar{display:none}
+  nav.top a{flex:0 0 auto;text-decoration:none;font-size:14px;font-weight:600;padding:7px 13px;border-radius:999px;background:var(--chip);color:var(--ink);white-space:nowrap}
+  nav.top a.home{background:var(--navy);color:#fff}
+  @media (prefers-color-scheme:dark){nav.top a.home{color:#16171a}}
+  header.hero{padding:40px 20px 18px;text-align:center}
+  .brand{color:var(--gold);font-weight:700;letter-spacing:.04em;font-size:15px;margin:0 0 6px}
+  h1{font-size:clamp(27px,5.6vw,40px);line-height:1.28;margin:0 0 12px;color:var(--navy);text-wrap:balance}
+  .lead{color:var(--dim);font-size:clamp(15px,3.4vw,18px);max-width:660px;margin:0 auto;text-wrap:pretty}
+  /* 한눈에 보기 */
+  .map{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;margin:28px 0 8px}
+  .map a{display:block;text-decoration:none;background:var(--card);border:1px solid var(--line);border-radius:16px;padding:14px;transition:transform .15s ease}
+  .map a:active{transform:scale(.97)}
+  .map i{font-style:normal;font-size:24px;display:block}
+  .map b{display:block;font-size:15px;margin-top:4px}
+  .map small{color:var(--dim);font-size:12.5px;line-height:1.45;display:block}
+  /* 기능 섹션 */
+  section.f{display:grid;grid-template-columns:240px 1fr;gap:28px;align-items:start;padding:34px 0;border-top:1px solid var(--line)}
+  section.f.noimg{grid-template-columns:1fr}
+  @media (max-width:720px){section.f{grid-template-columns:1fr;gap:16px}section.f .shot{max-width:240px;margin:0 auto}}
+  .shot img{width:100%;height:auto;border-radius:20px;box-shadow:0 8px 24px rgba(0,0,0,.14);display:block}
+  .shot.two{display:flex;gap:10px}
+  .shot.two img{width:calc(50% - 5px)}
+  h2{font-size:clamp(22px,4.4vw,28px);color:var(--navy);margin:0 0 6px;line-height:1.35;text-wrap:balance}
+  h2 .e{margin-right:6px}
+  .tags{display:flex;flex-wrap:wrap;gap:6px;margin:4px 0 12px}
+  .tag{font-size:12.5px;font-weight:700;border-radius:999px;padding:3px 10px}
+  .tag.free{background:var(--free-bg);color:var(--free)}
+  .tag.k{background:var(--k-bg);color:var(--k)}
+  .tag.n{background:var(--chip);color:var(--dim)}
+  .f p{margin:0 0 10px;text-wrap:pretty}
+  .f ul{margin:0 0 10px;padding-left:20px}
+  .f li{margin:3px 0}
+  .tip{background:var(--card);border:1px solid var(--line);border-left:4px solid var(--gold);border-radius:12px;padding:10px 14px;font-size:14.5px;color:var(--dim);margin-top:12px}
+  table{border-collapse:collapse;width:100%;font-size:14.5px;background:var(--card);border-radius:14px;overflow:hidden;border:1px solid var(--line)}
+  th,td{text-align:left;padding:9px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+  th{background:var(--chip);font-weight:700}
+  tr:last-child td{border-bottom:0}
+  td.num{white-space:nowrap;font-weight:700}
+  details{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:12px 16px;margin:8px 0}
+  summary{cursor:pointer;font-weight:700}
+  details p{margin:8px 0 0;color:var(--dim)}
+  .cta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;margin:20px 0 6px}
+  .btn{display:inline-flex;align-items:center;gap:10px;padding:13px 22px;border-radius:999px;font-weight:700;font-size:16.5px;text-decoration:none;min-height:50px}
+  .btn.play{background:var(--navy);color:#fff}
+  @media (prefers-color-scheme:dark){.btn.play{color:#16171a}}
+  .btn.web{border:2px solid var(--navy);color:var(--navy)}
+  .btn small{display:block;font-weight:500;font-size:12px;opacity:.85;line-height:1.2}
+  .final{text-align:center;padding:36px 0 26px;border-top:1px solid var(--line)}
+  footer{border-top:1px solid var(--line);padding:20px 0 calc(env(safe-area-inset-bottom,0px) + 28px);font-size:13px;color:var(--dim);text-align:center}
+</style>
+</head>
+<body>
+<nav class="top" aria-label="기능 바로가기"><div class="in">
+  <a class="home" href="../game/">← 소개</a>
+  <a href="#game">🌏 인생 게임</a><a href="#today">☀️ 오늘의 운세</a><a href="#saju">📜 내 사주</a><a href="#newyear">🧧 신년운세</a>
+  <a href="#tojeong">🏮 토정비결</a><a href="#compat">💞 궁합</a><a href="#flirt">💘 바람기</a><a href="#mbti">🧩 사주 MBTI</a>
+  <a href="#tarot">🃏 타로</a><a href="#mbtitest">📝 MBTI 검사</a><a href="#counsel">🧭 사주 상담</a><a href="#pdf">📑 PDF 리포트</a>
+  <a href="#daily">🧧 출석·미션</a><a href="#karma">✨ 카르마</a><a href="#account">👤 계정·개인정보</a><a href="#faq">❓ 자주 묻는 질문</a>
+</div></nav>
+
+<header class="hero wrap">
+  <p class="brand">운명 연구소 · 프로젝트 80억</p>
+  <h1>모든 기능, 한 페이지에 자세히</h1>
+  <p class="lead">인생 게임부터 사주·토정비결·궁합·타로까지. 무엇을 할 수 있는지, 무엇이 무료인지, 어떻게 쓰는지 정리했어요. 생년월일 같은 내 정보는 <b>내 기기에만</b> 저장돼요.</p>
+  <div class="map">
+    <a href="#game"><i>🌏</i><b>인생 게임</b><small>80억 명 중 한 명으로 태어나 끝까지 살아 보기</small></a>
+    <a href="#today"><i>☀️</i><b>오늘의 운세</b><small>총운과 5개 분야 점수 · 행운 · 공유 카드</small></a>
+    <a href="#saju"><i>📜</i><b>내 사주 풀이</b><small>사주팔자 · 오행 · 대운 · 성격</small></a>
+    <a href="#newyear"><i>🧧</i><b>2027 신년운세</b><small>정미년 총운 · 12달 흐름</small></a>
+    <a href="#tojeong"><i>🏮</i><b>토정비결</b><small>한 해 신수 · 월별 운세</small></a>
+    <a href="#compat"><i>💞</i><b>궁합</b><small>궁합 지수 · 관계도 20명</small></a>
+    <a href="#flirt"><i>💘</i><b>바람기 테스트</b><small>도화살 · 홍염살 연애 기질</small></a>
+    <a href="#mbti"><i>🧩</i><b>사주 MBTI</b><small>오행·십성으로 본 성격 유형</small></a>
+    <a href="#tarot"><i>🃏</i><b>타로카드</b><small>78장 · 1장 · 3장 · 5장 펼치기</small></a>
+    <a href="#mbtitest"><i>📝</i><b>MBTI 성향 검사</b><small>24문항 · 사주 MBTI와 비교</small></a>
+    <a href="#counsel"><i>🧭</i><b>사주 상담</b><small>대화 상담 · 선택지 비교 상담</small></a>
+    <a href="#daily"><i>🧧</i><b>출석 · 미션</b><small>복주머니 모아 보상 받기</small></a>
+  </div>
+</header>
+
+<main class="wrap">
+
+<section class="f" id="game">
+  <div class="shot two"><img src="../game/img/1_birth.jpg" alt="인생 게임 탄생 화면" loading="lazy" width="270" height="587"><img src="../game/img/4_ending.jpg" alt="인생 게임 엔딩 화면" loading="lazy" width="270" height="587"></div>
+  <div>
+    <h2><span class="e">🌏</span>프로젝트 80억 : 인생 게임</h2>
+    <div class="tags"><span class="tag free">무료</span><span class="tag n">하단 「인생 게임」 탭</span></div>
+    <p>세계 인구 80억 명 가운데 한 사람으로 태어나, 한 해씩 나이를 먹으며 끝까지 살아 보는 시뮬레이션 게임이에요. 매번 다른 나라·가정·재능으로 태어나기 때문에 같은 인생은 없어요.</p>
+    <ul>
+      <li><b>탄생</b> — 실제 나라별 인구 비율로 태어날 곳이 정해지고, 가정형편·지역·타고난 재능이 함께 정해져요. 생년월일을 넣으면 그 사주가 캐릭터의 시작 능력치와 10년 대운이 돼요.</li>
+      <li><b>한 해씩 살기</b> — 공부·운동·취미·일을 골라 능력치를 키워요. 학교 과목, 7개 외국어 회화(소리 듣기), 피아노 악보 읽기·화성 시험과 리듬 미니게임, 경제 수업과 실제 역사 수익률로 하는 투자까지 들어 있어요.</li>
+      <li><b>실제 세계사</b> — 1950~2026년 실제 사건이 그 시대를 사는 내 인생에 영향을 줘요.</li>
+      <li><b>인생의 갈림길</b> — 진학·취업·결혼·이사 같은 중요한 순간에는 직접 골라요. 선택에 따라 인생이 크게 달라져요.</li>
+      <li><b>버킷리스트</b> — 목표를 이루면 카르마 +10.</li>
+      <li><b>엔딩: 운명 vs 노력</b> — 사주가 예언한 삶과 실제로 살아 낸 삶을 나란히 비교하고, 등급·인생 요약·결정적 순간을 보여 줘요. 엔딩마다 <b>카르마 +30</b>.</li>
+    </ul>
+    <p><b>편하게 하는 기능</b></p>
+    <ul>
+      <li><b>육성 방침 + 자동 진행</b> — 방침을 고르면 ▶ 자동 · ⏩ 빠르게 · 5년 건너뛰기로 알아서 진행해요. 중요한 선택에서는 멈추고, 진행 중 <b>화면을 누르면 바로 정지</b>해요.</li>
+      <li><b>저장</b> — 💾 중간 저장, 🏠 저장하고 나가기. 이어서 할 수 있어요.</li>
+      <li><b>10살마다 광고 휴식</b> — 원하면 광고를 보고 카르마 +20.</li>
+    </ul>
+    <p><b>카르마로 쓰는 게임 아이템</b>: 다시 태어나기 15 · 기적 40 · 운명 조작 팩 30(태어날 가정형편·재능 직접 선택) · 갈림길 미리 보기 3</p>
+  </div>
+</section>
+
+<section class="f" id="today">
+  <div class="shot"><img src="img/today.jpg" alt="오늘의 운세 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">☀️</span>오늘의 운세</h2>
+    <div class="tags"><span class="tag free">무료</span><span class="tag n">홈 맨 위</span></div>
+    <p>내 사주와 오늘의 일진(예: 을미일)을 맞춰 본 하루 운세예요. 날짜가 바뀌면 새 운세가 나와요.</p>
+    <ul>
+      <li><b>총운 점수와 등급</b>(예: 63점 · 평)과 오늘의 한 줄 조언</li>
+      <li><b>분야별 점수</b> — 애정 · 금전 · 직장 · 건강, 분야마다 짧은 풀이</li>
+      <li><b>시간대별 흐름</b> — 오전·오후·저녁에 어떤 기운인지</li>
+      <li><b>오늘의 행운</b> — 색 · 숫자 · 방향</li>
+      <li><b>「왜 이런 운세가 나왔나요?」</b> — 일간과 오늘 일진의 관계 등 계산 근거</li>
+      <li><b>공유 카드</b> — 점수·행운·오늘의 타로·오늘의 명언을 이미지 한 장으로 만들어 카카오톡·SNS로 보낼 수 있어요. 이름은 기본으로 숨기고(넣어도 첫 글자만), 생년월일은 넣지 않아요.</li>
+    </ul>
+    <div class="tip">🃏 오늘의 운세 화면에서 <b>매일 타로 한 장</b>을 무료로 뽑을 수 있어요. 질문을 떠올리고 7장 중 한 장을 고르면 사랑·일·돈 조언과 오늘의 행동 팁을 알려 줘요.</div>
+  </div>
+</section>
+
+<section class="f" id="saju">
+  <div class="shot"><img src="img/saju.jpg" alt="내 사주 풀이 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">📜</span>내 사주 풀이</h2>
+    <div class="tags"><span class="tag free">전부 무료</span><span class="tag n">하단 「내 사주」 탭</span></div>
+    <p>생년월일과 태어난 시간(모르면 생략 가능)으로 사주팔자를 세우고 풀이해요. 양력·음력 모두 넣을 수 있어요.</p>
+    <ul>
+      <li><b>사주팔자 명식</b> — 연·월·일·시 네 기둥의 천간·지지를 오행 색으로 표시</li>
+      <li><b>보석 일간과 띠</b> — 나를 상징하는 일간을 쉽게 풀어 설명</li>
+      <li><b>오행 분포</b> — 목·화·토·금·수가 얼마나 있는지, 강한 기운과 부족한 기운</li>
+      <li><b>지금 대운</b> — 10년 단위로 바뀌는 큰 흐름과 지금 내가 있는 구간</li>
+      <li><b>사주풀이</b> — 타고난 성격, 강점·약점, 연애, 재물, 건강 성향, 개운법</li>
+    </ul>
+  </div>
+</section>
+
+<section class="f" id="newyear">
+  <div class="shot"><img src="img/newyear.jpg" alt="2027 신년운세 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">🧧</span>2027 신년운세 (정미년)</h2>
+    <div class="tags"><span class="tag free">개요 무료</span><span class="tag k">상세 ✨ 15</span></div>
+    <p>다가오는 한 해를 미리 보는 운세예요. 11월부터는 다음 해 운세로 바뀌어요.</p>
+    <ul>
+      <li><b>무료 개요</b> — 한 해 총운과 한 줄 요약, 좋은 달, 12달 점수 흐름</li>
+      <li><b>상세</b> — 한 해 총점·키워드, 6개 분야별 기회·주의·실천, 12개월 상세(달마다 일·재물·사람·건강·좋은 날), 10년 대운, 분기 전략, 관계, 개운</li>
+    </ul>
+    <div class="tip">한 번 연 신년운세 상세는 같은 프로필·같은 연도라면 기간 제한 없이 다시 볼 수 있어요.</div>
+  </div>
+</section>
+
+<section class="f" id="tojeong">
+  <div class="shot"><img src="img/tojeong.jpg" alt="토정비결 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">🏮</span>토정비결</h2>
+    <div class="tags"><span class="tag free">작괘·총평 무료</span><span class="tag k">상세 ✨ 10</span></div>
+    <p>조선 시대 이지함 선생의 토정비결 방식으로 음력 생년월일에서 상·중·하괘(예: 4·3·1)를 뽑아 한 해의 신수를 봐요.</p>
+    <ul>
+      <li><b>무료</b> — 작괘 결과, 괘의 뜻, 총평, 좋은 달, 월별 한 줄 운세</li>
+      <li><b>상세</b> — 상·중·하괘 풀이, 계절 흐름, 월별 상세(신수 풀이·달의 기운·일/재물/사람/건강·좋은 날·행운 색·실천), 길한 달 활용법</li>
+    </ul>
+  </div>
+</section>
+
+<section class="f" id="compat">
+  <div class="shot"><img src="img/compat.jpg" alt="궁합 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">💞</span>궁합 · 나의 관계도</h2>
+    <div class="tags"><span class="tag free">궁합 지수 무료</span><span class="tag k">상세 ✨ 10 (상대마다)</span><span class="tag n">하단 「궁합」 탭</span></div>
+    <p>상대의 이름(별명)·생년월일·성별과 관계(연인 · 가족 · 친구 · 동료)를 넣으면 두 사람의 궁합을 봐요.</p>
+    <ul>
+      <li><b>궁합 지수</b>와 한눈에 보는 관계 요약</li>
+      <li><b>나의 관계도</b> — 최대 20명까지 등록해 한 화면에서 궁합 지수를 비교</li>
+      <li><b>상세</b> — 오행·일간·띠·배우자 자리, MBTI 관계 궁합, 연인이면 연애 성향(바람기) 비교, 관계 유형별 조심할 점·개선할 점, 대화 예시, 월별 흐름</li>
+    </ul>
+    <div class="tip">상대의 정보도 서버로 보내지 않고 내 기기에만 저장돼요.</div>
+  </div>
+</section>
+
+<section class="f" id="flirt">
+  <div class="shot"><img src="img/flirt.jpg" alt="바람기 테스트 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">💘</span>사주 바람기 테스트</h2>
+    <div class="tags"><span class="tag free">결과 무료</span><span class="tag k">상세 ✨ 5</span></div>
+    <p>사주에 있는 도화살·홍염살 같은 연애 기질을 재미있게 풀어 바람기 지수와 유형(예: 인기 많은 순정파)을 알려 줘요.</p>
+    <ul>
+      <li><b>무료</b> — 바람기 지수, 연애 유형, 인기·흔들림 정도</li>
+      <li><b>상세</b> — 사주 근거, 이상형과 연애 패턴, 위험 신호, 대운별 연애 흐름, 월별 연애운, 연애 단계별 조언</li>
+      <li>결과를 친구에게 공유할 수 있어요.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="f" id="mbti">
+  <div class="shot"><img src="img/mbti.jpg" alt="사주로 보는 MBTI 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">🧩</span>사주로 보는 MBTI</h2>
+    <div class="tags"><span class="tag free">유형 무료</span><span class="tag k">상세 ✨ 5</span></div>
+    <p>오행과 십성의 균형으로 타고난 기질을 MBTI 4글자로 바꿔 보여 줘요(예: INTP 호기심 탐구자). 실제 MBTI를 고르면 둘을 비교해 줘요.</p>
+    <ul>
+      <li><b>무료</b> — 사주 MBTI 유형과 4개 축(E/I·S/N·T/F·J/P) 막대</li>
+      <li><b>상세</b> — 축별 계산 근거, 일·관계·연애·스트레스, 어울리는 일·환경, 성장 로드맵, 잘 맞는 유형, 사주로 보완하는 법</li>
+    </ul>
+  </div>
+</section>
+
+<section class="f" id="tarot">
+  <div class="shot"><img src="img/tarot.jpg" alt="타로카드 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">🃏</span>타로카드</h2>
+    <div class="tags"><span class="tag free">카드 뒤집기·요약 무료</span><span class="tag k">상세 1장 ✨5 · 3장 ✨10 · 5장 ✨15</span></div>
+    <p>메이저·마이너 78장 전체로 보는 타로예요. 주제(종합 · 연애 · 일 · 재물)를 고르고, 질문을 마음에 담은 채 카드를 섞어 직접 골라요.</p>
+    <ul>
+      <li><b>1장 · 오늘의 카드</b> — 지금 필요한 메시지 한 장</li>
+      <li><b>3장 · 과거 → 현재 → 미래</b> — 흐름과 카드끼리의 관계</li>
+      <li><b>5장 · 고민 해결</b> — 상황 · 장애물 · 숨은 원인 · 조언 · 결과</li>
+      <li><b>상세 리딩</b> — 그림·숫자·원소 읽기, 주제별 풀이, 시기, 내 사주와의 연결, 실천 계획</li>
+    </ul>
+    <div class="tip">오늘의 운세에 있는 <b>매일 타로 1장은 항상 무료</b>예요.</div>
+  </div>
+</section>
+
+<section class="f" id="mbtitest">
+  <div class="shot"><img src="img/mbtitest.jpg" alt="MBTI 성향 검사 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">📝</span>MBTI 성향 검사</h2>
+    <div class="tags"><span class="tag free">무료</span></div>
+    <p>24문항 설문에 「전혀 아니다 ~ 매우 그렇다」로 답하면 내 성향 유형과 4개 축 점수를 알려 줘요.</p>
+    <ul>
+      <li>검사 결과와 <b>사주로 보는 MBTI</b>를 나란히 비교 — 타고난 기질과 지금의 나는 얼마나 같을까요?</li>
+      <li>결과는 기록 보관함에 남고, 궁합의 MBTI 관계 궁합에도 쓰여요.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="f" id="counsel">
+  <div class="shot"><img src="img/counsel.jpg" alt="사주 상담 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">🧭</span>사주 상담</h2>
+    <div class="tags"><span class="tag free">처음 질문 1개 무료</span><span class="tag k">질문 1개 ✨ 3</span></div>
+    <p>고민을 편하게 적으면 내 사주·대운·올해 흐름·좋은 달·MBTI를 바탕으로 상담사처럼 답하고 다음 질문을 이어 가요.</p>
+    <ul>
+      <li><b>💬 대화 상담</b> — 이직·연애·창업 같은 고민을 자유롭게. 예시 질문을 눌러 시작할 수도 있어요.</li>
+      <li><b>🧭 선택 상담</b> — 「A 회사 vs B 회사」처럼 선택지를 2~3개 적으면 선택지별로 자세히 비교해 줘요. 내 생년월일로 태어난 가상 인물이 선택지마다 끝까지 살아 본 결과(인생 게임 엔진)도 참고로 보여 줘요.</li>
+      <li>상담 기록은 프로필별로 이 기기에만 저장돼요.</li>
+    </ul>
+    <div class="tip">사주 상담은 기기 안에서 정해진 규칙으로 계산하는 참고용 상담이에요. 서버나 외부 AI로 고민 내용을 보내지 않아요.</div>
+  </div>
+</section>
+
+<section class="f noimg" id="pdf">
+  <div>
+    <h2><span class="e">📑</span>종합 사주 리포트 (PDF)</h2>
+    <div class="tags"><span class="tag k">✨ 40</span></div>
+    <p>내 정보만으로 만드는 상담 보고서예요. 명식, 한 해 흐름, 분야별·월별 상담, 성향, 90일 실천 계획을 한 권으로 묶어 PDF로 저장해요(궁합은 선택 부록). 만들기 전에 목차와 예시를 먼저 보여 주고, 같은 프로필·같은 연도는 다시 내려받기가 무료예요. 한 번도 만들지 못했다면 카르마를 돌려받을 수 있어요.</p>
+  </div>
+</section>
+
+<section class="f" id="daily">
+  <div class="shot"><img src="img/daily.jpg" alt="출석 · 미션 화면" loading="lazy" width="390" height="844"></div>
+  <div>
+    <h2><span class="e">🧧</span>출석 · 데일리 미션</h2>
+    <div class="tags"><span class="tag free">무료</span></div>
+    <p>매일 들러 출석하고 간단한 미션을 하면 복주머니가 쌓여요.</p>
+    <ul>
+      <li><b>연속 출석</b> — 1~7일 출석판, 날마다 복주머니</li>
+      <li><b>오늘의 미션</b> — 오늘의 운세 보기, 타로 카드 한 번 뽑기, MBTI 성향 검사 하기, 오늘의 운세 공유하기</li>
+      <li><b>복주머니 교환</b> — 복주머니 3개로 카르마 +10 등 보상으로 바꿔요(더보기 › 복주머니 교환).</li>
+    </ul>
+  </div>
+</section>
+
+<section class="f noimg" id="karma">
+  <div>
+    <h2><span class="e">✨</span>카르마 — 운명 연구소의 하나뿐인 재화</h2>
+    <p>상세 풀이·타로 상세·상담·게임 아이템은 모두 <b>카르마</b>로 열어요. 사주풀이, 오늘의 운세, 매일 타로 1장, 각 서비스의 개요는 언제나 무료예요.</p>
+    <table>
+      <thead><tr><th>모으는 방법</th><th>카르마</th></tr></thead>
+      <tbody>
+        <tr><td>처음 시작할 때</td><td class="num">+100</td></tr>
+        <tr><td>카카오·구글로 처음 로그인 (계정당 1번)</td><td class="num">+100</td></tr>
+        <tr><td>광고 보기 (3분 간격 · 하루 6번)</td><td class="num">+20</td></tr>
+        <tr><td>인생 게임 엔딩 (한 판 끝까지)</td><td class="num">+30</td></tr>
+        <tr><td>인생 게임 중 10살마다 광고 휴식 (원할 때만)</td><td class="num">+20</td></tr>
+        <tr><td>버킷리스트 달성 (게임)</td><td class="num">+10</td></tr>
+        <tr><td>복주머니 3개 교환</td><td class="num">+10</td></tr>
+        <tr><td>이벤트 기간 무상 지급</td><td class="num">이벤트마다</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:14px"></p>
+    <table>
+      <thead><tr><th>쓰는 곳</th><th>카르마</th></tr></thead>
+      <tbody>
+        <tr><td>신년운세 상세</td><td class="num">15</td></tr>
+        <tr><td>토정비결 상세 · 궁합 상세(상대마다)</td><td class="num">10</td></tr>
+        <tr><td>바람기 테스트 상세 · 사주 MBTI 상세</td><td class="num">5</td></tr>
+        <tr><td>타로 상세 리딩 1장 / 3장 / 5장</td><td class="num">5 / 10 / 15</td></tr>
+        <tr><td>사주 상담 질문 1개 (처음 1개 무료)</td><td class="num">3</td></tr>
+        <tr><td>종합 사주 리포트 PDF</td><td class="num">40</td></tr>
+        <tr><td>게임 아이템: 다시 태어나기 · 기적 · 운명 조작 팩 · 갈림길 미리 보기</td><td class="num">15 · 40 · 30 · 3</td></tr>
+      </tbody>
+    </table>
+    <div class="tip">상세 풀이는 카르마를 쓴 날 자정까지 같은 대상을 3번 더 무료로 다시 볼 수 있어요. 신년운세·토정비결·종합 리포트는 같은 프로필·같은 연도면 계속 다시 볼 수 있어요. 안드로이드 앱에서는 카르마를 살 수도 있어요.</div>
+  </div>
+</section>
+
+<section class="f noimg" id="account">
+  <div>
+    <h2><span class="e">👤</span>계정 · 개인정보</h2>
+    <ul>
+      <li><b>로그인하지 않아도 모든 기능</b>을 쓸 수 있어요.</li>
+      <li>이름(별명)·생년월일·태어난 시간·성별, 궁합 상대, 상담·검사 기록, 게임 저장은 <b>현재 기기·브라우저에만</b> 저장되고 개발자 서버로 보내지 않아요.</li>
+      <li><b>카카오·구글 로그인(선택)</b>을 하면 카르마 잔액·살아 본 인생 수·연 콘텐츠 목록만 계정에 저장돼 다른 기기에서도 이어져요. 탈퇴하면 서버 기록은 바로 지워져요. (안드로이드 앱·웹 지원)</li>
+      <li>⚙️ 설정에서 화면 모드(라이트·다크·휴대폰 설정), 배경음악·효과음, 내 정보 수정, 기록 지우기를 할 수 있어요. 📂 내 기록 보관함에서 운세·타로·검사·상담·궁합·게임 기록을 모아 봐요.</li>
+    </ul>
+  </div>
+</section>
+
+<section class="f noimg" id="faq">
+  <div>
+    <h2><span class="e">❓</span>자주 묻는 질문</h2>
+    <details><summary>태어난 시간을 모르면 어떻게 하나요?</summary><p>「모름」으로 두면 시주(태어난 시간 기둥)를 빼고 연·월·일 세 기둥으로 풀이해요. 대부분의 기능은 그대로 쓸 수 있어요.</p></details>
+    <details><summary>앱을 지우거나 휴대폰을 바꾸면 어떻게 되나요?</summary><p>정보와 기록은 기기에만 저장돼서 앱을 지우거나 기기를 바꾸면 복원되지 않을 수 있어요. 카카오·구글로 로그인해 두면 카르마 잔액과 연 콘텐츠 목록은 새 기기에서도 이어져요.</p></details>
+    <details><summary>운세 결과를 믿어도 되나요?</summary><p>전통 명리를 바탕으로 한 참고·재미용 풀이예요. 중요한 결정은 여러 정보를 함께 살펴보고 스스로 판단해 주세요.</p></details>
+    <details><summary>웹과 앱은 무엇이 다른가요?</summary><p>기능은 같아요. 앱에서는 실제 광고 보상, 알림, 공유 시트, 카르마 구매(안드로이드)를 쓸 수 있어요. 웹은 설치 없이 바로 해 볼 수 있어요.</p></details>
+    <details><summary>안드로이드 뒤로가기 버튼은 어떻게 동작하나요?</summary><p>팝업이 열려 있으면 닫고, 아니면 이전 화면으로 돌아가요. 홈 화면에서 한 번 더 누르면 앱이 종료돼요. 인생 게임 중에는 저장하고 나갈지 물어봐요.</p></details>
+    <details><summary>문의는 어디로 하나요?</summary><p><a href="mailto:support.um09@gmail.com">support.um09@gmail.com</a>으로 보내 주세요. 비공개 테스트 참여 신청도 같은 주소로 받아요.</p></details>
+  </div>
+</section>
+
+<section class="final">
+  <h2>지금 바로 시작해 보세요</h2>
+  <div class="cta">
+    <a class="btn play" href="https://play.google.com/store/apps/details?id=com.morogohi.project8b" rel="noopener">▶ <span>Google Play에서 받기<small>안드로이드 앱 · 무료</small></span></a>
+    <a class="btn web" href="../life/">🌐 <span>웹에서 해 보기<small>설치 없이</small></span></a>
+  </div>
+  <p style="font-size:13px;color:var(--dim)">정식 출시 전 비공개 테스트 중이라 Google Play 앱은 테스터로 등록된 계정에서만 설치할 수 있어요.</p>
+</section>
+</main>
+
+<footer class="wrap">
+  <p>운명 연구소 · 문의 <a href="mailto:support.um09@gmail.com">support.um09@gmail.com</a> · <a href="../life/privacy.html">개인정보 처리방침</a> · <a href="../game/">인생 게임 소개</a></p>
+  <p>모든 운세·사주 풀이는 전통 명리를 바탕으로 한 참고·재미용 풀이예요.</p>
+</footer>
+</body>
+</html>

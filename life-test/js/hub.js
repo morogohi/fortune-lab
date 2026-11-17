@@ -991,7 +991,7 @@ const Hub = (() => {
         <p class="sjnote">사주 풀이·운세·궁합·인생 게임 결과는 전통 명리 이론을 바탕으로 한 참고·재미용 콘텐츠예요. 만세력 계산: lunar-javascript (MIT).</p></div>`;
   }
   function bindMore() {
-    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => go('shop'); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const ma = $('#mApp'); if (ma) ma.onclick = () => window.open('https://morogohi.github.io/project8b/', '_blank', 'noopener'); const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
+    $('#mExch').onclick = openExchange; $('#mShop').onclick = () => go('shop'); $('#mEdit').onclick = editProfile; $('#mRec').onclick = openRecords; const ma = $('#mApp'); if (ma) ma.onclick = () => window.open('https://morogohi.github.io/fortune-lab/guide/', '_blank', 'noopener'); const mm = $('#mMet'); if (mm) mm.onclick = () => Karma.openMetrics();
     const pv = $('#mPriv'); if (pv) pv.onclick = () => Ads.privacyOptions();
     document.querySelectorAll('[data-mode]').forEach(b => b.onclick = () => { Theme.set(b.dataset.mode); Snd.sfx('tap'); render(); });
     $('#mWipe').onclick = openWipe;
