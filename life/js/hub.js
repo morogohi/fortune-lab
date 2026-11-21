@@ -1083,6 +1083,6 @@ const Hub = (() => {
     tab = 'home'; show('hub'); render();
     scheduleNoti();
   }
-  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openRecords, openLogin };
+  return { cur: () => tab, init, go, render, mission, dailyState, attend, toast, me: getMe, people, analyze: analyzeP, openTojeong, rememberProfile, register, openRecords, openLogin, openItem };
 })();
 Hub.init();
