@@ -206,7 +206,7 @@ const Karma = (() => {
          { t: '취소', f: () => { metric('pay_cancel'); after && after(); } }]);
       return;
     }
-    openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">카르마 구매는 <b>안드로이드 앱</b>에서 할 수 있어요.<br>웹에서는 광고 체험과 인생 게임으로 카르마를 모아 보세요.</p>`, [{ t: '돌아가기', f: () => after && after() }]);
+    openOverlay(`${it.e} ${it.n}`, `<p class="sjtxt" style="text-align:center">카르마 구매는 <b>안드로이드 앱</b>에서 할 수 있어요.<br>앱과 같은 계정(카카오·구글)으로 로그인하면 앱에서 산 카르마를 웹에서도 그대로 쓸 수 있어요.<br>웹에서는 광고 보기와 인생 게임으로도 모을 수 있어요.</p>`, [{ t: '돌아가기', f: () => after && after() }]);
   }
 
   /* ---------- 🧪 테스트 모드 / ✅ 실제 서비스 모드 ----------

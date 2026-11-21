@@ -804,8 +804,8 @@ sndUI();initSetup();Snd.mood('title');
 renderTitle();
 /* ===== 광고 UI ===== */
 function refreshAdUI(){
-  // 게임 화면의 광고 버튼도 카르마 충전과 같은 규칙(1회 +5 · 3분 간격 · 하루 10회 공유)으로
-  const ok=Ads.canReward(),txt=`📺 광고 보고 카르마 +${Karma.AD_K}<small>3분 간격 · 하루 ${Karma.AD_DAY}회</small>`;
+  // 게임 화면의 광고 버튼도 카르마 충전과 같은 규칙(1회 +20 · 3분 간격 · 하루 6회 공유)으로 · 웹은 광고가 없을 때 5초 대기로 대신 지급(홈·충전 화면과 같게)
+  const ok=Ads.canReward()||(!Ads.native&&!!(window.WebAds&&WebAds.on)),txt=`📺 광고 보고 카르마 +${Karma.AD_K}<small>3분 간격 · 하루 ${Karma.AD_DAY}회</small>`;
   ['#adKarmaBtn','#adKarmaBtn2'].forEach(id=>{const b=$(id);if(!b)return;b.style.display=ok?'inline-block':'none';b.innerHTML=txt;
     b.onclick=()=>Karma.adReward(()=>{renderTitle();const kg=$('#karmaGain');if(kg)kg.textContent=`✨ 광고 보상 +${Karma.AD_K} (보유 ${karma})`;buzz(30)})});
   const pb=$('#privBtn');if(pb){pb.style.display=Ads.privacyRequired?'inline':'none';pb.onclick=()=>Ads.privacyOptions()}
