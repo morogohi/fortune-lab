@@ -8,7 +8,9 @@
 window.WEB_AD_CONFIG = {
   client: 'ca-pub-8387477370861262',   // AdSense 게시자 ID (AdMob과 같은 계정). 비우면 웹 광고 끔
                            //  ※ 실제로 광고가 나오려면 AdSense에서 morogohi.github.io 사이트 승인이 필요 (승인 전엔 빈칸 → 자리 숨김)
-  displaySlot: '',         // ← 디스플레이 광고 단위 슬롯 ID (예: '1234567890'). 비어 있으면 배너 안 띄움
+  displaySlot: '9590343039', // 첫 화면·엔딩 배너 (AdSense 광고 단위 p8b-web-content-responsive · 반응형)
+  bottomSlot: '3819141609',  // 화면 아래 고정 320×50 (광고 단위 p8b-web-bottom-320x50 · 앱 AdMob 하단 배너와 같은 자리)
+                           //  ※ 자동 광고의 '앵커 광고'는 이 배너와 겹치지 않게 AdSense에서 꺼 둠 (2026-11-21)
   h5: true,                // H5 Games Ads(전면·보상형) 사용 — 베타 승인 전엔 false 권장
   // 테스트 페이지(life-test/)는 항상 테스트 광고(data-adtest·data-adbreak-test) — 본인 클릭으로 계정 정지 방지. 운영(life/)은 실제 광고
   test: /\/life-test\//.test(location.pathname),
@@ -54,11 +56,12 @@ window.WebAds = (() => {
   }
 
   /* ①-b 화면 아래 고정 배너 (앱의 AdMob 하단 배너와 같은 자리) — 320×50 */
-  const bottomReady = () => on && !!W.displaySlot;
+  const bottomSlot = () => W.bottomSlot || W.displaySlot;
+  const bottomReady = () => on && !!bottomSlot();
   function bottom(el) {
     if (!bottomReady() || !el || el.dataset.filled) return;
     el.dataset.filled = '1'; el.classList.add('real'); el.style.background = 'var(--card)';
-    el.innerHTML = `<ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="${W.client}" data-ad-slot="${W.displaySlot}"${W.test ? ' data-adtest="on"' : ''}></ins>`;
+    el.innerHTML = `<ins class="adsbygoogle" style="display:inline-block;width:320px;height:50px" data-ad-client="${W.client}" data-ad-slot="${bottomSlot()}"${W.test ? ' data-adtest="on"' : ''}></ins>`;
     try { (window.adsbygoogle = window.adsbygoogle || []).push({}); } catch (e) {}
   }
 

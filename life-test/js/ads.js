@@ -103,10 +103,18 @@ window.Ads = (() => {
 
   /* 웹: 앱과 같은 자리(화면 아래)·같은 때에 배너 — AdSense 배너 단위(WEB_AD_CONFIG.displaySlot)가 있으면 실제 광고,
    *  없으면 테스트 모드에서만 '배너 광고 자리'를 보여 줘 배치를 미리 확인 */
+  let wantWeb = false;
   function mockBanner(on) {
     const el = document.getElementById('adMock'); if (!el) return;
     const real = !!(window.WebAds && WebAds.on && WebAds.bottomReady && WebAds.bottomReady());
-    if (real) { if (on) WebAds.bottom(el); }
+    if (real) {
+      if (on) WebAds.bottom(el);
+      // 광고가 안 채워지면(사이트 승인 전·재고 없음) 빈 띠·여백을 없앰
+      const ins = el.querySelector('ins.adsbygoogle');
+      if (ins && ins.getAttribute('data-ad-status') === 'unfilled') on = false;
+      else if (ins && !el._obs) { el._obs = new MutationObserver(() => { if (ins.getAttribute('data-ad-status') === 'unfilled') { el.classList.remove('on'); setBannerHeight(0); } else if (ins.getAttribute('data-ad-status') === 'filled' && wantWeb) { el.classList.add('on'); setBannerHeight(50); } }); el._obs.observe(ins, { attributes: true, attributeFilter: ['data-ad-status'] }); }
+      wantWeb = on;
+    }
     else on = on && typeof Karma !== 'undefined' && Karma.testMode();
     if (el.classList.contains('on') === on) return;
     el.classList.toggle('on', on); setBannerHeight(on ? 50 : 0);
