@@ -1,0 +1,54 @@
+<!-- 운명 연구소 블로그(fortune-lab.blogspot.com) 레이아웃 > 사이드바 > HTML/자바스크립트 가젯 「앱 연결」 내용.
+     글 본문 바로 아래(글 페이지)와 목록 맨 위(홈)에 웹앱(life/) 바로가기 카드를 넣는다.
+     글 제목·태그로 주제를 골라 ?go=화면&from=blog 로 연결 (웹앱 js/blogbridge.js 가 받음). -->
+<style>
+.flcta{margin:24px 0 8px;padding:18px 18px 16px;border:1px solid #e7d6c9;border-left:5px solid #b23a2f;border-radius:14px;background:#fffaf4;font-family:inherit}
+.flcta b.t{display:block;font-size:18px;color:#3a2a20;margin-bottom:4px}
+.flcta p{margin:0 0 12px;color:#6b5a4e;font-size:14px;line-height:1.55}
+.flcta .bt{display:flex;flex-wrap:wrap;gap:8px}
+.flcta a{display:inline-block;padding:10px 14px;border-radius:999px;background:#b23a2f;color:#fff!important;text-decoration:none!important;font-weight:700;font-size:14px}
+.flcta a.s{background:#fff;color:#b23a2f!important;border:1px solid #b23a2f}
+.flcta small{display:block;margin-top:10px;color:#9a8a7e;font-size:12px}
+.flcta.home{margin:0 0 20px}
+</style>
+<script>
+(function () {
+  var APP = 'https://morogohi.github.io/fortune-lab/life/';
+  var R = [
+    [/타로/, 'tarot', '🃏 내 타로 카드 뽑아 보기', '글에서 본 카드가 오늘 나에게도 나올까요? 78장 중 한 장을 무료로 뽑아 보세요.'],
+    [/신년|2027|정미년/, 'newyear', '🧧 내 2027 신년운세 보기', '정미년 한 해 흐름을 내 생년월일로 12달까지 풀어 드려요.'],
+    [/토정/, 'tojeong', '🏮 내 토정비결 보기', '작괘부터 월별 신수까지, 내 생년월일로 바로 계산해요.'],
+    [/궁합|띠/, 'compat', '💞 우리 궁합 보기', '두 사람 생년월일로 오행 궁합 지수와 관계도를 보여 드려요.'],
+    [/십성|천간|지지|지장간|사주|격국|용신|오행|신살|명리|만세력|팔자|대운/, 'saju', '📜 내 사주로 직접 확인', '글에서 배운 개념이 내 사주에는 어떻게 들어 있는지 바로 풀어 드려요.'],
+    [/주역|괘|절기/, 'today', '☀️ 오늘의 운세 보기', '오늘의 일진과 내 사주로 본 하루 흐름을 확인해 보세요.']
+  ];
+  function url(go) { return APP + '?go=' + go + '&from=blog'; }
+  function card(cls, t, d, go) {
+    var el = document.createElement('div');
+    el.className = 'flcta ' + cls;
+    el.innerHTML = '<b class="t">' + t + '</b><p>' + d + '</p><div class="bt">' +
+      '<a href="' + url(go) + '" target="_blank" rel="noopener">지금 해 보기 ›</a>' +
+      '<a class="s" href="' + url('game') + '" target="_blank" rel="noopener">🌏 내 사주로 인생 게임</a></div>' +
+      '<small>운명 연구소 웹앱 · 가입 없이 무료 · 전통 명리 이론 기반 참고·재미용</small>';
+    return el;
+  }
+  function run() {
+    if (document.querySelector('.flcta')) return;
+    var bodies = document.querySelectorAll('.post-body');
+    var item = document.body.className.indexOf('item-view') >= 0 || (bodies.length === 1 && /\/\d{4}\/\d{2}\//.test(location.pathname));
+    if (item && bodies.length) {
+      var title = (document.querySelector('.post-title') || {}).textContent || document.title;
+      var labels = [].map.call(document.querySelectorAll('.post-labels a, .byline.post-labels a'), function (a) { return a.textContent; }).join(' ');
+      var hay = title + ' ' + labels, m = null;
+      for (var i = 0; i < R.length; i++) if (R[i][0].test(hay)) { m = R[i]; break; }
+      if (!m) m = [null, 'saju', '📜 내 사주 무료로 풀어 보기', '생년월일만 넣으면 팔자·오행·십성·대운을 한 화면에서 보여 드려요.'];
+      var b = bodies[0];
+      b.parentNode.insertBefore(card('post', m[2], m[3], m[1]), b.nextSibling);
+    } else {
+      var blog = document.querySelector('.Blog .blog-posts') || document.querySelector('.Blog');
+      if (blog) blog.insertBefore(card('home', '🔮 읽기만 하지 말고, 내 운명으로 확인해 보세요', '블로그에서 배운 사주·타로·토정비결을 운명 연구소 웹앱에서 내 생년월일로 바로 볼 수 있어요.', 'today'), blog.firstChild);
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run); else run();
+})();
+</script>
