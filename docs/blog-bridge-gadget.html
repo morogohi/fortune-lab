@@ -107,6 +107,7 @@
     var flex = root.querySelectorAll('[style*="display:flex"],[style*="display: flex"]');
     for (var j = 0; j < flex.length; j++) {
       var f = flex[j], kids = f.children, k;
+      if (sv(f, 'gap:')) continue;          // 새 [그림 해설] 글: gap 지정 행은 원래 레이아웃 유지
       if (sv(f, 'height:')) {                     // 막대그래프
         f.style.alignItems = 'flex-end'; f.style.justifyContent = 'space-around'; f.style.gap = '8px';
         for (k = 0; k < kids.length; k++) { kids[k].style.flex = '1'; kids[k].style.display = 'flex'; kids[k].style.flexDirection = 'column'; kids[k].style.justifyContent = 'flex-end'; }
